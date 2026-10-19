@@ -64,7 +64,7 @@ image = (
     .run_function(_download, secrets=[modal.Secret.from_name("huggingface-token")])
 )
 
-vol = modal.Volume.from_name("hausa-cosyvoice-weights")
+vol = modal.Volume.from_name("namu-voice-refs")   # only /refs is used: the voice samples
 
 with image.imports():
     import io

@@ -24,8 +24,8 @@ consistent.
 
 import modal
 
-TRANSCRIBE_URL = "https://abdoulide71--namu-transcribe-transcribe-api.modal.run"
-VOICE_URL = "https://abdoulide71--namu-voice-voice-api.modal.run"
+TRANSCRIBE_URL = "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run"
+VOICE_URL = "https://namu-ai-lab--namu-voice-voice-api.modal.run"
 
 FR_STT_MODEL = "gpt-4o-mini-transcribe"     # not a Namu model — French ASR only
 TEXT_MODEL = "gpt-4.1-mini"

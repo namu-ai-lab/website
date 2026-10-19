@@ -20,8 +20,8 @@ turn, return a 63-word Markdown list that takes 93 seconds to speak.
 
 import modal
 
-TRANSCRIBE_URL = "https://abdoulide71--namu-transcribe-transcribe-api.modal.run"
-VOICE_URL = "https://abdoulide71--namu-voice-voice-api.modal.run"
+TRANSCRIBE_URL = "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run"
+VOICE_URL = "https://namu-ai-lab--namu-voice-voice-api.modal.run"
 
 # Chosen for LATENCY AND CONSISTENCY, which is what a voice agent lives on.
 # Measured across eleven candidates on identical Hausa prompts:

@@ -48,10 +48,10 @@ app = modal.App("namu-gateway")
 REQUIRE_PROXY_AUTH = False
 
 UPSTREAM = {
-    "transcribe": "https://abdoulide71--namu-transcribe-transcribe-api.modal.run",
-    "voice": "https://abdoulide71--namu-voice-voice-api.modal.run",
-    "interpret": "https://abdoulide71--namu-interpret-api.modal.run",
-    "agent": "https://abdoulide71--namu-agent-api.modal.run",
+    "transcribe": "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run",
+    "voice": "https://namu-ai-lab--namu-voice-voice-api.modal.run",
+    "interpret": "https://namu-ai-lab--namu-interpret-api.modal.run",
+    "agent": "https://namu-ai-lab--namu-agent-api.modal.run",
 }
 
 SCOPES = ("transcribe", "speech", "translate", "converse")
