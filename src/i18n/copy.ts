@@ -21,7 +21,7 @@ const en = {
     about: ["About", "Namu AI Lab is the research unit of Namu, working on speech in the languages of the Sahel."],
   },
   nav: {
-    research: "Research", models: "Models", developers: "Developers", data: "Data", organisations: "Organisations", about: "About", skip: "Skip to main content", sites: "Namu sites",
+    research: "Research", models: "Models", developers: "Developers", data: "Data", organisations: "Organisations", about: "About", skip: "Skip to main content",
     openMenu: "Open menu", closeMenu: "Close menu", menu: "Menu",
     devIntro: "Build with the Lab’s speech models for the languages of the Sahel.", devCta: "Explore the API",
     apiPlatform: "API platform", apiPlatformSub: "One API for listening, speaking, translation and conversation",
@@ -29,7 +29,6 @@ const en = {
     researchIntro: "Five programmes on how machines hear, understand and answer in the languages of the Sahel.", exploreResearch: "Explore research",
     latest: "Latest research", latestSub: "Posts, notes and methods",
     modelsIntro: "Speech systems for the languages of the Sahel, built on the Lab’s research.", viewModels: "View models",
-    switcherNotes: { products: "Products", research: "Research", code: "Code" },
   },
   common: {
     learnMore: "Learn more", listen: "Listen", previous: "Previous", next: "Next", getInTouch: "Get in touch", viewAll: "View all",
@@ -44,8 +43,8 @@ const en = {
     tafiya: { line: "Natural, expressive speech synthesis for the languages of the Sahel", task: "Speech synthesis", languages: "Languages of the Sahel" },
   } as Record<string, { line: string; task: string; languages: string }>,
   footer: {
-    follow: "Follow us", tag: "Speech AI that hears everyone", models: "Models", research: "Research", learn: "Learn more",
-    allResearch: "All research", about: "About", news: "News", data: "Data", careers: "Careers", contact: "Contact",
+    follow: "Follow us", tag: "Speech AI that hears everyone", models: "Models", research: "Research", start: "Get started", lab: "The Lab",
+    partner: "Partner with us", github: "Code on GitHub", about: "About", news: "News", data: "Data", careers: "Careers", contact: "Contact",
     aboutNamu: "About Namu", privacy: "Privacy", terms: "Terms",
   },
   home: {
@@ -62,16 +61,11 @@ const en = {
     latest: "Latest news", viewNews: "View news",
     models: "Models", modelsSub: "Speech systems built on our research", modelsLink: "View on namu-ai.org", badge: "Research", statusLabel: "Status",
     research: "Research", researchSub: `Five programmes, one aim: speech technology that works for the people of the Sahel`, researchLink: "Explore research",
-    data: "Data", dataSub: "The languages of the Sahel as people speak them, recorded with their consent", dataLink: "How we work with data",
-    dataItems: [
-      { t: "Conversation, not dictation", d: "Two people talking on separate channels, calls over ordinary phones, and speakers who do not read, prompted by pictures and questions instead of text." },
-      { t: "Consent that travels with the data", d: "Every speaker consents in their own language, chooses what their voice may be used for, and is paid for their time. Those choices stay attached to every file and model." },
-      { t: "A data statement with every release", d: "Who is in the data, how it was recorded and what it cannot support, published with it. What we keep closed, we say why." },
-      { t: "Test sets frozen first", d: "Speaker-disjoint evaluation sets, balanced by dialect and gender, frozen before any training data is collected." },
-    ] as Card[],
-    join: "Help build speech AI for the languages you speak",
-    joinBody: "We work with native speakers, linguists, researchers and engineers in Niger, Nigeria and beyond. Fluency in a language of the Sahel counts.",
-    joinCta: "Work with us",
+    start: {
+      h: "Get started",
+      partner: { t: "Partner with us on your programme", items: ["Work with our team to bring speech AI into your programme", "Get hands-on guidance, from pilot to deployment", "Evaluate the models in your own languages and setting"], cta: "Contact us" },
+      build: { t: "Build on your own", items: ["Our speech models for the languages of the Sahel, through one API", "Early access as each model is released", "A model card and evaluation for every release", "Documentation and SDKs as the platform opens"], cta: "Start building" },
+    },
   },
   research: {
     eyebrow: "Research", h1: "We study how machines hear, understand and answer in the languages of the Sahel",
@@ -163,7 +157,7 @@ const fr: Copy = {
     about: ["À propos", "Namu AI Lab est l’unité de recherche de Namu, consacrée à la parole dans les langues du Sahel."],
   },
   nav: {
-    research: "Recherche", models: "Modèles", developers: "Développeurs", data: "Données", organisations: "Organisations", about: "À propos", skip: "Aller au contenu principal", sites: "Sites Namu",
+    research: "Recherche", models: "Modèles", developers: "Développeurs", data: "Données", organisations: "Organisations", about: "À propos", skip: "Aller au contenu principal",
     openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", menu: "Menu",
     devIntro: "Construisez avec les modèles de parole du Lab pour les langues du Sahel.", devCta: "Découvrir l’API",
     apiPlatform: "Plateforme API", apiPlatformSub: "Une seule API pour écouter, parler, traduire et converser",
@@ -171,7 +165,6 @@ const fr: Copy = {
     researchIntro: "Cinq programmes sur la façon dont les machines entendent, comprennent et répondent dans les langues du Sahel.", exploreResearch: "Explorer la recherche",
     latest: "Dernières recherches", latestSub: "Articles, notes et méthodes",
     modelsIntro: "Des systèmes de parole pour les langues du Sahel, issus des recherches du Lab.", viewModels: "Voir les modèles",
-    switcherNotes: { products: "Produits", research: "Recherche", code: "Code" },
   },
   common: {
     learnMore: "En savoir plus", listen: "Écouter", previous: "Précédent", next: "Suivant", getInTouch: "Nous écrire", viewAll: "Tout voir",
@@ -186,8 +179,8 @@ const fr: Copy = {
     tafiya: { line: "Synthèse vocale naturelle et expressive pour les langues du Sahel", task: "Synthèse vocale", languages: "Langues du Sahel" },
   },
   footer: {
-    follow: "Suivez-nous", tag: "Une IA de la parole qui entend tout le monde", models: "Modèles", research: "Recherche", learn: "En savoir plus",
-    allResearch: "Toute la recherche", about: "À propos", news: "Actualités", data: "Données", careers: "Carrières", contact: "Contact",
+    follow: "Suivez-nous", tag: "Une IA de la parole qui entend tout le monde", models: "Modèles", research: "Recherche", start: "Commencer", lab: "Le Lab",
+    partner: "Devenez partenaire", github: "Le code sur GitHub", about: "À propos", news: "Actualités", data: "Données", careers: "Carrières", contact: "Contact",
     aboutNamu: "À propos de Namu", privacy: "Confidentialité", terms: "Conditions",
   },
   home: {
@@ -204,16 +197,11 @@ const fr: Copy = {
     latest: "Dernières actualités", viewNews: "Toutes les actualités",
     models: "Modèles", modelsSub: "Des systèmes de parole issus de nos recherches", modelsLink: "Voir sur namu-ai.org", badge: "Recherche", statusLabel: "Statut",
     research: "Recherche", researchSub: `Cinq programmes, un seul but${n}: des technologies de la parole qui fonctionnent pour les populations du Sahel`, researchLink: "Explorer la recherche",
-    data: "Données", dataSub: "Les langues du Sahel telles qu’on les parle, enregistrées avec le consentement des locuteurs", dataLink: "Notre approche des données",
-    dataItems: [
-      { t: "La conversation, pas la dictée", d: "Deux personnes qui se parlent sur des canaux séparés, des appels sur des téléphones ordinaires, et des locuteurs qui ne lisent pas, guidés par des images et des questions plutôt que par un texte." },
-      { t: "Un consentement qui suit les données", d: "Chaque locuteur donne son consentement dans sa propre langue, choisit les usages autorisés de sa voix et est rémunéré pour son temps. Ces choix restent attachés à chaque fichier et à chaque modèle." },
-      { t: "Une fiche de données à chaque publication", d: "Qui figure dans les données, comment elles ont été enregistrées et ce qu’elles ne permettent pas, publié avec elles. Ce que nous gardons fermé, nous disons pourquoi." },
-      { t: "Des jeux de test figés d’abord", d: "Des jeux d’évaluation sans locuteurs communs, équilibrés par dialecte et par genre, figés avant toute collecte de données d’entraînement." },
-    ],
-    join: "Construisez avec nous l’IA de la parole pour les langues que vous parlez",
-    joinBody: "Nous travaillons avec des locuteurs natifs, des linguistes, des chercheurs et des ingénieurs au Niger, au Nigeria et au-delà. La maîtrise d’une langue du Sahel compte.",
-    joinCta: "Travailler avec nous",
+    start: {   /* FR-REVIEW */
+      h: "Commencer",
+      partner: { t: "Devenez notre partenaire pour votre programme", items: ["Travaillez avec notre équipe pour intégrer l’IA de la parole à votre programme", "Un accompagnement concret, du pilote au déploiement", "Évaluez les modèles dans vos langues et votre contexte"], cta: "Nous contacter" },
+      build: { t: "Construisez par vous-même", items: ["Nos modèles de parole pour les langues du Sahel, avec une seule API", "Un accès anticipé à mesure que chaque modèle est publié", "Une fiche de modèle et une évaluation pour chaque publication", "Documentation et SDK à l’ouverture de la plateforme"], cta: "Commencer à construire" },
+    },
   },
   research: {
     eyebrow: "Recherche", h1: "Nous étudions comment les machines entendent, comprennent et répondent dans les langues du Sahel",

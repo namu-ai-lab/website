@@ -1,5 +1,6 @@
-/* The home page console: a design preview of trying the Lab's models (after elevenlabs.io's hero panel
-   and openai.fm). Nothing here is connected to a model; the console says so in its footer.
+/* The home page console: a design preview of trying the Lab's models (after elevenlabs.io's hero panel:
+   three tabs, one object in the middle of each, a bar of choices underneath). Nothing here is connected
+   to a model yet.
    HA-REVIEW: every Hausa sentence below was written for this preview and needs a native speaker's check.
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
 import type { Lang } from "@/i18n/config";
@@ -8,17 +9,16 @@ const n = " ";   // narrow no-break space before French high punctuation
 
 export type Script = { id: string; label: string; text: string; gloss: string };
 export type Voice = { id: string; name: string; note: string; palette: [string, string, string] };
-export type Line = { who: "you" | "air"; text: string; gloss: string };
+
+export type Tab = "speak" | "converse" | "api";
 
 export type PlaygroundCopy = {
   sub: string;
-  tabs: { id: string; label: string; model: string }[];
-  preview: string; earlyAccess: string;
-  speak: { script: string; voices: string; play: string; stop: string; chars: (k: number) => string; dialects: string[]; region: string; speaking: string };
-  listen: { tap: string; listening: string; done: string; strict: string; folded: string; transcript: string; why: string; hint: string };
-  translate: { from: string; to: string; swap: string; run: string; listen: string };
-  converse: { start: string; end: string; you: string; air: string; status: string; connecting: string };
-  api: { run: string; running: string; output: string; illustrative: string };
+  tabs: { id: Tab; label: string; dot: [string, string, string] }[];
+  build: string;
+  speak: { scripts: string; voices: string; previous: string; next: string; play: string; stop: string };
+  converse: { start: string; end: string; connecting: string };
+  api: { run: string; running: string; output: string };
 };
 
 export const scripts: Record<Lang, Script[]> = {
@@ -42,20 +42,15 @@ export const voices: Record<Lang, Voice[]> = {
     { id: "bright", name: "Bright", note: "Clear and quick, for news", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
     { id: "calm", name: "Calm", note: "Slow and steady, for care", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
     { id: "story", name: "Storyteller", note: "Lively, for tales", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "radio", name: "Radio", note: "Steady and clear, for announcements", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
   ],
   fr: [
     { id: "warm", name: "Chaleureuse", note: "Égale et proche, pour la lecture", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
     { id: "bright", name: "Claire", note: "Nette et vive, pour l’info", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
     { id: "calm", name: "Posée", note: "Lente et sûre, pour le soin", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
     { id: "story", name: "Conteuse", note: "Vivante, pour les contes", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "radio", name: "Radio", note: "Posée et nette, pour les annonces", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
   ],
-};
-
-/* Strict keeps the hooked letters, case and punctuation; folded drops them, as the Lab's scoring does. */
-export const heard = {
-  strict: "Ƴan kasuwa sun ƙara farashin ɗan wake a Maraɗi.",
-  folded: "yan kasuwa sun kara farashin dan wake a maradi",
-  gloss: { en: "Traders have raised the price of bean cakes in Maradi.", fr: "Les commerçants ont augmenté le prix des beignets de haricot à Maradi." },
 };
 
 export const translation = {
@@ -63,46 +58,29 @@ export const translation = {
   fr: "Je voudrais acheter du mil au marché demain matin.",
 };
 
-export const conversation: Record<Lang, Line[]> = {
-  en: [
-    { who: "you", text: "Sannu Aïr, ina kwana?", gloss: "Hello Aïr, good morning." },
-    { who: "air", text: "Lafiya lau! Me kake so mu tattauna yau?", gloss: "Very well! What would you like to talk about today?" },
-    { who: "you", text: "Ka ba ni labarin Gizo.", gloss: "Tell me a story about Spider." },
-    { who: "air", text: "To, ga shi nan: wata rana Gizo ya tafi kasuwa…", gloss: "All right, here it is: one day Spider went to the market…" },
-  ],
-  fr: [
-    { who: "you", text: "Sannu Aïr, ina kwana?", gloss: "Bonjour Aïr, bien dormi ?".replace(" ?", `${n}?`) },
-    { who: "air", text: "Lafiya lau! Me kake so mu tattauna yau?", gloss: "Très bien ! De quoi veux-tu parler aujourd’hui ?".replace(" !", `${n}!`).replace(" ?", `${n}?`) },
-    { who: "you", text: "Ka ba ni labarin Gizo.", gloss: "Raconte-moi une histoire de l’Araignée." },
-    { who: "air", text: "To, ga shi nan: wata rana Gizo ya tafi kasuwa…", gloss: `Bien, la voici${n}: un jour, l’Araignée partit au marché…` },
-  ],
-};
-
 export const playground: Record<Lang, PlaygroundCopy> = {
   en: {
     sub: "Hear, speak, translate and converse in the languages of the Sahel",
     tabs: [
-      { id: "speak", label: "Speak", model: "Tafiya" }, { id: "listen", label: "Listen", model: "Tatsuniya" },
-      { id: "translate", label: "Translate", model: "Kora" }, { id: "converse", label: "Converse", model: "Aïr" }, { id: "api", label: "API", model: "Developers" },
+      { id: "speak", label: "Speak", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "converse", label: "Converse", dot: ["#e8935a", "#7a4325", "#1c1410"] },
+      { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
     ],
-    preview: "Design preview. These demos are not connected to the models yet.", earlyAccess: "Request early access",
-    speak: { script: "Script", voices: "Voice", play: "Play", stop: "Stop", chars: k => `${k} characters`, dialects: ["Niger", "Nigeria"], region: "Region", speaking: "Speaking" },
-    listen: { tap: "Tap to speak", listening: "Listening…", done: "Tap to try again", strict: "Strict", folded: "Folded", transcript: "Transcript", why: "Why we keep both", hint: "Say something in your language" },
-    translate: { from: "Your language", to: "French", swap: "Swap languages", run: "Translate", listen: "Listen" },
-    converse: { start: "Start a conversation", end: "End", you: "You", air: "Aïr", status: "Aïr · In research", connecting: "Connecting…" },
-    api: { run: "Run code", running: "Running…", output: "Output", illustrative: "Illustrative. The API is not public yet." },
+    build: "Start building",
+    speak: { scripts: "What the voice reads", voices: "Voices", previous: "Previous voice", next: "Next voice", play: "Play", stop: "Stop" },
+    converse: { start: "Call Aïr", end: "End call", connecting: "Connecting…" },
+    api: { run: "Run code", running: "Running…", output: "Output" },
   },
   fr: {
     sub: "Écouter, parler, traduire et converser dans les langues du Sahel",
     tabs: [
-      { id: "speak", label: "Parler", model: "Tafiya" }, { id: "listen", label: "Écouter", model: "Tatsuniya" },
-      { id: "translate", label: "Traduire", model: "Kora" }, { id: "converse", label: "Converser", model: "Aïr" }, { id: "api", label: "API", model: "Développeurs" },
+      { id: "speak", label: "Parler", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "converse", label: "Converser", dot: ["#e8935a", "#7a4325", "#1c1410"] },
+      { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
     ],
-    preview: "Aperçu de conception. Ces démonstrations ne sont pas encore reliées aux modèles.", earlyAccess: "Demander un accès anticipé",
-    speak: { script: "Texte", voices: "Voix", play: "Lire", stop: "Arrêter", chars: k => `${k} caractères`, dialects: ["Niger", "Nigeria"], region: "Région", speaking: "Lecture" },
-    listen: { tap: "Touchez pour parler", listening: "Écoute…", done: "Touchez pour recommencer", strict: "Strict", folded: "Replié", transcript: "Transcription", why: "Pourquoi garder les deux", hint: "Dites quelque chose dans votre langue" },
-    translate: { from: "Votre langue", to: "Français", swap: "Inverser les langues", run: "Traduire", listen: "Écouter" },
-    converse: { start: "Démarrer une conversation", end: "Terminer", you: "Vous", air: "Aïr", status: "Aïr · En recherche", connecting: "Connexion…" },
-    api: { run: "Exécuter", running: "Exécution…", output: "Résultat", illustrative: "Exemple illustratif. L’API n’est pas encore publique." },
+    build: "Commencer à construire",
+    speak: { scripts: "Ce que lit la voix", voices: "Voix", previous: "Voix précédente", next: "Voix suivante", play: "Lire", stop: "Arrêter" },
+    converse: { start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…" },
+    api: { run: "Exécuter", running: "Exécution…", output: "Résultat" },
   },
 };

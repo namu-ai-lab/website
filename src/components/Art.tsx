@@ -229,8 +229,7 @@ export function NightArt({ seed = "night", ratio = "card", label, tone = "warm" 
 }
 
 /* ---- the hero's glass Blossom: the Namu ring, very soft, floating in the haze ---- */
-export function HeroRing() {
-  const id = "hr";
+export function HeroRing({ id = "hr" }: { id?: string } = {}) {
   return (
     <svg className="ring" viewBox="0 0 600 600" aria-hidden="true">
       <defs>
