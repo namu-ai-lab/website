@@ -8,6 +8,14 @@ import { db } from "./db";
    Each provider's callback URL is <site>/api/auth/callback/<provider>. Server-only. */
 let instance: ReturnType<typeof create> | null = null;
 
+/** The site's own address: BETTER_AUTH_URL if set; otherwise, on Vercel, the branch URL for a preview
+    (so each PR signs in on its own preview) and the production URL in production. */
+function siteURL(): string | undefined {
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  const host = process.env.VERCEL_ENV === "preview" ? process.env.VERCEL_BRANCH_URL : process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return host ? `https://${host}` : undefined;
+}
+
 function create() {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {};
   if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET)
@@ -17,7 +25,7 @@ function create() {
   return betterAuth({
     database: db(),
     secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: process.env.BETTER_AUTH_URL,
+    baseURL: siteURL(),
     socialProviders,
     session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },   // two weeks, renewed daily
     plugins: [nextCookies()],
