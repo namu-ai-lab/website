@@ -71,8 +71,9 @@ never printed by the scripts.
    `/api/auth/callback/google`.
 4. **Modal**: `npm run modal:secrets` (creates `namu-db` and `namu-key-pepper`), then
    `modal deploy platform/modal/namu_gateway.py` → `https://abdoulide71--namu-gateway-api.modal.run/v1/health`.
-5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` (all of it except
-   `GATEWAY_DATABASE_URL`), and set `BETTER_AUTH_URL` to the production URL. Redeploy.
+5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` except `GATEWAY_DATABASE_URL`
+   and `BETTER_AUTH_URL` (on Vercel the site uses its preview or production address automatically). Redeploy.
+   The GitHub OAuth app's callback must match the address you sign in on (preview or production).
 6. **First admin**: sign in on the site, then `npm run db:admin -- you@example.org`.
 7. **Demo key**: in `/account/keys`, create a key named `website demo`, save it as `NAMU_DEMO_KEY` (in Vercel),
    then `npm run db:admin -- --demo`. Raise the admin account's monthly minutes if the demo is busy.
