@@ -70,7 +70,7 @@ never printed by the scripts.
    Save `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` into `.env.local` the same way. Google works the same with
    `/api/auth/callback/google`.
 4. **Modal**: `npm run modal:secrets` (creates `namu-db` and `namu-key-pepper`), then
-   `modal deploy platform/modal/namu_gateway.py` → `https://abdoulide71--namu-gateway-api.modal.run/v1/health`.
+   `modal deploy platform/modal/namu_gateway.py` → `https://<workspace>--namu-gateway-api.modal.run/v1/health`.
 5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` except `GATEWAY_DATABASE_URL`
    and `BETTER_AUTH_URL` (on Vercel the site uses its preview or production address automatically). Redeploy.
    The GitHub OAuth app's callback must match the address you sign in on (preview or production).

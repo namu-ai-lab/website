@@ -14,7 +14,7 @@ const MAX_TEXT = 300;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ model: string }> }) {
   const { model } = await params;
-  if (!(model in MODELS)) return fail(404, "unknown_model", "Unknown demo.");
+  if (!Object.hasOwn(MODELS, model)) return fail(404, "unknown_model", "Unknown demo.");
   if (!sameOrigin(req)) return fail(403, "bad_origin", "The demo runs from the Namu site only.");
   const key = process.env.NAMU_DEMO_KEY;
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");

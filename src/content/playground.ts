@@ -1,6 +1,6 @@
-/* The home page console: try the Lab's models (after elevenlabs.io's hero panel: three tabs, one object
-   in the middle of each, a bar of choices underneath). Speak and the API tab are live, through /api/demo
-   with the demo's limits; Converse is a timed preview while Aïr is in research.
+/* The home page console: a design preview of trying the Lab's models (after elevenlabs.io's hero panel:
+   three tabs, one object in the middle of each, a bar of choices underneath). Nothing here is connected
+   to a model yet.
    HA-REVIEW: every Hausa sentence below was written for this preview and needs a native speaker's check.
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
 import type { Lang } from "@/i18n/config";
@@ -18,8 +18,7 @@ export type PlaygroundCopy = {
   build: string;
   speak: { scripts: string; voices: string; previous: string; next: string; play: string; stop: string };
   converse: { start: string; end: string; connecting: string };
-  api: { run: string; running: string; output: string; note: string };
-  live: { working: string; unavailable: string; limited: string; failed: string };
+  api: { run: string; running: string; output: string };
 };
 
 export const scripts: Record<Lang, Script[]> = {
@@ -37,15 +36,20 @@ export const scripts: Record<Lang, Script[]> = {
   ],
 };
 
-/* The live API's two Hausa voices (GET /v1/voices). */
 export const voices: Record<Lang, Voice[]> = {
   en: [
-    { id: "nadia", name: "Nadia", note: "Hausa · warm and patient", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "salim", name: "Salim", note: "Hausa · direct and steady", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "warm", name: "Warm", note: "Even and close, for reading", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+    { id: "bright", name: "Bright", note: "Clear and quick, for news", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
+    { id: "calm", name: "Calm", note: "Slow and steady, for care", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
+    { id: "story", name: "Storyteller", note: "Lively, for tales", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "radio", name: "Radio", note: "Steady and clear, for announcements", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
   ],
   fr: [
-    { id: "nadia", name: "Nadia", note: "Haoussa · chaleureuse et patiente", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "salim", name: "Salim", note: "Haoussa · direct et posé", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "warm", name: "Chaleureuse", note: "Égale et proche, pour la lecture", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+    { id: "bright", name: "Claire", note: "Nette et vive, pour l’info", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
+    { id: "calm", name: "Posée", note: "Lente et sûre, pour le soin", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
+    { id: "story", name: "Conteuse", note: "Vivante, pour les contes", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
+    { id: "radio", name: "Radio", note: "Posée et nette, pour les annonces", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
   ],
 };
 
@@ -65,8 +69,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     build: "Start building",
     speak: { scripts: "What the voice reads", voices: "Voices", previous: "Previous voice", next: "Next voice", play: "Play", stop: "Stop" },
     converse: { start: "Call Aïr", end: "End call", connecting: "Connecting…" },
-    api: { run: "Run code", running: "Running…", output: "Output", note: "Runs on the live demo. In your app, your own key takes the demo’s place." },
-    live: { working: "Generating…", unavailable: "The live demo is not available right now.", limited: "Demo limit reached for now. Get an API key to keep going.", failed: "The model did not answer. Try again in a moment." },
+    api: { run: "Run code", running: "Running…", output: "Output" },
   },
   fr: {
     sub: "Écouter, parler, traduire et converser dans les langues du Sahel",
@@ -78,7 +81,6 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     build: "Commencer à construire",
     speak: { scripts: "Ce que lit la voix", voices: "Voix", previous: "Voix précédente", next: "Voix suivante", play: "Lire", stop: "Arrêter" },
     converse: { start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…" },
-    api: { run: "Exécuter", running: "Exécution…", output: "Résultat", note: "S’exécute sur la démo en direct. Dans votre application, votre propre clé remplace celle de la démo." },
-    live: { working: "Génération…", unavailable: "La démo en direct n’est pas disponible pour le moment.", limited: "Limite de la démo atteinte. Obtenez une clé d’API pour continuer.", failed: "Le modèle n’a pas répondu. Réessayez dans un instant." },
+    api: { run: "Exécuter", running: "Exécution…", output: "Résultat" },
   },
 };

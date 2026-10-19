@@ -70,7 +70,7 @@ export const accountCopy: Record<Lang, AccountCopy> = {
     },
     usage: {
       meta: ["Usage", "Your Namu API usage this month."],
-      h1: "Usage", lede: "Counted from the first of the month (UTC). We record durations and counts, never your audio or text.",
+      h1: "Usage", lede: "Counted from the first of the month (UTC). Usage records hold durations, counts and status codes.",
       month: "This month", allowance: (u, l) => `${u} of ${l} minutes of audio`,
       th: { endpoint: "Endpoint", requests: "Requests", audio: "Audio (min)", chars: "Characters", errors: "Errors" },
       empty: "No requests yet this month.", note: "Audio minutes count both what you send and the speech we return.",
@@ -118,7 +118,7 @@ export const accountCopy: Record<Lang, AccountCopy> = {
     },
     usage: {
       meta: ["Consommation", "Votre consommation de l’API Namu ce mois-ci."],
-      h1: "Consommation", lede: "Comptée depuis le premier du mois (UTC). Nous enregistrons des durées et des nombres, jamais votre audio ni vos textes.",
+      h1: "Consommation", lede: "Comptée depuis le premier du mois (UTC). Les relevés d’usage contiennent des durées, des nombres et des codes de statut.",
       month: "Ce mois-ci", allowance: (u, l) => `${u} sur ${l} minutes d’audio`,
       th: { endpoint: "Point d’accès", requests: "Requêtes", audio: "Audio (min)", chars: "Caractères", errors: "Erreurs" },
       empty: "Aucune requête ce mois-ci.", note: "Les minutes comptent l’audio envoyé et la parole renvoyée.",
