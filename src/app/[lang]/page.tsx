@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HeroRing, GlassArt, NightArt, Blueprint } from "@/components/Art";
+import { HeroRing } from "@/components/Art";
 import { Playground } from "@/components/Playground";
 import { playground } from "@/content/playground";
 import { Icon } from "@/components/Icon";
@@ -31,10 +31,6 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
   const c = copy[lang], h = c.home, pg = playground[lang];
   const L = (p: string) => lp(lang, p);
   const [lead, ...rest] = getNews(lang);
-  const dataArt = [
-    <GlassArt key="0" motif="mic" palette="apricot" ratio="square" place="centre" />, <NightArt key="1" seed="data-consent" ratio="square" />,
-    <GlassArt key="2" motif="stack" palette="sand" ratio="square" place="centre" />, <Blueprint key="3" kind="measure" ratio="square" />,
-  ];
   const go = (external?: boolean) => <Icon name={external ? "external" : "chevron"} size={16} stroke={1.6} className={external ? undefined : "rot-90"} />;
   return (
     <>
@@ -129,22 +125,19 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         </div>
       </section>
 
-      <section id="data" className="section" aria-labelledby="h-data">
+      {/* Get started, after openai.com/api's: organisations partner with Namu to deploy in their programmes; developers go to the API platform */}
+      <section className="gs" aria-labelledby="h-start">
         <div className="wrap">
-          <div className="section-head"><h2 id="h-data" className="h2">{h.data}<span className="sub">{h.dataSub}</span></h2><a className="pill" href={L("/data")}>{h.dataLink}</a></div>
-          <div className="datagrid">
-            {h.dataItems.map((d, i) => <div key={d.t} className="datum reveal"><div className="ic">{dataArt[i]}</div><div><h3 className="h3">{d.t}</h3><p>{d.d}</p></div></div>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="section" aria-labelledby="h-join">
-        <div className="wrap join">
-          <div className="pic reveal"><GlassArt motif="talk" palette="dusk" ratio="square" place="centre" /></div>
-          <div className="reveal">
-            <h2 id="h-join" className="statement">{h.join}</h2>
-            <p>{h.joinBody}</p>
-            <a className="pill lg dark" href={L("/about#careers")}>{h.joinCta}</a>
+          <h2 id="h-start" className="gs-title">{h.start.h}</h2>
+          <div className="gs-grid">
+            {[{ c: h.start.partner, href: `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`, grey: false },
+              { c: h.start.build, href: L("/api"), grey: true }].map(({ c: card, href, grey }) => (
+              <div key={card.t} className="gs-card">
+                <h3>{card.t}</h3>
+                <ul>{card.items.map(x => <li key={x}><Icon name="check" size={18} stroke={1.8} />{x}</li>)}</ul>
+                <a className={`gs-btn${grey ? " grey" : ""}`} href={href}>{card.cta}{grey && <Icon name="external" size={16} stroke={1.8} />}</a>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -4,11 +4,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
-import { models, programmeIcon, switcher } from "@/content/site";
+import { models, programmeIcon } from "@/content/site";
 import { LANG_COOKIE, lp, switchPath, type Lang } from "@/i18n/config";
 import type { Copy } from "@/i18n/copy";
 
-type Menu = null | "research" | "models" | "developers" | "switch" | "sheet";
+type Menu = null | "research" | "models" | "developers" | "sheet";
 type Page = null | "research" | "models" | "developers";
 type Props = { lang: Lang; c: Pick<Copy, "nav" | "models" | "status">; programmes: { slug: string; name: string; title: string }[] };
 
@@ -60,7 +60,6 @@ export function Header({ lang, c, programmes }: Props) {
   const toggle = (m: Menu) => setMenu(cur => (cur === m ? null : m));
   const open = (p: Page) => { setBack(p === null); setPage(p); };
   const cls = ["hdr", solid ? "solid" : "", menu ? "open" : ""].join(" ");
-  const notes = [n.switcherNotes.products, n.switcherNotes.research, n.switcherNotes.code];
   const ha = (s: string) => (/[ɗʼ]/.test(s) ? "ha" : undefined);
 
   return (
@@ -68,9 +67,6 @@ export function Header({ lang, c, programmes }: Props) {
       <a className="skip" href="#main">{n.skip}</a>
       <div className="wrap">
         <a className="brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" /></a>
-        <button className="switch-btn" type="button" aria-expanded={menu === "switch"} aria-controls="switch-panel" aria-label={n.sites} onClick={() => toggle("switch")}>
-          <Icon name="chevron" size={14} stroke={1.6} />
-        </button>
         <nav className="nav" aria-label="Main">
           <button type="button" aria-expanded={menu === "research"} aria-controls="mega-research" onClick={() => toggle("research")}>{n.research} <Icon name="chevron" size={14} stroke={1.6} /></button>
           <button type="button" aria-expanded={menu === "models"} aria-controls="mega-models" onClick={() => toggle("models")}>{n.models} <Icon name="chevron" size={14} stroke={1.6} /></button>
@@ -86,10 +82,6 @@ export function Header({ lang, c, programmes }: Props) {
         <button className="menu-toggle" type="button" aria-expanded={menu === "sheet"} aria-controls="sheet" aria-label={menu === "sheet" ? n.closeMenu : n.openMenu} onClick={() => toggle("sheet")}>
           <Icon name={menu === "sheet" ? "sidebar-open" : "sidebar"} size={22} stroke={1.5} />
         </button>
-      </div>
-
-      <div id="switch-panel" className="switch-panel" hidden={menu !== "switch"}>
-        {switcher.map((s, i) => <a key={s.label} href={s.href === "/" ? L("/") : s.href} aria-current={s.current ? "true" : undefined}><span>{s.label}</span><span>{notes[i]}</span></a>)}
       </div>
 
       <div id="mega-research" className="mega" hidden={menu !== "research"}>

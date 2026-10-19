@@ -16,21 +16,3 @@ export const models: { slug: string; name: string; line: string; task: string; l
   { slug: "tafiya", name: "Tafiya", line: "Natural, expressive speech synthesis for the languages of the Sahel", task: "Speech synthesis", languages: "Languages of the Sahel", status: "In development", icon: "volume", href: "https://www.namu-ai.org/models/tafiya" },
 ];
 
-export const switcher = [
-  { href: "https://www.namu-ai.org", label: "Namu", note: "Products" },
-  { href: "/", label: "Namu AI Lab", note: "Research", current: true },
-  { href: "https://github.com/namu-ai-lab", label: "GitHub", note: "Code" },
-];
-
-export const footerCols = [
-  { title: "Models", links: models.map(m => ({ label: m.name, href: m.href, icon: m.icon })) },
-  { title: "Research", links: [
-    { label: "Hira", href: "/programmes/hira", icon: "turns" }, { label: "Rumbu", href: "/programmes/rumbu", icon: "consent" },
-    { label: "Zarma", href: "/programmes/zarma", icon: "language" }, { label: "Tankaɗe", href: "/programmes/tankade", icon: "filter" },
-    { label: "Maʼauni", href: "/programmes/maauni", icon: "check" }, { label: "All research", href: "/research" },
-  ] },
-  { title: "Learn more", links: [
-    { label: "About", href: "/about" }, { label: "News", href: "/research#latest" }, { label: "Data", href: "/data" },
-    { label: "Careers", href: "/about#careers" }, { label: "Contact", href: "mailto:contact@namuai.org" },
-  ] },
-] as { title: string; links: { label: string; href: string; icon?: string }[] }[];
