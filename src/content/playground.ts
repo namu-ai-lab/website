@@ -8,7 +8,8 @@ import type { Lang } from "@/i18n/config";
 const n = " ";   // narrow no-break space before French high punctuation
 
 export type Script = { id: string; label: string; text: string; gloss: string };
-export type Voice = { id: string; name: string; note: string; palette: [string, string, string] };
+/* palette: main, light, deep, and an accent of another hue that drifts through it */
+export type Voice = { id: string; name: string; note: string; palette: readonly string[] };
 
 export type Tab = "speak" | "converse" | "api";
 
@@ -38,18 +39,18 @@ export const scripts: Record<Lang, Script[]> = {
 
 export const voices: Record<Lang, Voice[]> = {
   en: [
-    { id: "warm", name: "Warm", note: "Even and close, for reading", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "bright", name: "Bright", note: "Clear and quick, for news", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
-    { id: "calm", name: "Calm", note: "Slow and steady, for care", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
-    { id: "story", name: "Storyteller", note: "Lively, for tales", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
-    { id: "radio", name: "Radio", note: "Steady and clear, for announcements", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
+    { id: "warm", name: "Warm", note: "Even and close, for reading", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "bright", name: "Bright", note: "Clear and quick, for news", palette: ["#ffbe48", "#fff4d6", "#df7429", "#f59fbe"] },
+    { id: "calm", name: "Calm", note: "Slow and steady, for care", palette: ["#c29be0", "#fbeff6", "#6c47a0", "#f2a0b6"] },
+    { id: "story", name: "Storyteller", note: "Lively, for tales", palette: ["#9a4f2c", "#f6b679", "#24130d", "#e45f38"] },
+    { id: "radio", name: "Radio", note: "Steady and clear, for announcements", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
   fr: [
-    { id: "warm", name: "Chaleureuse", note: "Égale et proche, pour la lecture", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "bright", name: "Claire", note: "Nette et vive, pour l’info", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
-    { id: "calm", name: "Posée", note: "Lente et sûre, pour le soin", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
-    { id: "story", name: "Conteuse", note: "Vivante, pour les contes", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
-    { id: "radio", name: "Radio", note: "Posée et nette, pour les annonces", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
+    { id: "warm", name: "Chaleureuse", note: "Égale et proche, pour la lecture", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "bright", name: "Claire", note: "Nette et vive, pour l’info", palette: ["#ffbe48", "#fff4d6", "#df7429", "#f59fbe"] },
+    { id: "calm", name: "Posée", note: "Lente et sûre, pour le soin", palette: ["#c29be0", "#fbeff6", "#6c47a0", "#f2a0b6"] },
+    { id: "story", name: "Conteuse", note: "Vivante, pour les contes", palette: ["#9a4f2c", "#f6b679", "#24130d", "#e45f38"] },
+    { id: "radio", name: "Radio", note: "Posée et nette, pour les annonces", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
 };
 
