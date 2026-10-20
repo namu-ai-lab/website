@@ -326,14 +326,14 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 /* Footer, after labs.google's: Namu's shapes in a pile on the top line, the Get started row under it, the Lab's
    name across the whole width, the parent company's row in small capitals. Warm off-white, like the console panel.
    The footer clips sideways only, so a shape lifted above its line stays in sight over the section above. */
-.ftr { position: relative; isolation: isolate; overflow-x: clip; background: #f5f2ee; color: var(--ink); }
+.ftr { display: flow-root; position: relative; isolation: isolate; overflow-x: clip; background: #f5f2ee; color: var(--ink); }   /* flow-root: the pile's top margin stays inside the footer's colour */
 /* the pile's box, in labs.google's proportions for each width; --S is one shape's size (set exactly by the script) */
 .ftr-pile { --S: 102px; position: relative; z-index: 1; width: 100%; aspect-ratio: 352 / 222; margin-top: 96px; overflow-x: clip; overflow-y: visible;
   touch-action: pan-y; border-bottom: 1px solid var(--ink); }
 @media (min-width: 401px) { .ftr-pile { --S: 126px; aspect-ratio: 722 / 455; } }
 @media (min-width: 601px) { .ftr-pile { --S: 210px; } }
 @media (min-width: 769px) { .ftr-pile { --S: 166px; aspect-ratio: 1888 / 700; margin-top: 102px; } }
-@media (min-width: 1025px) { .ftr-pile { --S: 300px; margin-top: 112px; } }
+@media (min-width: 1025px) { .ftr-pile { --S: 300px; margin-top: 160px; } }
 .ftr-shape { position: absolute; left: 0; top: 0; width: calc(var(--S) * var(--w)); height: calc(var(--S) * var(--h)); opacity: 0; pointer-events: none;
   will-change: transform; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 .ftr-pile.on .ftr-shape { opacity: 1; }
@@ -343,29 +343,24 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .ftr-shape .hit { pointer-events: visiblePainted; cursor: grab; }
 .ftr-shape.is-blossom .hit { pointer-events: fill; }               /* the whole disc, ring and middle, takes the hand */
-.ftr-shape.is-orb .ftr-in { border-radius: 50%; }
-.ftr-shape canvas { display: block; width: 100%; height: 100%; border-radius: 50%; pointer-events: auto; cursor: grab; }
-.ftr-shape.is-wave .bar { transform-box: fill-box; transform-origin: center; }
-.ftr-shape.is-wave.held .bar { animation: ftr-bar .42s ease-in-out infinite alternate; animation-delay: calc(var(--b) * -110ms); }
-@keyframes ftr-bar { to { transform: scaleY(.35); } }
+.ftr-shape.is-kora .hit { pointer-events: fill; }
 .ftr-pile.is-dragging, .ftr-pile.is-dragging * { cursor: grabbing !important; }
-/* the links among the shapes: dark discs, Sahel under the cursor or the keyboard, the name above them */
-.ftr-follow { display: contents; }
-.ftr-shape.is-social { width: max(46px, calc(var(--S) * var(--w))); height: max(46px, calc(var(--S) * var(--h))); border-radius: 50%; color: #f5f2ee; pointer-events: auto; cursor: pointer; }
-.ftr-shape.is-social .ftr-in { display: grid; place-items: center; border-radius: 50%; background: #2b2622; transition: background-color .3s var(--ease), color .3s var(--ease); }
-.ftr-shape.is-social svg { width: 42%; height: 42%; overflow: visible; }
-.ftr-shape.is-social:hover .ftr-in, .ftr-shape.is-social:focus-visible .ftr-in { background: var(--sahel); color: #1c1410; }
-.ftr-shape.is-social:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
-.ftr-tip { position: absolute; left: 0; top: 0; z-index: 2; padding: 7px 11px; border-radius: var(--r-pill); background: #1c1410; color: #fffaf1;
-  font: 500 12.5px/1 var(--sans); letter-spacing: .01em; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s var(--ease); }
-.ftr-tip.on { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .ftr-pile.on .ftr-shape.in .ftr-in, .ftr-shape.is-wave.held .bar { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ftr-pile.on .ftr-shape.in .ftr-in { animation: none; } }
 .ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 52px 6px; }
 .ftr-row h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 500; letter-spacing: -.01em; }
 .ftr-row ul { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 34px; margin: 0; padding: 0; list-style: none; }
 .ftr-row a, .ftr-row .off { color: var(--ink-3); font-size: 17px; letter-spacing: -.01em; text-decoration: none; transition: color .2s var(--ease); }
 .ftr-row a:hover { color: var(--ink); }
 .ftr-row .off { color: rgba(21, 18, 15, .38); }
+.ftr-row + .ftr-row { padding-top: 18px; }
+.ftr-row a.ftr-api { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.ftr-row a.ftr-api svg { width: 14px; height: 14px; transition: transform .3s var(--ease); }
+.ftr-row a.ftr-api:hover svg { transform: translate(2px, -2px); }
+.ftr-row ul.ftr-social { gap: 10px; }
+.ftr-social a { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .24);
+  transition: background-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
+.ftr-social a:hover, .ftr-social a:focus-visible { background: var(--ink); color: #f5f2ee; box-shadow: inset 0 0 0 1px var(--ink); }
+.ftr-social svg { width: 18px; height: 18px; }
 .ftr-row .off em { margin-left: 8px; padding: 2px 8px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .06); color: var(--ink-2); font-size: 12px; font-style: normal; vertical-align: 2px; }
 /* the Lab's name across the width, as "Google Labs" is: one line, sized to the page */
 .ftr-word { margin: 0; padding: 0 var(--gutter); max-width: var(--page); margin-inline: auto; box-sizing: content-box; color: #2b2622; font-size: min(calc((100vw - 2 * var(--gutter)) / 4.26), 304px); font-weight: 500;
@@ -882,7 +877,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 
 /* Converse: Aïr as an orb with a call button */
 .pg-converse { --disc: 256px; }
-.pg-stage.pg-converse { min-height: 435px; }   /* with the note under the bar, the same height as Speak */
 .pg-agent { position: relative; display: grid; place-items: center; }
 .pg-agent > i { position: absolute; left: 0; top: 0; width: var(--disc); aspect-ratio: 1; border-radius: 50%; border: 1.5px solid rgba(232, 147, 90, .7); opacity: 0; pointer-events: none; }
 .pg-agent.live > i { animation: ring 2.6s var(--ease-out) infinite; }
@@ -902,7 +896,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-captions span { color: var(--ink-3); font-size: 12px; letter-spacing: .02em; padding-top: 2px; }
 .pg-captions q { quotes: none; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 @keyframes pg-rise { from { opacity: 0; transform: translateY(6px); } }
-.pg-converse-note { max-width: 640px; margin-inline: auto; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .pg-captions p { animation: none; } }
 @keyframes ring { from { opacity: .6; transform: scale(1); } to { opacity: 0; transform: scale(calc(1 + .22 * var(--motion))); } }
 
@@ -936,7 +929,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-bar-c::-webkit-scrollbar { display: none; }
   .pg-bar-c:has(.pg-pills) { justify-content: flex-start; }
   .pg-bar-c:empty { display: none; }
-  .pg-stage.pg-converse { min-height: 435px; }   /* with its note, Converse matches Speak and its row of pills */
+  .pg-stage.pg-converse { min-height: 524px; }   /* these two stand in for the row of pills Speak wraps onto */
   .pg-api { min-height: 564px; }
   .pg-pills { margin-inline: auto; }
 }
@@ -947,7 +940,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-tabs .dot { display: none; }
   .pg-panel { padding: 0 14px 16px; }
   .pg-stage { min-height: 424px; padding: 24px 0 20px; }
-  .pg-stage.pg-converse { min-height: 372px; }
+  .pg-stage.pg-converse { min-height: 474px; }
   .pg-speak, .pg-converse { --disc: 200px; }
   .vr-arrow.prev { left: calc(50% - 150px); }
   .vr-arrow.next { left: calc(50% + 118px); }
