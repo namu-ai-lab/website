@@ -5,6 +5,8 @@ import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 
 const PARTNER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`;
+/* the newsletter: until it has a sign-up list of its own, signing up is an email to the Lab */
+const NEWSLETTER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Sign me up for the Namu AI Lab newsletter")}`;
 
 /* the Lab's code and Namu's accounts (as namu-ai.org lists them), and the address to write to */
 const SOCIALS = [
@@ -24,6 +26,18 @@ export function Footer({ lang }: { lang: Lang }) {
   const L = (p: string) => lp(lang, p);
   return (
     <footer className="ftr">
+      {/* labs.google's pre-footer: stay connected (the newsletter, or start building) and where to follow the Lab, above the pile */}
+      <div className="wrap ftr-stay">
+        <h2>{f.stay}</h2>
+        <div className="ftr-stay-acts">
+          <a href={NEWSLETTER}>{f.join}</a>
+          <a href={L("/api")}>{f.build}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
+        </div>
+        <nav className="ftr-social" aria-label={f.follow}>
+          {SOCIALS.map(x => <a key={x.label} href={x.href} aria-label={x.label} target="_blank" rel="noopener">{x.icon}</a>)}
+          <a href="mailto:contact@namuai.org" aria-label={f.email}>{MAIL}</a>
+        </nav>
+      </div>
       <div className="wrap"><FooterShapes /></div>
       <div className="wrap">
         <div className="ftr-row">
@@ -36,14 +50,7 @@ export function Footer({ lang }: { lang: Lang }) {
           </ul>
         </div>
       </div>
-      <div className="ftr-sign">
-        <p className="ftr-word" aria-hidden="true">namu ai lab</p>
-        {/* the Lab's name speaks: a bubble off the end of it holds where to find the Lab */}
-        <nav className="ftr-say" aria-label={f.follow}>
-          {SOCIALS.map(x => <a key={x.label} href={x.href} aria-label={x.label} target="_blank" rel="noopener">{x.icon}</a>)}
-          <a href="mailto:contact@namuai.org" aria-label={f.email}>{MAIL}</a>
-        </nav>
-      </div>
+      <p className="ftr-word" aria-hidden="true">namu ai lab</p>
       <div className="wrap">
         <div className="ftr-base">
           <a className="parent" href="https://www.namu-ai.org" aria-label="Namu"><Logo className="mark" id="lg-ftr-base" /></a>

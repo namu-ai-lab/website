@@ -47,6 +47,7 @@ const en = {
   footer: {
     follow: "Follow us", tag: "Speech AI that hears everyone", models: "Models", research: "Research", start: "Get started", lab: "The Lab",
     partner: "Partner with us", github: "Code on GitHub", about: "About", news: "News", data: "Data", careers: "Careers", contact: "Contact", email: "Email",
+    stay: "Stay connected as we build speech AI for the languages of the Sahel", join: "Sign up for the Lab’s newsletter", build: "Start building",
     aboutNamu: "About Namu", privacy: "Privacy", terms: "Terms",
   },
   home: {
@@ -63,11 +64,6 @@ const en = {
     latest: "Latest news", viewNews: "View news",
     models: "Models", modelsSub: "Speech systems built on our research", modelsLink: "View on namu-ai.org", badge: "Research", statusLabel: "Status",
     research: "Research", researchSub: `Five programmes, one aim: speech technology that works for the people of the Sahel`, researchLink: "Explore research",
-    start: {
-      h: "Get started",
-      partner: { t: "Partner with us on your programme", items: ["Work with our team to bring speech AI into your programme", "Get hands-on guidance, from pilot to deployment", "Evaluate the models in your own languages and setting"], cta: "Contact us" },
-      build: { t: "Build on your own", items: ["Our speech models for the languages of the Sahel, through one API", "Early access as each model is released", "A model card and evaluation for every release", "Documentation and SDKs as the platform opens"], cta: "Start building" },
-    },
   },
   research: {
     eyebrow: "Research", h1: "We study how machines hear, understand and answer in the languages of the Sahel",
@@ -185,6 +181,7 @@ const fr: Copy = {
   footer: {
     follow: "Suivez-nous", tag: "Une IA de la parole qui entend tout le monde", models: "Modèles", research: "Recherche", start: "Commencer", lab: "Le Lab",
     partner: "Devenez partenaire", github: "Le code sur GitHub", about: "À propos", news: "Actualités", data: "Données", careers: "Carrières", contact: "Contact", email: "E-mail",
+    stay: "Restez connectés à notre travail sur l’IA de la parole pour les langues du Sahel", join: "S’inscrire à la newsletter du Lab", build: "Commencer à construire",
     aboutNamu: "À propos de Namu", privacy: "Confidentialité", terms: "Conditions",
   },
   home: {
@@ -201,11 +198,6 @@ const fr: Copy = {
     latest: "Dernières actualités", viewNews: "Toutes les actualités",
     models: "Modèles", modelsSub: "Des systèmes de parole issus de nos recherches", modelsLink: "Voir sur namu-ai.org", badge: "Recherche", statusLabel: "Statut",
     research: "Recherche", researchSub: `Cinq programmes, un seul but${n}: des technologies de la parole qui fonctionnent pour les populations du Sahel`, researchLink: "Explorer la recherche",
-    start: {   /* FR-REVIEW */
-      h: "Commencer",
-      partner: { t: "Devenez notre partenaire pour votre programme", items: ["Travaillez avec notre équipe pour intégrer l’IA de la parole à votre programme", "Un accompagnement concret, du pilote au déploiement", "Évaluez les modèles dans vos langues et votre contexte"], cta: "Nous contacter" },
-      build: { t: "Construisez par vous-même", items: ["Nos modèles de parole pour les langues du Sahel, avec une seule API", "Un accès anticipé à mesure que chaque modèle est publié", "Une fiche de modèle et une évaluation pour chaque publication", "Documentation et SDK à l’ouverture de la plateforme"], cta: "Commencer à construire" },
-    },
   },
   research: {
     eyebrow: "Recherche", h1: "Nous étudions comment les machines entendent, comprennent et répondent dans les langues du Sahel",

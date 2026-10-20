@@ -7,9 +7,9 @@
    touches them, and in Namu's own colours. They are the Lab's own: a greeting in each of the four languages it works
    in (Hausa sannu, Zarma fofo, Fulfulde jam, and Tamasheq alxer written in Tifinagh), the granary and the measuring
    bowl that two of its research programmes are named after (Rumbu, Maʼauni), the Aïr massif its voice agent is
-   named after, and the Blossom of the logo. As on
-   labs.google the box is open at the top, so a shape lifted above the line stays in sight, and walls at the sides
-   and a ceiling high above keep every shape on the page. */
+   named after, and the Blossom of the logo. The shapes drop in from above; once they are in, the ceiling comes down
+   to the footer's top edge, so a shape can be lifted above the line, as on labs.google, but never out of the
+   footer. */
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type * as MatterNS from "matter-js";
 
@@ -101,7 +101,7 @@ export function FooterShapes() {
     let sim: Sim | null = null;
     let raf = 0, started = false, cancelled = false, last = 0, acc = 0, builtFor = 0, resizeT = 0;
     const ptr = { x: -1e5, y: -1e5, px: -1e5, py: -1e5, inside: false };
-    type Drag = { i: number; body: MatterNS.Body; id: number; c: MatterNS.Constraint; x0: number; y0: number; t0: number; moved: boolean; touch: boolean };
+    type Drag = { i: number; body: MatterNS.Body; id: number; c: MatterNS.Constraint; x0: number; y0: number; t0: number; moved: boolean; touch: boolean; reach: number };
     let drag: Drag | null = null;
     let probe: SVGPathElement | null = null;
 
@@ -159,22 +159,37 @@ export function FooterShapes() {
         els[i].style.setProperty("--k", String(f));
       });
       const ceiling = Math.max(CEILING, 200 - Math.min(...placed.map(p => p.y - p.r)));
+      /* the footer's top edge, above the box: once every shape has dropped in below it, the ceiling comes down to it, so no
+         shape can be thrown or dragged out of the footer */
+      const ftr = box!.closest("footer");
+      const roof = ftr ? Math.max(0, box!.getBoundingClientRect().top - ftr.getBoundingClientRect().top) : 0;
 
       const engine = Engine.create({ positionIterations: 10, velocityIterations: 10 });
+      let top = ceiling;                                   // until the shapes are in, the ceiling stays high above
       const walls = (h: number) => [
         Bodies.rectangle(W / 2, h + WALL / 2, W + 2 * WALL, WALL, { isStatic: true, friction: 0.95, frictionStatic: 1 }),
-        Bodies.rectangle(W / 2, -ceiling - WALL / 2, W + 2 * WALL, WALL, { isStatic: true }),
-        Bodies.rectangle(-WALL / 2, (h - ceiling) / 2, WALL, h + ceiling + WALL, { isStatic: true }),
-        Bodies.rectangle(W + WALL / 2, (h - ceiling) / 2, WALL, h + ceiling + WALL, { isStatic: true }),
+        Bodies.rectangle(W / 2, -top - WALL / 2, W + 2 * WALL, WALL, { isStatic: true }),
+        Bodies.rectangle(-WALL / 2, (h - top) / 2, WALL, h + top + WALL, { isStatic: true }),
+        Bodies.rectangle(W + WALL / 2, (h - top) / 2, WALL, h + top + WALL, { isStatic: true }),
       ];
       let fence = walls(H);
       Composite.add(engine.world, [...fence, ...live.map(i => bodies[i])]);
       if (reduce) for (let k = 0; k < 2400; k++) Engine.update(engine, STEP);   // shown at rest
-      return {
-        engine, bodies, offset, size, live, ceiling, H,
+      const sim = {
+        engine, bodies, offset, size, live, ceiling, roof, W, H, closed: false, born: performance.now(),
         resize(h: number) { Composite.remove(engine.world, fence); fence = walls(h); Composite.add(engine.world, fence); this.H = h; },
+        /* bring the ceiling down to the footer's top edge once nothing is above it; four seconds after the drop, or once
+           the pile has settled, close it anyway, just over the highest shape */
+        close(force = false) {
+          if (this.closed) return;
+          const highest = Math.min(...live.map(i => bodies[i].bounds.min.y));
+          if (!force && highest <= -roof + 1) return;
+          this.closed = true; top = Math.max(roof, -highest + 2); this.resize(this.H);
+        },
         stop() { Composite.clear(engine.world, false); Engine.clear(engine); },
       };
+      if (reduce) sim.close();
+      return sim;
     }
 
     function show() {
@@ -270,13 +285,14 @@ export function FooterShapes() {
       if (hover && !reduce) { const seen = r.top <= window.innerHeight && r.bottom >= 0; onScroll(seen); onWindow(seen); }
       if (drag || ptr.inside) wake();
       if (paused) { acc = 0; return; }
+      sim.close(now - sim.born > 4000);
       acc += dt; let k = 0;
       while (acc >= STEP && k < 9) { beforeStep(); M!.Engine.update(sim.engine, STEP); acc -= STEP; k++; }
       if (k >= 9) acc = 0;
       render();
       const still = sim.live.every(i => { const b = sim!.bodies[i]; return b.speed < 0.05 && b.angularSpeed < 0.002; });
       stillMs = still ? stillMs + dt : 0;
-      if (stillMs > 800) paused = true;
+      if (stillMs > 800) { paused = true; sim.close(true); }
     };
 
     /* the pointer: a constraint from the finger or cursor to the point of the shape that was taken */
@@ -291,13 +307,17 @@ export function FooterShapes() {
       wake();
       const c = M!.Constraint.create({ pointA: { ...p }, bodyB: b, pointB: { x: p.x - b.position.x, y: p.y - b.position.y }, stiffness: DRAG.stiffness, damping: DRAG.damping, length: 0.01 });
       M!.Composite.add(sim.engine.world, c);
-      drag = { i, body: b, id: e.pointerId, c, x0: e.clientX, y0: e.clientY, t0: performance.now(), moved: false, touch: e.pointerType !== "mouse" };
+      /* how far the shape reaches from the point that was taken, whichever way it turns */
+      const reach = Math.max(...b.vertices.map(v => Math.hypot(v.x - p.x, v.y - p.y)));
+      drag = { i, body: b, id: e.pointerId, c, x0: e.clientX, y0: e.clientY, t0: performance.now(), moved: false, touch: e.pointerType !== "mouse", reach };
       box.classList.add("is-dragging"); el.classList.add("held");
     };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType === "mouse" || drag?.id === e.pointerId) { const p = at(e); ptr.x = p.x; ptr.y = p.y; }
       if (!drag || e.pointerId !== drag.id) return;
-      drag.c.pointA = { x: ptr.x, y: ptr.y };
+      /* the pull stops short of the footer's edges by the shape's reach, so no part of it is pressed through them */
+      const r = Math.min(drag.reach, sim!.W / 2);
+      drag.c.pointA = { x: Math.min(sim!.W - r, Math.max(r, ptr.x)), y: Math.min(sim!.H, Math.max(-sim!.roof + drag.reach, ptr.y)) };
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) drag.moved = true;
     };
     const onUp = (e: PointerEvent) => {
