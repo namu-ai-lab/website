@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/account/LoginForm";
 import { NotConfigured } from "@/components/account/AccountShell";
+import { AuthFrame } from "@/components/console/ConsoleShell";
 import { accountCopy } from "@/content/account";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { currentUser } from "@/lib/auth";
@@ -21,17 +22,19 @@ export default async function Login({ params, searchParams }:
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
   const sp = await searchParams;
   // Only same-site paths: never let sign-in bounce a fresh session to another origin.
-  const next = sp.next && /^\/(?!\/)[\w\-/]*$/.test(sp.next) ? sp.next : lp(lang, "/account/keys");
+  const next = sp.next && /^\/(?!\/)[\w\-/]*$/.test(sp.next) ? sp.next : lp(lang, "/account");
   if (await currentUser()) redirect(next);
   const t = accountCopy[lang].login;
   return (
-    <section className="page-top wrap intro acct-intro">
-      <p className="eyebrow">{t.eyebrow}</p>
-      <h1 className="h1">{t.h1}</h1>
-      <p className="lede">{t.lede}</p>
-      <LoginForm lang={lang} next={next} providers={providers()} />
-      {sp.error && <p className="acct-error" role="alert">{t.error}</p>}
-      <p className="meta acct-terms">{t.terms}</p>
-    </section>
+    <AuthFrame lang={lang}>
+      <section className="intro acct-intro">
+        <p className="eyebrow">{t.eyebrow}</p>
+        <h1 className="h1">{t.h1}</h1>
+        <p className="lede">{t.lede}</p>
+        <LoginForm lang={lang} next={next} providers={providers()} />
+        {sp.error && <p className="acct-error" role="alert">{t.error}</p>}
+        <p className="meta acct-terms">{t.terms}</p>
+      </section>
+    </AuthFrame>
   );
 }
