@@ -197,7 +197,6 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
       <Bar cta={cta}>
         <Pills items={vs.map(v => ({ id: v.id as Persona, label: v.name }))} value={persona} onPick={id => { if (id !== persona) { end(); setPersona(id); } }} label={t.voice} />
       </Bar>
-      <p className="pg-note pg-converse-note">{t.note}</p>
     </>
   );
 }
