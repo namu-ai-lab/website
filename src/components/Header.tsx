@@ -157,15 +157,15 @@ export function Header({ lang, c, programmes }: Props) {
         {page === null && (
           <div className={`sheet-page${back ? " from-left" : ""}`} key="root">
             <nav className="sheet-main" aria-label="Main">
-              <button type="button" onClick={() => open("research")}>{n.research}</button>
-              <button type="button" onClick={() => open("models")}>{n.models}</button>
-              <button type="button" onClick={() => open("developers")}>{n.developers}</button>
+              <button type="button" onClick={() => open("research")}>{n.research}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
+              <button type="button" onClick={() => open("models")}>{n.models}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
+              <button type="button" onClick={() => open("developers")}>{n.developers}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
               <a href={L("/data")} aria-current={path.startsWith("/data") ? "page" : undefined}>{n.data}</a>
               <a href={L("/organisations")} aria-current={path.startsWith("/organisations") ? "page" : undefined}>{n.organisations}</a>
             </nav>
             <div className="sheet-more">
-              <a href={L("/models/air")}>{n.hearAir}</a>
-              <a href="https://www.namu-ai.org">namu-ai.org <Icon name="external" size={22} stroke={1.6} /></a>
+              <a className="pill dark" href={L("/models/air")}><Icon name="play" size={16} stroke={1.6} />{n.hearAir}</a>
+              <a className="pill" href="https://www.namu-ai.org">namu-ai.org <Icon name="external" size={16} stroke={1.6} /></a>
             </div>
           </div>
         )}

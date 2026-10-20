@@ -136,8 +136,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; }
 .sheet-main .soon { padding: 7px 0; color: var(--ink-3); font-size: 32px; font-weight: 500; line-height: 1.14; letter-spacing: -.02em; }
 .sheet-main .soon em { font-size: 13px; }
 
-/* mobile sheet */
-.sheet { position: fixed; inset: 64px 0 0; background: #fff; overflow-x: hidden; overflow-y: auto; padding: 20px var(--gutter) 48px; }
+/* mobile sheet: a calm list, after the menus of apple.com and openai.com on a phone. One row per item, a hairline
+   between rows, a chevron where a row opens its own page; the two ways out (Hear Aïr, namu-ai.org) are pills. */
+.sheet { position: fixed; inset: var(--hdr-h, 64px) 0 0; background: #fff; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  padding: 8px var(--gutter) calc(32px + env(safe-area-inset-bottom)); }
 .sheet[hidden] { display: none; }
 .sheet-page { animation: sheet-in calc(.4s * var(--motion)) var(--ease-out) both; }
 .sheet-page.from-right { animation-name: sheet-in-right; }
@@ -145,25 +147,40 @@ button { font: inherit; letter-spacing: inherit; color: inherit; }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes sheet-in-right { from { opacity: 0; transform: translateX(28px); } }
 @keyframes sheet-in-left { from { opacity: 0; transform: translateX(-28px); } }
-.sheet-main { display: flex; flex-direction: column; align-items: flex-start; }
-.sheet-main > a, .sheet-main > button {
-  padding: 7px 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 32px; font-weight: 500; line-height: 1.14; letter-spacing: -.02em;
-  text-align: left; text-decoration: none; cursor: pointer; transition: opacity .2s var(--ease);
+.sheet-main { display: flex; flex-direction: column; }
+.sheet-main > a, .sheet-main > button, .sheet-main > .soon {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 0; border: 0; border-bottom: 1px solid var(--line);
+  background: none; color: var(--ink); font: inherit; font-size: 19px; font-weight: 500; letter-spacing: -.012em; text-align: left; text-decoration: none; cursor: pointer;
+  transition: color .2s var(--ease); -webkit-tap-highlight-color: transparent;
 }
-.sheet-main > a:hover, .sheet-main > button:hover { opacity: .6; }
-.sheet-main > a[aria-current="page"] { opacity: .5; }
-.sheet-more { display: flex; flex-direction: column; align-items: flex-start; margin-top: 28px; padding-top: 28px; border-top: 1px solid var(--line); }
-.sheet-more a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 0; color: var(--ink); font-size: 32px; font-weight: 500; line-height: 1.14; letter-spacing: -.02em; text-decoration: none; }
-.sheet-more a + a { color: var(--ink-2); }
-.sheet-more svg { width: 22px; height: 22px; }
-.sheet-back { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 26px; padding: 6px 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; cursor: pointer; }
-.sheet-label { margin: 0 0 8px; color: var(--ink-2); font-size: 13px; font-weight: 500; }
-.sheet-main + .sheet-label { margin-top: 32px; }
-.sheet-small a { display: block; padding: 6px 0; color: var(--ink); font-size: 14px; font-weight: 600; letter-spacing: -.01em; text-decoration: none; }
+.sheet-main > a:active, .sheet-main > button:active { color: var(--ink-2); }
+.sheet-main > a[aria-current="page"] { color: var(--sahel-deep); }
+.sheet-main svg { width: 18px; height: 18px; flex: none; color: var(--ink-3); }
+.sheet-main > .soon { justify-content: flex-start; color: var(--ink-3); cursor: default; }
+.sheet-page.from-right .sheet-main > a, .sheet-page.from-right .sheet-main > .soon { min-height: 48px; font-size: 17px; }
+.sheet-main > .soon em { font-size: 12px; }
+.sheet-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.sheet-more .pill { height: 42px; padding: 0 18px; font-size: 15.5px; }
+.sheet-more svg { width: 16px; height: 16px; }
+.sheet-back { display: inline-flex; align-items: center; gap: 8px; margin: 6px 0 14px; padding: 6px 0; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+.sheet-back svg { width: 18px; height: 18px; }
+.sheet-label { margin: 0 0 4px; color: var(--ink-3); font-size: 12.5px; font-weight: 500; letter-spacing: .02em; }
+.sheet-main + .sheet-label { margin-top: 28px; }
+.sheet-small a { display: flex; align-items: center; min-height: 48px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 16px; font-weight: 500; text-decoration: none; }
 
 @media (max-width: 1120px) {
   .nav, .hdr-cta { display: none; }
   .menu-toggle { display: grid; }
+  .hdr.solid, .hdr.open { background: #fff; }   /* nothing of the page shows through on a small screen */
+}
+@media (max-width: 640px) {
+  :root { --hdr-h: 56px; }
+  .hdr { height: var(--hdr-h); }
+  .brand .mark { height: 30px; margin-top: 0; }
+  .hdr .lang-switch { padding: 2px; }
+  .hdr .lang-switch a { height: 26px; min-width: 34px; padding: 0 8px; font-size: 13px; }
+  .menu-toggle { width: 38px; height: 38px; margin-left: 4px; }
+  .menu-toggle svg { width: 20px; height: 20px; }
 }
 /* With the full bar showing, the menu sits on the wordmark's line: "namu" in the logo and the words of the
    menu share one baseline, and the Blossom rises above it. (Measured: the logo moves up 8px, the menu down 2px.) */
@@ -816,6 +833,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .vr-name span { font-size: 14px; line-height: 1.35; color: var(--ink-3); }
 .vr-arrow { position: absolute; top: 6px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--ink-2); cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
 .vr-arrow:hover { background: rgba(21, 18, 15, .05); color: var(--ink); }
+.vr-arrow:disabled { opacity: .25; cursor: default; background: none; }
 .vr-arrow.prev { left: calc(50% - 168px); }
 .vr-arrow.next { left: calc(50% + 136px); }
 .vr-arrow svg { width: 18px; height: 18px; }

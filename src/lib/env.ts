@@ -10,6 +10,6 @@ export const providers = () => ([
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? "google" : null,
 ] as const).filter((p): p is "github" | "google" => p !== null);
 
-/** The public API base developers call: set NEXT_PUBLIC_NAMU_API_BASE to the gateway on Namu's own Modal
- *  workspace. The fallback is the address the API will keep once its domain points at the gateway. */
-export const apiBase = (process.env.NEXT_PUBLIC_NAMU_API_BASE || "https://api.namu-ai.org").replace(/\/+$/, "");
+/** The public API base developers call: the gateway on Namu's own Modal workspace (namu-ai-lab), until
+ *  api.namu-ai.org points at it. NEXT_PUBLIC_NAMU_API_BASE overrides it. */
+export const apiBase = (process.env.NEXT_PUBLIC_NAMU_API_BASE || "https://namu-ai-lab--namu-gateway-api.modal.run").replace(/\/+$/, "");
