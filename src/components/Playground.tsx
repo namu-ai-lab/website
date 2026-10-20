@@ -46,6 +46,12 @@ async function speech(text: string, voice: string): Promise<{ blob: Blob; second
   return { blob: await res.blob(), seconds: res.headers.get("x-audio-seconds") ?? "" };
 }
 
+/* Each script was spoken once by Tafiya through the API (public/demo/<script>-<voice>.m4a), so the demo plays the
+   model's real output at once and works without the live demo key; anything without a recording is generated live. */
+async function recorded(script: string, voice: string): Promise<Blob | null> {
+  try { const r = await fetch(`/demo/${script}-${voice}.m4a`); return r.ok ? await r.blob() : null; } catch { return null; }
+}
+
 /* Plays a clip and writes its loudness into `amp` each frame, so the orb moves with the real voice. */
 function usePlayer(amp: { current: number }) {
   const audio = useRef<HTMLAudioElement | null>(null);
@@ -128,7 +134,7 @@ function Speak({ lang, cta }: { lang: Lang; cta: Cta }) {
     let clip = cache.current.get(k);
     if (!clip) {
       setLoading(true);
-      try { clip = (await speech(script.text, voice)).blob; cache.current.set(k, clip); }
+      try { clip = (await recorded(script.id, voice)) ?? (await speech(script.text, voice)).blob; cache.current.set(k, clip); }
       catch (e) { setError(demoMessage(e, c.live)); return; }
       finally { setLoading(false); }
     }
