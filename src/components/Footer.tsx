@@ -1,3 +1,4 @@
+import { FooterShapes } from "./FooterShapes";
 import { LangSwitch } from "./Header";
 import { Logo } from "./Logo";
 import { lp, type Lang } from "@/i18n/config";
@@ -12,25 +13,7 @@ const PARTNER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner
 
 type Link = { label: string; href?: string; soon?: string; external?: boolean };
 
-/* Four voices, each a line in one of the voice orbs' colours, weaving across the top of the footer. Every
-   wavelength divides the period (1440), so a strip two periods long can slide by one period and loop. */
-const PERIOD = 1440, HEIGHT = 120;
-const VOICES: { colour: string; parts: [number, number, number][]; y: number; dur: number }[] = [
-  { colour: "#f0884f", parts: [[16, 2, 0.3], [7, 5, 1.9]], y: 58, dur: 38 },
-  { colour: "#ec6b80", parts: [[14, 3, 2.1], [6, 4, 0.4]], y: 62, dur: 46 },
-  { colour: "#ffbe48", parts: [[12, 2, 4.0], [8, 6, 2.6]], y: 60, dur: 54 },
-  { colour: "#7c9bd2", parts: [[18, 3, 5.2], [5, 8, 1.1]], y: 64, dur: 42 },
-];
-const voicePath = (v: (typeof VOICES)[number]) => {
-  let d = "";
-  for (let x = 0; x <= PERIOD * 2; x += 12) {
-    const y = v.y + v.parts.reduce((sum, [amp, k, ph]) => sum + amp * Math.sin((2 * Math.PI * k * x) / PERIOD + ph), 0);
-    d += `${x ? "L" : "M"}${x} ${y.toFixed(1)}`;
-  }
-  return d;
-};
-
-/* After labs.google's footer, in Namu's own terms: four voices weaving across the top in the orbs' colours;
+/* After labs.google's footer, in Namu's own terms: a pile of Namu's shapes to play with on the top line;
    one row of where to go (the bar's sections) with the ways to reach us; one row of what to do (Get started);
    the Lab's name set across the whole width; and the parent company's row in small capitals. */
 export function Footer({ lang }: { lang: Lang }) {
@@ -48,13 +31,7 @@ export function Footer({ lang }: { lang: Lang }) {
   ];
   return (
     <footer className="ftr">
-      <div className="ftr-voices" aria-hidden="true">
-        {VOICES.map(v => (
-          <svg key={v.colour} viewBox={`0 0 ${PERIOD * 2} ${HEIGHT}`} preserveAspectRatio="none" style={{ animationDuration: `${v.dur}s` }}>
-            <path d={voicePath(v)} stroke={v.colour} />
-          </svg>
-        ))}
-      </div>
+      <div className="wrap"><FooterShapes /></div>
       <div className="wrap">
         <div className="ftr-top">
           <a className="ftr-brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" id="lg-ftr" /></a>

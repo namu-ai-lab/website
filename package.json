@@ -2,7 +2,7 @@
   "name": "namu-ai-lab",
   "version": "0.1.0",
   "private": true,
-  "description": "Namu AI Lab — the research unit of Namu (lab.namu-ai.org)",
+  "description": "Namu AI Lab \u2014 the research unit of Namu (lab.namu-ai.org)",
   "scripts": {
     "dev": "next dev --hostname localhost",
     "build": "next build",
@@ -16,12 +16,14 @@
   },
   "dependencies": {
     "better-auth": "1.7.7",
+    "matter-js": "0.20.0",
     "next": "16.4.0",
     "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@types/matter-js": "0.20.2",
     "@types/node": "22.20.5",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",

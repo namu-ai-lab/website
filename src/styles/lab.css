@@ -327,16 +327,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
    links; labelled rows, one per part of the Lab; the Lab's name across the whole width; the parent company's
    row in small capitals. Warm off-white, like the console panel. */
 .ftr { position: relative; isolation: isolate; overflow: hidden; background: #f5f2ee; color: var(--ink); }
-/* four voices weaving across the top, in the voice orbs' colours; each strip is two periods long and slides by
-   one, so the lines drift without a seam */
-.ftr-voices { position: relative; height: 120px; overflow: hidden; pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-.ftr-voices svg { position: absolute; inset: 0 auto 0 0; width: 200%; height: 100%; animation: voice-drift 40s linear infinite; }
-.ftr-voices svg:nth-child(2n) { animation-direction: reverse; }
-.ftr-voices path { fill: none; stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .9; }
-@keyframes voice-drift { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .ftr-voices svg { animation: none; } }
-.ftr-top { display: flex; align-items: center; gap: 24px; padding-block: 8px 30px; border-bottom: 1px solid var(--ink); }
+/* the shapes' box: they fall into it from above and rest on its bottom line */
+.ftr-shapes { position: relative; height: clamp(230px, 25vw, 340px); margin-top: 24px; overflow: hidden; border-bottom: 1px solid var(--ink); }
+.ftr-shape { position: absolute; left: 0; top: 0; opacity: 0; touch-action: none; cursor: grab; will-change: transform; -webkit-user-select: none; user-select: none; }
+.ftr-shape.held { cursor: grabbing; }
+.ftr-shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ftr-top { display: flex; align-items: center; gap: 24px; padding-block: 28px; }
 .ftr-brand { flex: none; color: var(--ink); }
 .ftr-brand .mark { display: block; height: 40px; width: auto; }
 .ftr-nav { display: flex; flex-wrap: wrap; gap: 6px 30px; margin: 0 auto; }
@@ -347,7 +343,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   transition: background-color .25s var(--ease); }
 .ftr-social a:hover { background: #fff; }
 .ftr-social svg { width: 19px; height: 19px; }
-.ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 30px 6px; }
+.ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 22px 6px; border-top: 1px solid var(--line-2); }
 .ftr-row h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 500; letter-spacing: -.01em; }
 .ftr-row ul { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 34px; margin: 0; padding: 0; list-style: none; }
 .ftr-row a, .ftr-row .off { color: var(--ink-3); font-size: 17px; letter-spacing: -.01em; text-decoration: none; transition: color .2s var(--ease); }
@@ -367,7 +363,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr .lang-switch { flex: none; margin-left: 0; font-family: var(--sans); letter-spacing: 0; text-transform: none; background: rgba(21, 18, 15, .06); }
 .ftr-base small { color: var(--ink-3); font-size: 12px; }
 @media (max-width: 960px) {
-  .ftr-voices { height: 96px; }
   .ftr-top { flex-wrap: wrap; padding-block: 4px 22px; row-gap: 18px; }
   .ftr-nav { order: 3; flex: 1 0 100%; margin: 0; gap: 8px 22px; }
   .ftr-social { margin-left: auto; }
