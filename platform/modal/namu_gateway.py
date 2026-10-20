@@ -432,15 +432,28 @@ class PostgresStore:
         from psycopg_pool import ConnectionPool
 
         # prepare_threshold=None: no server-side prepared statements, so Neon's
-        # pooled (PgBouncer) endpoint is safe to use.
-        self.pool = ConnectionPool(url, min_size=1, max_size=4, open=True,
-                                   kwargs={"prepare_threshold": None, "connect_timeout": 10})
+        # pooled (PgBouncer) endpoint is safe to use. Neon suspends an idle database
+        # and drops its connections, so each one is checked before use, and idle ones
+        # are retired well before that happens.
+        self.pool = ConnectionPool(url, min_size=1, max_size=4, open=True, max_idle=120,
+                                   check=ConnectionPool.check_connection,
+                                   kwargs={"prepare_threshold": None, "connect_timeout": 15})
+
+    def _one(self, sql: str, args: tuple):
+        import psycopg
+
+        for attempt in (1, 2):                 # one retry: a dropped connection is not an outage
+            try:
+                with self.pool.connection() as c:
+                    return c.execute(sql, args).fetchone()
+            except psycopg.OperationalError:
+                if attempt == 2:
+                    raise
 
     def lookup(self, key_hash: str) -> KeyRecord | None:
-        with self.pool.connection() as c:
-            x = c.execute("select key_id, user_id, scopes, revoked, is_demo, rate_limit_per_min, "
-                          "beta_status, monthly_audio_seconds, used_audio_seconds "
-                          "from public.namu_key_lookup(%s::text)", (key_hash,)).fetchone()
+        x = self._one("select key_id, user_id, scopes, revoked, is_demo, rate_limit_per_min, "
+                      "beta_status, monthly_audio_seconds, used_audio_seconds "
+                      "from public.namu_key_lookup(%s::text)", (key_hash,))
         if x is None:
             return None
         return KeyRecord(str(x[0]), x[1], list(x[2] or []), bool(x[3]), bool(x[4]), int(x[5]),
@@ -448,11 +461,10 @@ class PostgresStore:
 
     def record(self, u: Usage) -> None:
         try:
-            with self.pool.connection() as c:
-                c.execute("select public.namu_record_usage(%s::uuid, %s::text, %s::text, %s::text, "
-                          "%s::numeric, %s::int, %s::int, %s::int)",
-                          (u.key_id, u.user_id, u.endpoint, u.model, u.audio_seconds,
-                           u.characters, u.status, u.latency_ms))
+            self._one("select public.namu_record_usage(%s::uuid, %s::text, %s::text, %s::text, "
+                      "%s::numeric, %s::int, %s::int, %s::int)",
+                      (u.key_id, u.user_id, u.endpoint, u.model, u.audio_seconds,
+                       u.characters, u.status, u.latency_ms))
         except Exception as e:                 # metering must never fail a request
             print(f"usage record failed: {type(e).__name__}", flush=True)
 
