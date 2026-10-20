@@ -13,8 +13,10 @@ slots are already filled by Namu-Transcribe and Namu-Voice, so the interpreter
 is just a text-to-text step in the LLM slot.
 
 ASR routing: Hausa goes to Namu-Transcribe (our NCAIR1 model). French goes to
-OpenAI, because Namu-Transcribe is Hausa-only — the French half is not a Namu
-model and is labelled as such in /v1/health rather than quietly implied.
+Gemini (through OpenRouter, the same key and model family as Namu-Agent),
+because Namu-Transcribe is Hausa-only. The French half is not a Namu model and
+is labelled as such in /v1/health rather than quietly implied. Translation is
+Gemini through OpenRouter too.
 
 The Hausa orthography block in the prompt is load bearing. The hooked consonants
 ɓ ɗ ƙ ƴ are separate phonemes, and a model that writes 'bude' for 'buɗe' hands
@@ -27,8 +29,9 @@ import modal
 TRANSCRIBE_URL = "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run"
 VOICE_URL = "https://namu-ai-lab--namu-voice-voice-api.modal.run"
 
-FR_STT_MODEL = "gpt-4o-mini-transcribe"     # not a Namu model — French ASR only
-TEXT_MODEL = "gpt-4.1-mini"
+OR_BASE = "https://openrouter.ai/api/v1"
+TEXT_MODEL = "google/gemini-3.5-flash-lite"   # translation, through OpenRouter
+FR_STT_MODEL = TEXT_MODEL                     # not a Namu model: French ASR only, audio in a chat turn
 
 app = modal.App("namu-interpret")
 
@@ -116,7 +119,7 @@ PROMPTS = {
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("openai-api-key")] + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
+    secrets=[modal.Secret.from_name("gemini-api-key")] + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
     timeout=900,
     scaledown_window=600,
 )
@@ -137,7 +140,9 @@ def api():
                   description="Hausa <-> French speech translation.")
     web.add_middleware(CORSMiddleware, allow_origins=["*"],
                        allow_methods=["*"], allow_headers=["*"])
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    # OpenRouter speaks the OpenAI API; the secret is the one Namu-Agent uses.
+    client = OpenAI(api_key=os.environ.get("OPENROUTER_API_KEY") or os.environ["GEMINI_API_KEY"],
+                    base_url=OR_BASE)
 
     def _translate(text: str, source: str, target: str) -> tuple[str, float]:
         prompt = PROMPTS.get((source, target))
@@ -162,17 +167,31 @@ def api():
             r.raise_for_status()
             return (r.json().get("text") or "").strip(), time.time() - t
 
-        # OpenAI's SDK wants a real file handle with a usable extension.
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as fh:
+        # Gemini takes audio as a chat turn (wav or mp3), so normalise whatever came
+        # in (browser WebM, phone OGG, ...) to 16 kHz mono WAV first.
+        import subprocess
+
+        with tempfile.NamedTemporaryFile(suffix=".in", delete=False) as fh:
             fh.write(raw)
-            path = fh.name
+            src = fh.name
+        dst = src + ".wav"
         try:
-            with open(path, "rb") as f:
-                r = client.audio.transcriptions.create(
-                    model=FR_STT_MODEL, file=f, language="fr")
-            return (r.text or "").strip(), time.time() - t
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-ac", "1", "-ar", "16000", dst],
+                           check=True, timeout=120)
+            audio = base64.b64encode(open(dst, "rb").read()).decode()
         finally:
-            os.unlink(path)
+            for f in (src, dst):
+                if os.path.exists(f):
+                    os.unlink(f)
+        r = client.chat.completions.create(
+            model=FR_STT_MODEL, temperature=0, max_tokens=400,
+            messages=[{"role": "user", "content": [
+                {"type": "text", "text": "Transcribe this French speech exactly as spoken. "
+                                         "Reply with the transcript only, no quotes or notes."},
+                {"type": "input_audio", "input_audio": {"data": audio, "format": "wav"}},
+            ]}],
+        )
+        return (r.choices[0].message.content or "").strip(), time.time() - t
 
     @web.get("/v1/health")
     def health():

@@ -68,7 +68,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
       ["Monthly audio", "30 minutes per account during the beta (can be raised)"], ["Active keys", "10 per account"], ["First request", "slower while a model wakes up"]],
     livekitH: "Voice agents (LiveKit)",
     livekit: "Building a phone or WebRTC agent? Call /v1/transcribe and /v1/speech from your agent’s server.",
-    status: "Endpoints are provisional during the private beta and may change. Translation, and French speech recognition, run on OpenAI models; conversation replies use Google Gemini through OpenRouter.",
+    status: "Endpoints are provisional during the private beta and may change. Translation, French speech recognition and conversation replies use Google Gemini through OpenRouter.",
   },
   fr: {
     meta: ["Documentation de l’API", `Appelez les modèles de parole de Namu depuis votre application${n}: authentification, points d’accès, erreurs et limites.`],
@@ -116,7 +116,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
       ["Audio mensuel", "30 minutes par compte pendant la bêta (peut être relevé)"], ["Clés actives", "10 par compte"], ["Première requête", "plus lente, le temps qu’un modèle démarre"]],
     livekitH: "Agents vocaux (LiveKit)",
     livekit: `Vous construisez un agent téléphonique ou WebRTC${n}? Appelez /v1/transcribe et /v1/speech depuis le serveur de votre agent.`,
-    status: `Les points d’accès sont provisoires pendant la bêta privée et peuvent changer. La traduction et la reconnaissance du français s’appuient sur des modèles d’OpenAI${n}; les réponses de conversation, sur Google Gemini via OpenRouter.`,
+    status: `Les points d’accès sont provisoires pendant la bêta privée et peuvent changer. La traduction, la reconnaissance du français et les réponses de conversation s’appuient sur Google Gemini via OpenRouter.`,
   },
 };
 
