@@ -303,37 +303,42 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .datum p { margin: 6px 0 0; color: var(--ink-2); font-size: 16.5px; line-height: 1.5; }
 @media (max-width: 760px) { .datagrid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---- get started: openai.com/api's layout in Namu's colours. Ink ground, Paper type, Sahel for the checks and
-   the hover, Kola for the second button (brand pairings: Paper on Ink, Sahel on Ink) ---- */
-.gs { margin-top: 120px; padding: 88px 0 112px; background: var(--night); color: #fffaf1; }
-.gs-title { margin: 0 auto; max-width: 16em; text-align: center; color: #fffaf1; font-size: clamp(36px, 4.4vw, 60px); line-height: 1.06; letter-spacing: -.03em; font-weight: 500; text-wrap: balance; }
-.gs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 1160px; margin: 44px auto 0; }
-.gs-card { display: flex; flex-direction: column; min-height: 300px; padding: 32px; border: 1px solid rgba(255, 250, 241, .14); border-radius: var(--r-thumb); background: rgba(255, 250, 241, .025); }
-.gs-card h3 { margin: 0; color: #fffaf1; font-size: 21px; font-weight: 400; line-height: 1.25; letter-spacing: -.01em; }
-.gs-card ul { display: grid; gap: 12px; margin: 22px 0 36px; padding: 0; list-style: none; }
-.gs-card li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 14px; align-items: start; color: rgba(255, 250, 241, .84); font-size: 15.5px; line-height: 1.45; text-wrap: pretty; }
-.gs-card li svg { width: 17px; height: 17px; margin-top: 2px; color: var(--sahel); }
-.gs-btn { align-self: flex-start; margin-top: auto; display: inline-flex; align-items: center; height: 44px; padding: 0 22px; border-radius: var(--r-pill); background: #fffaf1; color: var(--night);
-  font-size: 15.5px; text-decoration: none; white-space: nowrap; transition: background-color .3s var(--ease), color .3s var(--ease); }
-.gs-btn:hover { background: var(--sahel); color: var(--night); }
-.gs-btn.grey { background: var(--kola); color: #fffaf1; }
-.gs-btn.grey:hover { background: var(--sahel); color: var(--night); }
-.gs-btn svg { width: 16px; height: 16px; margin-left: 6px; transition: transform .3s var(--ease); }
-.gs-btn:hover svg { transform: translate(2px, -2px); }
-@media (max-width: 860px) { .gs { margin-top: 88px; padding: 64px 0 80px; } .gs-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; } .gs-card { min-height: 0; padding: 26px 24px; } .gs-card ul { margin-bottom: 32px; } }
 
 /* ---- footer ---- */
 /* Footer, after labs.google's: Namu's shapes in a pile on the top line, the Get started row under it, the Lab's
    name across the whole width, the parent company's row in small capitals. Warm off-white, like the console panel.
-   The footer clips sideways only, so a shape lifted above its line stays in sight over the section above. */
-.ftr { display: flow-root; position: relative; isolation: isolate; overflow-x: clip; background: #f5f2ee; color: var(--ink); }   /* flow-root: the pile's top margin stays inside the footer's colour */
+   A shape lifted above the line stays in sight up to the footer's top edge, and never beyond it. */
+.ftr { display: flow-root; position: relative; isolation: isolate; overflow: clip; background: #f5f2ee; color: var(--ink); }   /* flow-root: the pile's top margin stays inside the footer's colour; clip: its shapes never show outside it */
+/* the invitation above the pile, after labs.google's pre-footer: a centred title, two beige pills, outlined circles */
+.ftr-stay { display: grid; justify-items: center; gap: 28px; padding-top: 112px; text-align: center; }
+.ftr-stay h2 { max-width: 19em; margin: 0; color: var(--ink); font-size: clamp(30px, 3.4vw, 46px); font-weight: 500; line-height: 1.12; letter-spacing: -.03em; text-wrap: balance; }
+.ftr-stay-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ftr-stay-acts a { display: inline-flex; align-items: center; height: 52px; padding: 0 26px; border-radius: var(--r-pill); background: #e8e0d4; color: var(--ink); font-size: 15.5px;
+  text-decoration: none; transition: background-color .25s var(--ease); }
+.ftr-stay-acts a:hover { background: #ddd2c3; }
+.ftr-stay-acts a:first-child { background: var(--ink); color: #fffaf1; }
+.ftr-stay-acts a:first-child:hover { background: var(--sahel); color: #1c1410; }
+.ftr-stay-acts svg { width: 14px; height: 14px; margin-left: 6px; transition: transform .3s var(--ease); }
+.ftr-stay-acts a:hover svg { transform: translate(2px, -2px); }
+.ftr-social { display: flex; gap: 10px; margin-top: 6px; }
+.ftr-social a { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .55);
+  transition: background-color .25s var(--ease), color .25s var(--ease); }
+.ftr-social a:hover, .ftr-social a:focus-visible { background: var(--ink); color: #f5f2ee; }
+.ftr-social svg { width: 20px; height: 20px; }
+@media (max-width: 640px) {
+  .ftr-stay { gap: 22px; padding-top: 72px; }
+  .ftr-stay-acts { flex-direction: column; align-items: stretch; width: min(100%, 300px); }
+  .ftr-stay-acts a { justify-content: center; height: 46px; padding: 0 20px; font-size: 15px; }
+  .ftr-social a { width: 46px; height: 46px; }
+  .ftr-social svg { width: 18px; height: 18px; }
+}
 /* the pile's box, in labs.google's proportions for each width; --S is one shape's size (set exactly by the script) */
-.ftr-pile { --S: 102px; position: relative; z-index: 1; width: 100%; aspect-ratio: 352 / 222; margin-top: 96px; overflow-x: clip; overflow-y: visible;
+.ftr-pile { --S: 102px; position: relative; z-index: 1; width: 100%; aspect-ratio: 352 / 222; margin-top: 40px; overflow-x: clip; overflow-y: visible;
   touch-action: pan-y; border-bottom: 1px solid var(--ink); }
 @media (min-width: 401px) { .ftr-pile { --S: 126px; aspect-ratio: 722 / 455; } }
 @media (min-width: 601px) { .ftr-pile { --S: 210px; } }
-@media (min-width: 769px) { .ftr-pile { --S: 166px; aspect-ratio: 1888 / 700; margin-top: 102px; } }
-@media (min-width: 1025px) { .ftr-pile { --S: 300px; margin-top: 160px; } }
+@media (min-width: 769px) { .ftr-pile { --S: 166px; aspect-ratio: 1888 / 700; margin-top: 56px; } }
+@media (min-width: 1025px) { .ftr-pile { --S: 300px; margin-top: 64px; } }
 .ftr-shape { position: absolute; left: 0; top: 0; width: calc(var(--S) * var(--w)); height: calc(var(--S) * var(--h)); opacity: 0; pointer-events: none;
   will-change: transform; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 .ftr-pile.on .ftr-shape { opacity: 1; }
@@ -356,16 +361,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-row a.ftr-api svg { width: 14px; height: 14px; transition: transform .3s var(--ease); }
 .ftr-row a.ftr-api:hover svg { transform: translate(2px, -2px); }
 .ftr-row .off em { margin-left: 8px; padding: 2px 8px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .06); color: var(--ink-2); font-size: 12px; font-style: normal; vertical-align: 2px; }
-/* the Lab's name speaks: a dark speech bubble off the end of it, tipped a little, holds where to follow the Lab */
-.ftr-sign { position: relative; margin-top: 112px; max-width: calc(var(--page) + 2 * var(--gutter)); margin-inline: auto; }
-.ftr-say { position: absolute; z-index: 1; right: var(--gutter); bottom: calc(100% + 18px); display: flex; gap: 4px; padding: 7px; border-radius: 30px; background: #1c1410;
-  transform: rotate(-4deg); transform-origin: 85% 100%; box-shadow: 0 12px 30px -16px rgba(28, 20, 16, .6); }
-.ftr-say::after { content: ""; position: absolute; right: 30px; top: calc(100% - 2px); width: 18px; height: 16px; background: #1c1410; clip-path: polygon(0 0, 100% 0, 78% 100%); }
-.ftr-say a { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fffaf1; transition: background-color .25s var(--ease), color .25s var(--ease); }
-.ftr-say a:hover, .ftr-say a:focus-visible { background: var(--sahel); color: #1c1410; }
-.ftr-say a:focus-visible { outline: 2px solid #fffaf1; outline-offset: -4px; }
-.ftr-say svg { width: 18px; height: 18px; }
-@media (max-width: 520px) { .ftr-sign { margin-top: 96px; } .ftr-say { gap: 2px; padding: 5px; bottom: calc(100% + 14px); } .ftr-say a { width: 38px; height: 38px; } .ftr-say::after { right: 22px; } }
 /* the Lab's name across the width, as "Google Labs" is: one line, sized to the page */
 .ftr-word { margin: 0; padding: 0 var(--gutter); max-width: var(--page); margin-inline: auto; box-sizing: content-box; color: #2b2622; font-size: min(calc((100vw - 2 * var(--gutter)) / 4.26), 304px); font-weight: 500;
   line-height: .9; letter-spacing: -.055em; white-space: nowrap; text-align: center; user-select: none; }

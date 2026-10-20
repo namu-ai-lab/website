@@ -124,23 +124,6 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           />
         </div>
       </section>
-
-      {/* Get started, after openai.com/api's: organisations partner with Namu to deploy in their programmes; developers go to the API platform */}
-      <section className="gs" aria-labelledby="h-start">
-        <div className="wrap">
-          <h2 id="h-start" className="gs-title">{h.start.h}</h2>
-          <div className="gs-grid">
-            {[{ c: h.start.partner, href: `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`, grey: false },
-              { c: h.start.build, href: L("/api"), grey: true }].map(({ c: card, href, grey }) => (
-              <div key={card.t} className="gs-card">
-                <h3>{card.t}</h3>
-                <ul>{card.items.map(x => <li key={x}><Icon name="check" size={18} stroke={1.8} />{x}</li>)}</ul>
-                <a className={`gs-btn${grey ? " grey" : ""}`} href={href}>{card.cta}{grey && <Icon name="external" size={16} stroke={1.8} />}</a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   );
 }
