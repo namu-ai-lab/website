@@ -4,23 +4,17 @@
    top. Speak and Converse each put one object in the middle (a reel of voices, Aïr on a call; see VoiceReel) over the
    same bar: the choices in the middle, the way in on the right. API keeps the code window it had before
    the redesign. Speak and API are live: the browser calls /api/demo/speech, which adds the server-held demo key;
-   the gateway caps the demo at 300 characters and limits each visitor. Converse is a timed preview while Aïr is
-   in research. Tabs follow the WAI-ARIA tabs pattern. */
+   the gateway caps the demo at 300 characters and limits each visitor. Converse is a live call with Aïr, a research
+   preview (see lib/call and /api/demo/converse). Tabs follow the WAI-ARIA tabs pattern. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
 import { playground, scripts, voices, type PlaygroundCopy, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
 import { apiBase } from "@/lib/env";
+import { AirCall, type CallState, type Persona } from "@/lib/call";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/* A loudness envelope with the rhythm of speech: syllables about 190 ms apart, gathered into words. */
-const envelope = (t: number) => {
-  const syllable = Math.max(0, Math.sin(t * Math.PI * 2 * 5.2)) ** .6;
-  const phrase = .55 + .45 * Math.abs(Math.sin(t * 2.1) * Math.sin(t * .7 + 1));
-  return Math.min(1, syllable * phrase * (.86 + .14 * Math.sin(t * 37.1)));
-};
 
 /* Runs `tick(elapsedMs)` every frame while `on`; stops when tick returns false. */
 function useTicker(on: boolean, tick: (ms: number) => boolean | void) {
@@ -156,33 +150,54 @@ function Speak({ lang, cta }: { lang: Lang; cta: Cta }) {
 }
 
 /* ---------------------------------------------------------------- Converse (Aïr) */
+/* A live call: Aïr greets, listens, answers aloud and listens again until the call ends (see lib/call). The orb moves
+   with whoever is speaking; under it, what Aïr heard and what it said, in Hausa. */
 function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
-  const c = playground[lang], t = c.converse, tab = c.tabs[1];
-  const [state, setState] = useState<"idle" | "connecting" | "live">("idle");
+  const c = playground[lang], t = c.converse, vs = voices[lang];
+  const [persona, setPersona] = useState<Persona>("nadia");
+  const [state, setState] = useState<CallState | "idle">("idle");
+  const [heard, setHeard] = useState(""), [said, setSaid] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const amp = useRef(0);
-  const per = 2600;   // one turn of the conversation; the caller and Aïr take turns until the call ends
+  const call = useRef<AirCall | null>(null);
+  const voice = vs.find(v => v.id === persona) ?? vs[0];
 
-  useTicker(state !== "idle", ms => {
-    if (state === "connecting") { if (ms > 900) setState("live"); return; }
-    const air = Math.floor(ms / per) % 2 === 1;
-    const talking = (ms % per) / per < .78;
-    amp.current = reduced() ? 0 : talking ? envelope(ms / 1000) * (air ? 1 : .45) : 0;
-  });
-  useEffect(() => { if (state === "idle") amp.current = 0; }, [state]);
+  const start = () => {
+    setError(null); setHeard(""); setSaid("");
+    const k = new AirCall(persona, {
+      state: s => { if (call.current === k) setState(s === "ended" ? "idle" : s); },
+      heard: x => { setHeard(x); setSaid(""); },
+      reply: setSaid,
+      problem: p => setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed),
+    }, amp, reduced());
+    call.current = k;
+    void k.start();
+  };
+  const end = () => { call.current?.end(); call.current = null; setState("idle"); };
+  useEffect(() => () => call.current?.end(), []);
 
+  const live = state !== "idle";
+  const line = !live ? error ?? t.idle : state === "connecting" ? t.connecting : state === "thinking" ? t.thinking : state === "speaking" ? t.speaking : t.listening;
   return (
     <>
       <div className="pg-stage pg-converse">
-        <div className={`pg-agent${state === "live" ? " live" : ""}`}>
+        <div className={`pg-agent${live ? " live" : ""}${state === "hearing" ? " hearing" : ""}`} onClick={() => call.current?.interrupt()}>
           <i aria-hidden="true" /><i aria-hidden="true" />
-          <AgentOrb palette={tab.dot} amp={amp} live={state === "live"} />
-          <button type="button" className={`pg-call${state !== "idle" ? " on" : ""}`} aria-label={state === "idle" ? t.start : t.end} onClick={() => setState(s => (s === "idle" ? "connecting" : "idle"))}>
-            <Icon name={state === "idle" ? "phone-voice" : "close"} size={22} stroke={1.6} />
+          <AgentOrb palette={voice.palette} amp={amp} live={live} />
+          <button type="button" className={`pg-call${live ? " on" : ""}`} aria-label={live ? t.end : t.start} onClick={e => { e.stopPropagation(); if (live) end(); else start(); }}>
+            <Icon name={live ? "close" : "phone-voice"} size={22} stroke={1.6} />
           </button>
         </div>
-        <p className="pg-call-state" aria-live="polite">{state === "idle" ? t.start : state === "connecting" ? t.connecting : t.end}</p>
+        <p className={error && !live ? "pg-error" : "pg-call-state"} aria-live="polite">{line}</p>
+        <div className="pg-captions" aria-live="polite">
+          {heard && <p><span>{t.you}</span><q lang="ha">{heard}</q></p>}
+          {said && <p><span>{t.air}</span><q lang="ha">{said}</q></p>}
+        </div>
       </div>
-      <Bar cta={cta} />
+      <Bar cta={cta}>
+        <Pills items={vs.map(v => ({ id: v.id as Persona, label: v.name }))} value={persona} onPick={id => { if (id !== persona) { end(); setPersona(id); } }} label={t.voice} />
+      </Bar>
+      <p className="pg-note pg-converse-note">{t.note}</p>
     </>
   );
 }

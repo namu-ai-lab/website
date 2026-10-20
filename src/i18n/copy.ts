@@ -46,7 +46,7 @@ const en = {
   } as Record<string, { line: string; task: string; languages: string }>,
   footer: {
     follow: "Follow us", tag: "Speech AI that hears everyone", models: "Models", research: "Research", start: "Get started", lab: "The Lab",
-    partner: "Partner with us", github: "Code on GitHub", about: "About", news: "News", data: "Data", careers: "Careers", contact: "Contact",
+    partner: "Partner with us", github: "Code on GitHub", about: "About", news: "News", data: "Data", careers: "Careers", contact: "Contact", email: "Email",
     aboutNamu: "About Namu", privacy: "Privacy", terms: "Terms",
   },
   home: {
@@ -184,7 +184,7 @@ const fr: Copy = {
   },
   footer: {
     follow: "Suivez-nous", tag: "Une IA de la parole qui entend tout le monde", models: "Modèles", research: "Recherche", start: "Commencer", lab: "Le Lab",
-    partner: "Devenez partenaire", github: "Le code sur GitHub", about: "À propos", news: "Actualités", data: "Données", careers: "Carrières", contact: "Contact",
+    partner: "Devenez partenaire", github: "Le code sur GitHub", about: "À propos", news: "Actualités", data: "Données", careers: "Carrières", contact: "Contact", email: "E-mail",
     aboutNamu: "À propos de Namu", privacy: "Confidentialité", terms: "Conditions",
   },
   home: {

@@ -4,26 +4,17 @@ import { Logo } from "./Logo";
 import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 
-const GitHub = () => <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z" /></svg>;
-const Mail = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg>;
-
-const GITHUB = "https://github.com/namu-ai-lab";
-const CONTACT = "mailto:contact@namuai.org";
 const PARTNER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`;
 
 type Link = { label: string; href?: string; soon?: string; external?: boolean };
 
-/* After labs.google's footer, in Namu's own terms: a pile of Namu's shapes to play with on the top line;
-   one row of where to go (the bar's sections) with the ways to reach us; one row of what to do (Get started);
-   the Lab's name set across the whole width; and the parent company's row in small capitals. */
+/* After labs.google's footer, in Namu's own terms: a pile of Namu's shapes to play with, resting on the top line,
+   with the Lab's GitHub, LinkedIn, X, Instagram and email among them (the bar above already lists the sections);
+   one row of what to do (Get started); the Lab's name set across the whole width; and the parent company's row
+   in small capitals. */
 export function Footer({ lang }: { lang: Lang }) {
   const c = copy[lang], f = c.footer, n = c.nav;
   const L = (p: string) => lp(lang, p);
-  /* where to go, in the bar's order (Organisations has no page yet, so About and Careers take its place) */
-  const top: Link[] = [
-    { label: f.research, href: L("/research") }, { label: f.models, href: L("/#models") }, { label: n.developers, href: L("/api") },
-    { label: f.data, href: L("/data") }, { label: f.about, href: L("/about") }, { label: f.careers, href: L("/about#careers") },
-  ];
   /* what to do: the same two ways in as the Get started band above, organisations first */
   const start: Link[] = [
     { label: f.partner, href: PARTNER }, { label: n.apiPlatform, href: L("/api") }, { label: n.docs, href: L("/docs") },
@@ -31,16 +22,8 @@ export function Footer({ lang }: { lang: Lang }) {
   ];
   return (
     <footer className="ftr">
-      <div className="wrap"><FooterShapes /></div>
+      <div className="wrap"><FooterShapes follow={f.follow} email={f.email} /></div>
       <div className="wrap">
-        <div className="ftr-top">
-          <a className="ftr-brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" id="lg-ftr" /></a>
-          <nav className="ftr-nav" aria-label={f.lab}>{top.map(l => <a key={l.label} href={l.href}>{l.label}</a>)}</nav>
-          <div className="ftr-social">
-            <a href={GITHUB} aria-label="GitHub" target="_blank" rel="noopener"><GitHub /></a>
-            <a href={CONTACT} aria-label={f.contact}><Mail /></a>
-          </div>
-        </div>
         <div className="ftr-row">
           <h2>{f.start}</h2>
           <ul>{start.map(l => (
