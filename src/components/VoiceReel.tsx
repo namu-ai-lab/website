@@ -61,9 +61,13 @@ type ReelProps = {
 
 export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels }: ReelProps) {
   const n = voices.length;
+  const loop = n >= 5;                      // a few voices sit side by side; five or more go round without end
+  const duo = n === 2;                      // two voices: both orbs stay in place, side by side, and the chosen one is larger
+  const inReel = (v: number) => loop || (v >= 0 && v < n);
+  const clampT = (v: number) => (loop ? v : Math.max(0, Math.min(n - 1, v)));
   const host = useRef<HTMLDivElement | null>(null), canvas = useRef<HTMLCanvasElement | null>(null), sizer = useRef<HTMLDivElement | null>(null);
   const { r, box } = useRenderer(canvas);
-  const s = useRef({ pos: index, vel: 0, target: index, drag: null as null | { x: number; pos: number; moved: number; t: number; v: number }, clocks: voices.map((_, i) => i * 3.1) });
+  const s = useRef({ pos: index, vel: 0, target: index, drag: null as null | { x: number; pos: number; moved: number; t: number; v: number }, clocks: voices.map((_, i) => i * 3.1), hover: new Map<number, number>(), pointer: null as null | { x: number; y: number }, breath: 0 });
   const [base, setBase] = useState(index);   // the window of orbs and names in the page follows the reel
   const labelEls = useRef(new Map<number, HTMLDivElement>());
   const playEl = useRef<HTMLButtonElement | null>(null);
@@ -74,7 +78,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
   useEffect(() => {
     const st = s.current, cur = mod(Math.round(st.target), n);
     if (cur === index) return;
-    let d = index - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n;
+    let d = index - cur; if (loop) { if (d > n / 2) d -= n; if (d < -n / 2) d += n; }
     st.target = Math.round(st.target) + d;
   }, [index, n]);
 
@@ -82,6 +86,11 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     const D = sizer.current?.offsetWidth || 256, W = box.current.w || host.current?.offsetWidth || 800;
     const spread = Math.min(1, (0.53 * W) / (SPREAD[1] * D));
     return { D, W, spread, cy: (box.current.h || D * 1.1) / 2 };
+  };
+  /* two voices: the orbs a little smaller than the reel's middle one, their centres a little more than an orb apart */
+  const duoPlaces = (g: ReturnType<typeof geometry>) => {
+    const D = Math.min(g.D, (g.W - 24) / 2.15), sep = D * 1.1;
+    return { D, x: [g.W / 2 - sep / 2, g.W / 2 + sep / 2] };
   };
   const layout = (d: number, g: ReturnType<typeof geometry>) => ({
     x: g.W / 2 + Math.sign(d) * lerpAt(SPREAD, d) * g.D * g.spread,
@@ -103,12 +112,38 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     const b = Math.round(st.pos);
     if (b !== base) setBase(b);
     const a = amp.current, midVoice = mod(b, n);
-    if (!reduce.current) for (let vi = 0; vi < n; vi++) st.clocks[vi] += dt * (0.055 + (vi === midVoice && playing ? 0.12 + 0.45 * a : 0));   // a speaking voice flows faster
+    /* every voice keeps flowing; the one in the middle a little faster, and faster still while it speaks */
+    if (!reduce.current) { for (let vi = 0; vi < n; vi++) st.clocks[vi] += dt * (vi === midVoice ? 0.2 + (playing ? 0.12 + 0.6 * a : 0) : 0.12); st.breath += dt; }
     const orbs: OrbDraw[] = [];
+    if (duo) {
+      const P = duoPlaces(g);
+      for (let v = 0; v < 2; v++) {
+        const d = v - st.pos, f = Math.max(0, 1 - Math.abs(d)), x = P.x[v], mid = Math.abs(d) < 0.5, speaking = mid && playing ? a : 0;
+        const rad = (P.D / 2) * (0.76 + 0.24 * f), pt = st.pointer, over = !st.drag && !mid && pt && Math.hypot(pt.x - x, pt.y - g.cy) < rad ? 1 : 0;
+        const h = (st.hover.get(v) ?? 0) + (over - (st.hover.get(v) ?? 0)) * Math.min(1, dt * 10);
+        st.hover.set(v, h);
+        const breathe = mid && !playing && !reduce.current ? 0.008 * Math.sin(st.breath * 1.6) : 0;
+        orbs.push({ x, y: g.cy, r: rad * (1 + 0.04 * h + breathe + 0.025 * speaking), palette: voices[v].palette, seed: v * 7.31 + 1.7, time: st.clocks[v], amp: speaking,
+          focus: Math.max(f, 0.6 * h), alpha: 1 });
+        const label = labelEls.current.get(v);
+        if (label) { label.style.transform = `translateX(${(x - g.W / 2).toFixed(1)}px)`; label.style.opacity = "1"; label.style.setProperty("--ink-mix", (1 - f).toFixed(3)); }
+      }
+      orbs.sort((p, q) => p.r - q.r);
+      r.current?.draw(orbs);
+      if (playEl.current) { playEl.current.style.left = `${P.x[Math.round(st.target)].toFixed(1)}px`; playEl.current.classList.toggle("on", Math.abs(st.pos - st.target) < 0.12); }
+      return;
+    }
     for (let v = b - 4; v <= b + 4; v++) {
+      if (!inReel(v)) { const label = labelEls.current.get(v); if (label) label.style.opacity = "0"; continue; }
       const d = v - st.pos, L = layout(d, g), vi = mod(v, n), mid = Math.abs(d) < 0.5;
       const speaking = mid && playing ? a : 0;
-      orbs.push({ x: L.x, y: g.cy, r: (g.D / 2) * L.scale * (1 + 0.025 * speaking), palette: voices[vi].palette, seed: vi * 7.31 + 1.7, time: st.clocks[vi], amp: speaking, alpha: L.alpha });
+      /* a side orb under the pointer leans forward a little: larger, fuller in colour */
+      const rad = (g.D / 2) * L.scale, pt = st.pointer, over = !st.drag && !mid && pt && Math.hypot(pt.x - L.x, pt.y - g.cy) < rad ? 1 : 0;
+      const h = (st.hover.get(v) ?? 0) + (over - (st.hover.get(v) ?? 0)) * Math.min(1, dt * 10);
+      st.hover.set(v, h);
+      const breathe = mid && !playing && !reduce.current ? 0.008 * Math.sin(st.breath * 1.6) : 0;   // the voice in the middle breathes while it waits
+      orbs.push({ x: L.x, y: g.cy, r: rad * (1 + 0.035 * h + breathe + 0.025 * speaking), palette: voices[vi].palette, seed: vi * 7.31 + 1.7, time: st.clocks[vi], amp: speaking,
+        focus: Math.max(1 - Math.min(1, Math.abs(d)), 0.6 * h), alpha: L.alpha });
       const label = labelEls.current.get(v);
       if (label) {
         const side = Math.abs(d), show = g.spread > 0.95 ? Math.max(0, 1 - Math.max(0, side - 1) / 0.6) : Math.max(0, 1 - side / 0.6);
@@ -131,25 +166,36 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
-    const st = s.current, dr = st.drag; if (!dr) return;
+    const st = s.current, dr = st.drag;
+    const rect = host.current?.getBoundingClientRect();
+    if (rect) st.pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    if (!dr) return;
+    if (duo) { dr.moved = Math.max(dr.moved, Math.abs(e.clientX - dr.x)); dr.v = e.clientX - dr.x; return; }
     const g = geometry(), step = SPREAD[1] * g.D * g.spread, now = performance.now();
     const pos = dr.pos - (e.clientX - dr.x) / step;
     const dtm = Math.max(1, now - dr.t);
     dr.v = 0.7 * dr.v + 0.3 * ((pos - st.pos) / dtm) * 1000;
     dr.t = now; dr.moved = Math.max(dr.moved, Math.abs(e.clientX - dr.x));
-    st.pos = pos;
+    st.pos = loop ? pos : pos < 0 ? pos * 0.35 : pos > n - 1 ? n - 1 + (pos - n + 1) * 0.35 : pos;
   };
   const onUp = (e: React.PointerEvent) => {
     const st = s.current, dr = st.drag; if (!dr) return;
     st.drag = null;
+    if (duo) {
+      const g = geometry(), P = duoPlaces(g), rect = host.current!.getBoundingClientRect(), px = e.clientX - rect.left, py = e.clientY - rect.top;
+      if (dr.moved > 24) { st.target = dr.v < 0 ? 1 : 0; onIndex(st.target); return; }   // a swipe left brings the right-hand voice forward
+      for (let v = 0; v < 2; v++) if (Math.hypot(px - P.x[v], py - g.cy) < P.D / 2) { if (v === Math.round(st.target)) onPlay(); else { st.target = v; onIndex(v); } return; }
+      return;
+    }
     if (dr.moved > 6) {   /* let go: carry on in the direction of the flick, then settle on a voice */
       st.vel = dr.v;
-      st.target = Math.round(st.pos + Math.max(-2, Math.min(2, dr.v * 0.18)));
+      st.target = clampT(Math.round(st.pos + Math.max(-2, Math.min(2, dr.v * 0.18))));
       onIndex(mod(st.target, n));
       return;
     }
     const g = geometry(), rect = host.current!.getBoundingClientRect(), px = e.clientX - rect.left, py = e.clientY - rect.top;
     for (let v = Math.round(st.pos) - 3; v <= Math.round(st.pos) + 3; v++) {
+      if (!inReel(v)) continue;
       const d = v - st.pos, L = layout(d, g);
       if (Math.hypot(px - L.x, py - g.cy) < (g.D / 2) * L.scale) {
         if (Math.abs(d) < 0.5) onPlay(); else { st.target = v; onIndex(mod(v, n)); }
@@ -157,17 +203,17 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
       }
     }
   };
-  const turn = (d: number) => { const st = s.current; st.target = Math.round(st.target) + d; onIndex(mod(st.target, n)); };
+  const turn = (d: number) => { const st = s.current; st.target = clampT(Math.round(st.target) + d); onIndex(mod(st.target, n)); };
 
   const items = [];
-  for (let v = base - 3; v <= base + 3; v++) items.push(v);
+  for (let v = base - 3; v <= base + 3; v++) if (inReel(v)) items.push(v);
   const chosen = voices[mod(index, n)];
 
   return (
-    <div className="vr" role="group" aria-roledescription="carousel" aria-label={labels.voices}
+    <div className={`vr${duo ? " duo" : ""}`} role="group" aria-roledescription="carousel" aria-label={labels.voices}
       tabIndex={0} onKeyDown={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); turn(-1); } if (e.key === "ArrowRight") { e.preventDefault(); turn(1); } }}>
       <div className="vr-sizer" ref={sizer} aria-hidden="true" />
-      <div className="vr-stage" ref={host} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <div className="vr-stage" ref={host} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { s.current.pointer = null; }}>
         <canvas ref={canvas} className="vr-canvas" aria-hidden="true" />
         <button ref={playEl} type="button" className="vr-play" aria-label={playing ? labels.stop : `${labels.play}: ${chosen.name}`} onClick={onPlay}>
           <Icon name={playing ? "pause" : "play"} size={22} stroke={1.8} />
@@ -178,8 +224,8 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
           const voice = voices[mod(v, n)];
           return <div key={v} className="vr-name" ref={el => { if (el) labelEls.current.set(v, el); else labelEls.current.delete(v); }}><b>{voice.name}</b><span>{voice.note}</span></div>;
         })}
-        <button type="button" className="vr-arrow prev" aria-label={labels.previous} onClick={() => turn(-1)}><Icon name="chevron" size={18} stroke={1.6} className="rot90" /></button>
-        <button type="button" className="vr-arrow next" aria-label={labels.next} onClick={() => turn(1)}><Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
+        <button type="button" className="vr-arrow prev" aria-label={labels.previous} onClick={() => turn(-1)} disabled={!loop && index === 0}><Icon name="chevron" size={18} stroke={1.6} className="rot90" /></button>
+        <button type="button" className="vr-arrow next" aria-label={labels.next} onClick={() => turn(1)} disabled={!loop && index === n - 1}><Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
       </div>
       <p className="sr-only" aria-live="polite">{chosen.name}. {chosen.note}</p>
     </div>
@@ -195,7 +241,7 @@ export function AgentOrb({ palette, amp, live, style }: { palette: Voice["palett
   useFrames(host, (dt) => {
     const a = amp.current, { w, h } = box.current;
     if (!w) return;
-    if (!reduce.current) clock.current += dt * (0.055 + (live ? 0.12 + 0.45 * a : 0));
+    if (!reduce.current) clock.current += dt * (0.2 + (live ? 0.12 + 0.6 * a : 0));
     r.current?.draw([{ x: w / 2, y: h / 2, r: (Math.min(w, h) / 2) * (0.94 + 0.04 * a), palette, seed: 11.3, time: clock.current, amp: a }]);
   });
   return <div className="vr-agent" ref={host} style={style}><canvas ref={canvas} className="vr-canvas" aria-hidden="true" /></div>;

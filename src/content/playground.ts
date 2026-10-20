@@ -1,6 +1,6 @@
-/* The home page console: a design preview of trying the Lab's models (after elevenlabs.io's hero panel:
-   three tabs, one object in the middle of each, a bar of choices underneath). Nothing here is connected
-   to a model yet.
+/* The home page console: try the Lab's models (after elevenlabs.io's hero panel: three tabs, one object
+   in the middle of each, a bar of choices underneath). Speak and the API tab are live, through /api/demo
+   with the demo's limits; Converse is a timed preview while Aïr is in research.
    HA-REVIEW: every Hausa sentence below was written for this preview and needs a native speaker's check.
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
 import type { Lang } from "@/i18n/config";
@@ -8,7 +8,8 @@ import type { Lang } from "@/i18n/config";
 const n = " ";   // narrow no-break space before French high punctuation
 
 export type Script = { id: string; label: string; text: string; gloss: string };
-export type Voice = { id: string; name: string; note: string; palette: [string, string, string] };
+/* palette: main, light, deep, and an accent of another hue that drifts through it */
+export type Voice = { id: string; name: string; note: string; palette: readonly string[] };
 
 export type Tab = "speak" | "converse" | "api";
 
@@ -18,7 +19,8 @@ export type PlaygroundCopy = {
   build: string;
   speak: { scripts: string; voices: string; previous: string; next: string; play: string; stop: string };
   converse: { start: string; end: string; connecting: string };
-  api: { run: string; running: string; output: string };
+  api: { run: string; running: string; output: string; note: string };
+  live: { working: string; unavailable: string; limited: string; failed: string };
 };
 
 export const scripts: Record<Lang, Script[]> = {
@@ -36,20 +38,15 @@ export const scripts: Record<Lang, Script[]> = {
   ],
 };
 
+/* The live API's two Hausa voices (GET /v1/voices): ids nadia and salim, shown as the female and the male voice. */
 export const voices: Record<Lang, Voice[]> = {
   en: [
-    { id: "warm", name: "Warm", note: "Even and close, for reading", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "bright", name: "Bright", note: "Clear and quick, for news", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
-    { id: "calm", name: "Calm", note: "Slow and steady, for care", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
-    { id: "story", name: "Storyteller", note: "Lively, for tales", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
-    { id: "radio", name: "Radio", note: "Steady and clear, for announcements", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
+    { id: "nadia", name: "Female", note: "Hausa · warm and patient", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "salim", name: "Male", note: "Hausa · direct and steady", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
   fr: [
-    { id: "warm", name: "Chaleureuse", note: "Égale et proche, pour la lecture", palette: ["#f29a5f", "#ffd8b8", "#b4552a"] },
-    { id: "bright", name: "Claire", note: "Nette et vive, pour l’info", palette: ["#ffd27f", "#fff1d6", "#e8935a"] },
-    { id: "calm", name: "Posée", note: "Lente et sûre, pour le soin", palette: ["#e3b3c9", "#fcf2ef", "#bd7193"] },
-    { id: "story", name: "Conteuse", note: "Vivante, pour les contes", palette: ["#7a4325", "#f6b48a", "#1c1410"] },
-    { id: "radio", name: "Radio", note: "Posée et nette, pour les annonces", palette: ["#cf9b62", "#fbf6ef", "#8a5a33"] },
+    { id: "nadia", name: "Féminine", note: "Haoussa · chaleureuse et patiente", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "salim", name: "Masculine", note: "Haoussa · direct et posé", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
 };
 
@@ -69,7 +66,8 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     build: "Start building",
     speak: { scripts: "What the voice reads", voices: "Voices", previous: "Previous voice", next: "Next voice", play: "Play", stop: "Stop" },
     converse: { start: "Call Aïr", end: "End call", connecting: "Connecting…" },
-    api: { run: "Run code", running: "Running…", output: "Output" },
+    api: { run: "Run code", running: "Running…", output: "Output", note: "Runs on the live demo. In your app, your own key takes the demo’s place." },
+    live: { working: "Generating…", unavailable: "The live demo is not available right now.", limited: "Demo limit reached for now. Get an API key to keep going.", failed: "The model did not answer. Try again in a moment." },
   },
   fr: {
     sub: "Écouter, parler, traduire et converser dans les langues du Sahel",
@@ -81,6 +79,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     build: "Commencer à construire",
     speak: { scripts: "Ce que lit la voix", voices: "Voix", previous: "Voix précédente", next: "Voix suivante", play: "Lire", stop: "Arrêter" },
     converse: { start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…" },
-    api: { run: "Exécuter", running: "Exécution…", output: "Résultat" },
+    api: { run: "Exécuter", running: "Exécution…", output: "Résultat", note: "S’exécute sur la démo en direct. Dans votre application, votre propre clé remplace celle de la démo." },
+    live: { working: "Génération…", unavailable: "La démo en direct n’est pas disponible pour le moment.", limited: "Limite de la démo atteinte. Obtenez une clé d’API pour continuer.", failed: "Le modèle n’a pas répondu. Réessayez dans un instant." },
   },
 };
