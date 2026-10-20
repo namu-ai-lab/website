@@ -38,15 +38,15 @@ export const scripts: Record<Lang, Script[]> = {
   ],
 };
 
-/* The live API's two Hausa voices (GET /v1/voices). */
+/* The live API's two Hausa voices (GET /v1/voices): ids nadia and salim, shown as the female and the male voice. */
 export const voices: Record<Lang, Voice[]> = {
   en: [
-    { id: "nadia", name: "Nadia", note: "Hausa · warm and patient", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
-    { id: "salim", name: "Salim", note: "Hausa · direct and steady", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
+    { id: "nadia", name: "Female", note: "Hausa · warm and patient", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "salim", name: "Male", note: "Hausa · direct and steady", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
   fr: [
-    { id: "nadia", name: "Nadia", note: "Haoussa · chaleureuse et patiente", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
-    { id: "salim", name: "Salim", note: "Haoussa · direct et posé", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
+    { id: "nadia", name: "Féminine", note: "Haoussa · chaleureuse et patiente", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
+    { id: "salim", name: "Masculine", note: "Haoussa · direct et posé", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
 };
 

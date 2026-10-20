@@ -861,6 +861,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .vr-arrow { position: absolute; top: 6px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--ink-2); cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
 .vr-arrow:hover { background: rgba(21, 18, 15, .05); color: var(--ink); }
 .vr-arrow:disabled { opacity: .25; cursor: default; background: none; }
+/* two voices: no arrows, both names shown under their orbs, the play button sits on the chosen one */
+.vr.duo .vr-arrow { display: none; }
+.vr.duo .vr-name { width: 190px; margin-left: -95px; }
+.vr.duo .vr-name span { white-space: normal; text-wrap: balance; }
+@media (max-width: 640px) { .vr.duo .vr-name { width: 42vw; margin-left: -21vw; } .vr.duo .vr-name span { font-size: 13px; } }
+.vr.duo .vr-play { transition: opacity calc(.35s * var(--motion)) var(--ease), transform calc(.5s * var(--motion)) var(--ease-out), left calc(.5s * var(--motion)) var(--ease-out); }
 .vr-arrow.prev { left: calc(50% - 168px); }
 .vr-arrow.next { left: calc(50% + 136px); }
 .vr-arrow svg { width: 18px; height: 18px; }
