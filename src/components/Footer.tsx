@@ -58,7 +58,7 @@ export function Footer({ lang }: { lang: Lang }) {
           ))}
         </div>
       </div>
-      <p className="ftr-word" aria-hidden="true">Namu AI Lab</p>
+      <p className="ftr-word" aria-hidden="true">namu ai lab</p>
       <div className="wrap">
         <div className="ftr-base">
           <a className="parent" href="https://www.namu-ai.org" aria-label="Namu"><Logo className="mark" id="lg-ftr-base" /></a>
