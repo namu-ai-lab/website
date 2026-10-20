@@ -12,6 +12,7 @@ export type OrbDraw = {
   amp?: number;                                // loudness, 0..1
   focus?: number;                              // 1 in the middle of the reel, 0 off to the side
   alpha?: number;
+  rot?: number;                                // how far the orb's own canvas is turned on the page, so its light stays put
 };
 
 export type OrbRenderer = { size(w: number, h: number): void; draw(orbs: OrbDraw[]): void; destroy(): void };
@@ -32,7 +33,7 @@ const FRAG = `
 precision highp float;
 varying vec2 vP;
 uniform vec3 uMain, uLight, uDeep, uAccent;
-uniform float uTime, uSeed, uAmp, uAlpha, uRpx, uFocus;
+uniform float uTime, uSeed, uAmp, uAlpha, uRpx, uFocus, uRot;
 
 /* 2D simplex noise by Ian McEwan and Stefan Gustavson (Ashima Arts), MIT licence. It is built on a
    permutation polynomial rather than a sine hash, so it paints the same smooth field on every GPU. */
@@ -91,7 +92,8 @@ void main() {
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
   col = mix(vec3(lum), col, 0.84 + 0.3 * uFocus);
   vec3 nrm = normalize(vec3(p, z + 0.3));
-  float key = clamp(dot(nrm, normalize(vec3(-0.45, 0.55, 0.72))), 0.0, 1.0);
+  vec2 lit = mat2(cos(uRot), -sin(uRot), sin(uRot), cos(uRot)) * vec2(-0.45, 0.55);   /* the light turned back by the canvas's turn */
+  float key = clamp(dot(nrm, normalize(vec3(lit, 0.72))), 0.0, 1.0);
   col *= 0.82 + 0.28 * key;
   col += vec3(1.0, 0.97, 0.92) * pow(key, 8.0) * 0.1;
   col += uAmp * 0.12 * (1.0 - r) * vec3(1.0, 0.86, 0.72);
@@ -126,7 +128,7 @@ export function createOrbRenderer(canvas: HTMLCanvasElement): OrbRenderer {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, "aCorner"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const u = (n: string) => gl.getUniformLocation(prog, n);
-  const U = { view: u("uView"), orb: u("uOrb"), main: u("uMain"), light: u("uLight"), deep: u("uDeep"), accent: u("uAccent"), time: u("uTime"), seed: u("uSeed"), amp: u("uAmp"), focus: u("uFocus"), alpha: u("uAlpha"), rpx: u("uRpx") };
+  const U = { view: u("uView"), orb: u("uOrb"), main: u("uMain"), light: u("uLight"), deep: u("uDeep"), accent: u("uAccent"), time: u("uTime"), seed: u("uSeed"), amp: u("uAmp"), focus: u("uFocus"), alpha: u("uAlpha"), rpx: u("uRpx"), rot: u("uRot") };
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   const colours = new Map<string, [number, number, number]>();
   const col = (hex: string) => { let c = colours.get(hex); if (!c) { c = rgb(hex); colours.set(hex, c); } return c; };
@@ -142,7 +144,7 @@ export function createOrbRenderer(canvas: HTMLCanvasElement): OrbRenderer {
         if (a < 0.01 || o.r < 1) continue;
         gl.uniform3f(U.orb, o.x, o.y, o.r);
         gl.uniform3fv(U.main, col(o.palette[0])); gl.uniform3fv(U.light, col(o.palette[1])); gl.uniform3fv(U.deep, col(o.palette[2])); gl.uniform3fv(U.accent, col(o.palette[3] ?? o.palette[0]));
-        gl.uniform1f(U.time, o.time); gl.uniform1f(U.seed, o.seed); gl.uniform1f(U.amp, o.amp ?? 0); gl.uniform1f(U.focus, o.focus ?? 1); gl.uniform1f(U.alpha, a); gl.uniform1f(U.rpx, o.r * dpr);
+        gl.uniform1f(U.time, o.time); gl.uniform1f(U.seed, o.seed); gl.uniform1f(U.amp, o.amp ?? 0); gl.uniform1f(U.focus, o.focus ?? 1); gl.uniform1f(U.alpha, a); gl.uniform1f(U.rpx, o.r * dpr); gl.uniform1f(U.rot, o.rot ?? 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
     },

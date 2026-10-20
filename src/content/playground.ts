@@ -18,23 +18,23 @@ export type PlaygroundCopy = {
   tabs: { id: Tab; label: string; dot: [string, string, string] }[];
   build: string;
   speak: { scripts: string; voices: string; previous: string; next: string; play: string; stop: string };
-  converse: { start: string; end: string; connecting: string };
+  converse: { start: string; end: string; connecting: string; idle: string; listening: string; thinking: string; speaking: string; voice: string; you: string; air: string; mic: string; note: string };
   api: { run: string; running: string; output: string; note: string };
   live: { working: string; unavailable: string; limited: string; failed: string };
 };
 
 export const scripts: Record<Lang, Script[]> = {
   en: [
-    { id: "news", label: "Morning news", text: "Barka da safiya! Ga labaran yau daga Yamai da Kano: an yi ruwan sama mai yawa a daren jiya.", gloss: "Good morning! Here is today’s news from Niamey and Kano: there was heavy rain last night." },
-    { id: "clinic", label: "Clinic reminder", text: "Sannu Hauwa. Muna tunatar da ke cewa ganinki da likita gobe ne, da ƙarfe tara na safe.", gloss: "Hello Hauwa. A reminder that your appointment with the doctor is tomorrow, at nine in the morning." },
-    { id: "market", label: "Market prices", text: "Farashin gero a kasuwar Maraɗi ya sauka kaɗan a wannan mako.", gloss: "The price of millet at Maradi market fell a little this week." },
-    { id: "tale", label: "Folktale", text: "Gatanan, gatananku! Wata rana Gizo ya tafi kasuwa da ƙwarya cike da zuma.", gloss: "Once upon a time! One day Spider went to the market with a calabash full of honey." },
+    { id: "greet", label: "Welcome", text: "Sannu da zuwa! Muna farin cikin jin muryarku.", gloss: "Welcome! We are glad to hear your voice." },
+    { id: "weather", label: "Weather", text: "Ina kwana? Yau za a yi zafi sosai, don haka ku sha ruwa da yawa.", gloss: "Good morning! It will be very hot today, so drink plenty of water." },
+    { id: "clinic", label: "Clinic reminder", text: "Kar ki manta, gobe da safe ki kawo jaririnki asibiti don allurar rigakafi.", gloss: "Don’t forget: tomorrow morning, bring your baby to the clinic for the vaccination." },
+    { id: "farm", label: "Farming", text: "Damina ta kama. Lokaci ya yi da manoma su fara shuka gero da dawa.", gloss: "The rainy season has set in. It is time for farmers to start sowing millet and sorghum." },
   ],
   fr: [
-    { id: "news", label: "Journal du matin", text: "Barka da safiya! Ga labaran yau daga Yamai da Kano: an yi ruwan sama mai yawa a daren jiya.", gloss: `Bonjour${n}! Voici les nouvelles du jour depuis Niamey et Kano${n}: il a beaucoup plu la nuit dernière.` },
-    { id: "clinic", label: "Rappel de rendez-vous", text: "Sannu Hauwa. Muna tunatar da ke cewa ganinki da likita gobe ne, da ƙarfe tara na safe.", gloss: "Bonjour Hauwa. Nous vous rappelons votre rendez-vous chez le médecin demain, à neuf heures du matin." },
-    { id: "market", label: "Prix du marché", text: "Farashin gero a kasuwar Maraɗi ya sauka kaɗan a wannan mako.", gloss: "Le prix du mil au marché de Maradi a un peu baissé cette semaine." },
-    { id: "tale", label: "Conte", text: "Gatanan, gatananku! Wata rana Gizo ya tafi kasuwa da ƙwarya cike da zuma.", gloss: `Il était une fois${n}! Un jour, l’Araignée partit au marché avec une calebasse pleine de miel.` },
+    { id: "greet", label: "Bienvenue", text: "Sannu da zuwa! Muna farin cikin jin muryarku.", gloss: `Bienvenue${n}! Nous sommes heureux d’entendre votre voix.` },
+    { id: "weather", label: "Météo", text: "Ina kwana? Yau za a yi zafi sosai, don haka ku sha ruwa da yawa.", gloss: `Bonjour${n}! Il fera très chaud aujourd’hui, alors buvez beaucoup d’eau.` },
+    { id: "clinic", label: "Rappel de vaccination", text: "Kar ki manta, gobe da safe ki kawo jaririnki asibiti don allurar rigakafi.", gloss: `N’oubliez pas${n}: demain matin, amenez votre bébé au centre de santé pour la vaccination.` },
+    { id: "farm", label: "Agriculture", text: "Damina ta kama. Lokaci ya yi da manoma su fara shuka gero da dawa.", gloss: "La saison des pluies s’est installée. Il est temps pour les agriculteurs de semer le mil et le sorgho." },
   ],
 };
 
@@ -65,7 +65,11 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     ],
     build: "Start building",
     speak: { scripts: "What the voice reads", voices: "Voices", previous: "Previous voice", next: "Next voice", play: "Play", stop: "Stop" },
-    converse: { start: "Call Aïr", end: "End call", connecting: "Connecting…" },
+    converse: {
+      start: "Call Aïr", end: "End call", connecting: "Connecting…", idle: "Talk with Aïr, in Hausa", listening: "Listening…", thinking: "Thinking…",
+      speaking: "Aïr is speaking. Tap to interrupt", voice: "Voice", you: "You", air: "Aïr", mic: "Allow the microphone to talk with Aïr.",
+      note: "Research preview. Tatsuniya writes down what you say, Google Gemini (through OpenRouter) writes Aïr’s reply and Tafiya speaks it. The text of the conversation is kept.",
+    },
     api: { run: "Run code", running: "Running…", output: "Output", note: "Runs on the live demo. In your app, your own key takes the demo’s place." },
     live: { working: "Generating…", unavailable: "The live demo is not available right now.", limited: "Demo limit reached for now. Get an API key to keep going.", failed: "The model did not answer. Try again in a moment." },
   },
@@ -78,7 +82,11 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     ],
     build: "Commencer à construire",
     speak: { scripts: "Ce que lit la voix", voices: "Voix", previous: "Voix précédente", next: "Voix suivante", play: "Lire", stop: "Arrêter" },
-    converse: { start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…" },
+    converse: {
+      start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…", idle: "Parlez avec Aïr, en haoussa", listening: "À l’écoute…", thinking: "Réflexion…",
+      speaking: "Aïr parle. Touchez pour l’interrompre", voice: "Voix", you: "Vous", air: "Aïr", mic: "Autorisez le micro pour parler avec Aïr.",
+      note: "Aperçu de recherche. Tatsuniya transcrit ce que vous dites, Google Gemini (via OpenRouter) rédige la réponse d’Aïr et Tafiya la prononce. Le texte de la conversation est conservé.",
+    },
     api: { run: "Exécuter", running: "Exécution…", output: "Résultat", note: "S’exécute sur la démo en direct. Dans votre application, votre propre clé remplace celle de la démo." },
     live: { working: "Génération…", unavailable: "La démo en direct n’est pas disponible pour le moment.", limited: "Limite de la démo atteinte. Obtenez une clé d’API pour continuer.", failed: "Le modèle n’a pas répondu. Réessayez dans un instant." },
   },
