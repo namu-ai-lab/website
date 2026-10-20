@@ -16,7 +16,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 const mail = (subject: string) => `mailto:contact@namuai.org?subject=${encodeURIComponent(subject)}`;
-const EARLY = mail("Namu API, early access");
 const TALK = mail("Namu API");
 
 /* HA-REVIEW: the Hausa lines in the mock-ups below were written for this preview. */
@@ -136,7 +135,7 @@ export default async function Api({ params }: { params: Promise<{ lang: string }
             <h1 className="ap-display">{a.h1}</h1>
             <p className="lede">{a.lede}</p>
             <div className="ap-acts">
-              <a className="pill lg dark" href="#get-started">{a.start} <Icon name="arrow-long" size={18} stroke={1.6} /></a>
+              <a className="pill lg dark" href={L("/account/keys")}>{a.start} <Icon name="arrow-long" size={18} stroke={1.6} /></a>
               <a className="pill lg frost" href={TALK}>{a.talk}</a>
             </div>
           </div>
@@ -235,7 +234,7 @@ export default async function Api({ params }: { params: Promise<{ lang: string }
           <h2 id="h-ap-start" className="ap-title">{a.startH}</h2>
           <div className="ap-start-grid">
             {[{ c: a.partner, href: TALK, dark: false, art: <GlassArt motif="talk" palette="sand" ratio="wide" seed="st0" place="centre" /> },
-              { c: a.build, href: EARLY, dark: true, art: <NightArt seed="api-start" ratio="wide" /> }].map(({ c, href, dark, art }) => (
+              { c: a.build, href: L("/account/keys"), dark: true, art: <NightArt seed="api-start" ratio="wide" /> }].map(({ c, href, dark, art }) => (
               <div key={c.t} className={`ap-scard reveal${dark ? " dark" : ""}`}>
                 <span className="art" aria-hidden="true">{art}</span>
                 <div className="ap-scard-in">
