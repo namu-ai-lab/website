@@ -6,3 +6,6 @@ next-env.d.ts
 .DS_Store
 .env*.local
 .vercel
+.env
+__pycache__
+.pytest_cache

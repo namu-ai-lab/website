@@ -23,7 +23,7 @@ export function Footer({ lang }: { lang: Lang }) {
   const cols: { title: string; links: Link[] }[] = [
     { title: f.research, links: [{ label: n.overview, href: L("/research") }, ...getProgrammes(lang).map(p => ({ label: p.name, href: L(`/programmes/${p.slug}`) })), { label: f.news, href: L("/research#latest") }] },
     { title: f.models, links: models.map(m => ({ label: m.name, href: L(m.href) })) },
-    { title: f.start, links: [{ label: f.partner, href: PARTNER }, { label: n.apiPlatform, href: L("/api") }, { label: n.sdks, soon: n.soon }, { label: f.github, href: GITHUB, external: true }] },
+    { title: f.start, links: [{ label: f.partner, href: PARTNER }, { label: n.apiPlatform, href: L("/api") }, { label: n.docs, href: L("/docs") }, { label: n.apiKeys, href: L("/account/keys") }, { label: n.sdks, soon: n.soon }, { label: f.github, href: GITHUB, external: true }] },
     { title: f.lab, links: [{ label: f.about, href: L("/about") }, { label: f.data, href: L("/data") }, { label: f.careers, href: L("/about#careers") }, { label: f.contact, href: "mailto:contact@namuai.org" }] },
   ];
   return (

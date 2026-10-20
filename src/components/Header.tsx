@@ -136,6 +136,14 @@ export function Header({ lang, c, programmes }: Props) {
               <span className="ic"><Icon name="code" size={22} stroke={1.4} /></span>
               <span><b>{n.apiPlatform}</b><span>{n.apiPlatformSub}</span></span>
             </a>
+            <a className="mega-item" href={L("/docs")} aria-current={path.startsWith("/docs") ? "page" : undefined}>
+              <span className="ic"><Icon name="paper" size={22} stroke={1.4} /></span>
+              <span><b>{n.docs}</b><span>{n.docsSub}</span></span>
+            </a>
+            <a className="mega-item" href={L("/account/keys")} aria-current={path.startsWith("/account") ? "page" : undefined}>
+              <span className="ic"><Icon name="licence" size={22} stroke={1.4} /></span>
+              <span><b>{n.apiKeys}</b><span>{n.apiKeysSub}</span></span>
+            </a>
             {/* The SDK page is not built yet: shown, not linked. */}
             <div className="mega-item soon" aria-disabled="true">
               <span className="ic"><Icon name="download" size={22} stroke={1.4} /></span>
@@ -181,6 +189,8 @@ export function Header({ lang, c, programmes }: Props) {
             ) : (
               <nav className="sheet-main" aria-label={n.developers}>
                 <a href={L("/api")}>{n.apiPlatform}</a>
+                <a href={L("/docs")}>{n.docs}</a>
+                <a href={L("/account/keys")}>{n.apiKeys}</a>
                 <span className="soon" aria-disabled="true">{n.sdks}<em>{n.soon}</em></span>
               </nav>
             )}
