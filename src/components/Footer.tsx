@@ -1,7 +1,5 @@
 import { LangSwitch } from "./Header";
 import { Logo } from "./Logo";
-import { models } from "@/content/site";
-import { getProgrammes } from "@/content";
 import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 
@@ -14,26 +12,49 @@ const PARTNER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner
 
 type Link = { label: string; href?: string; soon?: string; external?: boolean };
 
-/* After labs.google's footer: a band of soft colour across the top (here the voice orbs' colours) under the
-   main links and the ways to reach us; a few labelled rows, one per part of the Lab, in the bar's order; the
-   Lab's name set across the whole width; and the parent company's row in small capitals, as Google's is. */
+/* Four voices, each a line in one of the voice orbs' colours, weaving across the top of the footer. Every
+   wavelength divides the period (1440), so a strip two periods long can slide by one period and loop. */
+const PERIOD = 1440, HEIGHT = 120;
+const VOICES: { colour: string; parts: [number, number, number][]; y: number; dur: number }[] = [
+  { colour: "#f0884f", parts: [[16, 2, 0.3], [7, 5, 1.9]], y: 58, dur: 38 },
+  { colour: "#ec6b80", parts: [[14, 3, 2.1], [6, 4, 0.4]], y: 62, dur: 46 },
+  { colour: "#ffbe48", parts: [[12, 2, 4.0], [8, 6, 2.6]], y: 60, dur: 54 },
+  { colour: "#7c9bd2", parts: [[18, 3, 5.2], [5, 8, 1.1]], y: 64, dur: 42 },
+];
+const voicePath = (v: (typeof VOICES)[number]) => {
+  let d = "";
+  for (let x = 0; x <= PERIOD * 2; x += 12) {
+    const y = v.y + v.parts.reduce((sum, [amp, k, ph]) => sum + amp * Math.sin((2 * Math.PI * k * x) / PERIOD + ph), 0);
+    d += `${x ? "L" : "M"}${x} ${y.toFixed(1)}`;
+  }
+  return d;
+};
+
+/* After labs.google's footer, in Namu's own terms: four voices weaving across the top in the orbs' colours;
+   one row of where to go (the bar's sections) with the ways to reach us; one row of what to do (Get started);
+   the Lab's name set across the whole width; and the parent company's row in small capitals. */
 export function Footer({ lang }: { lang: Lang }) {
   const c = copy[lang], f = c.footer, n = c.nav;
   const L = (p: string) => lp(lang, p);
+  /* where to go, in the bar's order (Organisations has no page yet, so About and Careers take its place) */
   const top: Link[] = [
-    { label: f.about, href: L("/about") }, { label: f.research, href: L("/research") }, { label: f.models, href: L("/#models") },
-    { label: n.developers, href: L("/api") }, { label: f.contact, href: CONTACT },
+    { label: f.research, href: L("/research") }, { label: f.models, href: L("/#models") }, { label: n.developers, href: L("/api") },
+    { label: f.data, href: L("/data") }, { label: f.about, href: L("/about") }, { label: f.careers, href: L("/about#careers") },
   ];
-  const rows: { title: string; links: Link[] }[] = [
-    { title: f.research, links: [...getProgrammes(lang).map(p => ({ label: p.name, href: L(`/programmes/${p.slug}`) })), { label: f.news, href: L("/research#latest") }] },
-    { title: f.models, links: models.map(m => ({ label: m.name, href: L(m.href) })) },
-    { title: n.developers, links: [{ label: n.apiPlatform, href: L("/api") }, { label: n.docs, href: L("/docs") }, { label: n.apiKeys, href: L("/account/keys") }, { label: n.sdks, soon: n.soon }, { label: f.github, href: GITHUB, external: true }] },
-    { title: f.lab, links: [{ label: f.partner, href: PARTNER }, { label: f.data, href: L("/data") }, { label: f.careers, href: L("/about#careers") }] },
+  /* what to do: the same two ways in as the Get started band above, organisations first */
+  const start: Link[] = [
+    { label: f.partner, href: PARTNER }, { label: n.apiPlatform, href: L("/api") }, { label: n.docs, href: L("/docs") },
+    { label: n.apiKeys, href: L("/account/keys") }, { label: n.sdks, soon: n.soon },
   ];
-  const ha = (s: string) => (/[ɗʼ]/.test(s) ? "ha" : undefined);
   return (
     <footer className="ftr">
-      <div className="ftr-band" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><i className="b4" /><i className="b5" /></div>
+      <div className="ftr-voices" aria-hidden="true">
+        {VOICES.map(v => (
+          <svg key={v.colour} viewBox={`0 0 ${PERIOD * 2} ${HEIGHT}`} preserveAspectRatio="none" style={{ animationDuration: `${v.dur}s` }}>
+            <path d={voicePath(v)} stroke={v.colour} />
+          </svg>
+        ))}
+      </div>
       <div className="wrap">
         <div className="ftr-top">
           <a className="ftr-brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" id="lg-ftr" /></a>
@@ -43,26 +64,18 @@ export function Footer({ lang }: { lang: Lang }) {
             <a href={CONTACT} aria-label={f.contact}><Mail /></a>
           </div>
         </div>
-        <div className="ftr-rows">
-          {rows.map(r => (
-            <div key={r.title} className="ftr-row">
-              <h2>{r.title}</h2>
-              <ul>{r.links.map(l => (
-                <li key={l.label}>
-                  {l.href
-                    ? <a href={l.href} lang={ha(l.label)} {...(l.external ? { target: "_blank", rel: "noopener" } : {})}>{l.label}{l.external && <span aria-hidden="true"> ↗</span>}</a>
-                    : <span className="off">{l.label}<em>{l.soon}</em></span>}
-                </li>
-              ))}</ul>
-            </div>
-          ))}
+        <div className="ftr-row">
+          <h2>{f.start}</h2>
+          <ul>{start.map(l => (
+            <li key={l.label}>{l.href ? <a href={l.href}>{l.label}</a> : <span className="off">{l.label}<em>{l.soon}</em></span>}</li>
+          ))}</ul>
         </div>
       </div>
       <p className="ftr-word" aria-hidden="true">namu ai lab</p>
       <div className="wrap">
         <div className="ftr-base">
           <a className="parent" href="https://www.namu-ai.org" aria-label="Namu"><Logo className="mark" id="lg-ftr-base" /></a>
-          <nav aria-label="Namu">
+          <nav className="ftr-legal" aria-label="Namu">
             <a href="https://www.namu-ai.org">{f.aboutNamu}</a>
             <a href="https://www.namu-ai.org/privacy">{f.privacy}</a>
             <a href="https://www.namu-ai.org/terms">{f.terms}</a>

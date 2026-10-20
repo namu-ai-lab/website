@@ -327,14 +327,16 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
    links; labelled rows, one per part of the Lab; the Lab's name across the whole width; the parent company's
    row in small capitals. Warm off-white, like the console panel. */
 .ftr { position: relative; isolation: isolate; overflow: hidden; background: #f5f2ee; color: var(--ink); }
-.ftr-band { position: absolute; inset: 0 0 auto; z-index: -1; height: 132px; overflow: hidden; pointer-events: none; }
-.ftr-band i { position: absolute; top: -40px; height: 168px; border-radius: 0 0 90px 90px; filter: blur(14px); opacity: .9; }
-.ftr-band .b1 { left: 1%; width: 22%; background: #f0884f; }
-.ftr-band .b2 { left: 22%; width: 20%; background: #f5a3bb; }
-.ftr-band .b3 { left: 47%; width: 15%; background: #ffbe48; }
-.ftr-band .b4 { left: 63%; width: 13%; background: #c29be0; opacity: .75; }
-.ftr-band .b5 { left: 78%; width: 21%; background: #7c9bd2; }
-.ftr-top { display: flex; align-items: center; gap: 24px; height: 132px; border-bottom: 1px solid var(--ink); }
+/* four voices weaving across the top, in the voice orbs' colours; each strip is two periods long and slides by
+   one, so the lines drift without a seam */
+.ftr-voices { position: relative; height: 120px; overflow: hidden; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.ftr-voices svg { position: absolute; inset: 0 auto 0 0; width: 200%; height: 100%; animation: voice-drift 40s linear infinite; }
+.ftr-voices svg:nth-child(2n) { animation-direction: reverse; }
+.ftr-voices path { fill: none; stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .9; }
+@keyframes voice-drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ftr-voices svg { animation: none; } }
+.ftr-top { display: flex; align-items: center; gap: 24px; padding-block: 8px 30px; border-bottom: 1px solid var(--ink); }
 .ftr-brand { flex: none; color: var(--ink); }
 .ftr-brand .mark { display: block; height: 40px; width: auto; }
 .ftr-nav { display: flex; flex-wrap: wrap; gap: 6px 30px; margin: 0 auto; }
@@ -345,9 +347,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   transition: background-color .25s var(--ease); }
 .ftr-social a:hover { background: #fff; }
 .ftr-social svg { width: 19px; height: 19px; }
-.ftr-rows { padding-block: 28px 12px; }
-.ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 18px; }
-.ftr-row + .ftr-row { border-top: 1px solid var(--line-2); }
+.ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 30px 6px; }
 .ftr-row h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 500; letter-spacing: -.01em; }
 .ftr-row ul { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 34px; margin: 0; padding: 0; list-style: none; }
 .ftr-row a, .ftr-row .off { color: var(--ink-3); font-size: 17px; letter-spacing: -.01em; text-decoration: none; transition: color .2s var(--ease); }
@@ -361,19 +361,19 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   font: 500 13px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; }
 .ftr-base .parent { color: var(--ink); text-transform: none; letter-spacing: normal; }   /* the logo keeps its own lettering */
 .ftr-base .mark { display: block; height: 30px; width: auto; }
-.ftr-base nav { display: flex; gap: 12px 40px; flex-wrap: wrap; margin-inline: auto; }
-.ftr-base nav a { color: var(--ink); text-decoration: none; }
-.ftr-base nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.ftr-legal { display: flex; gap: 12px 40px; flex-wrap: wrap; margin-inline: auto; }
+.ftr-legal a { color: var(--ink); text-decoration: none; }
+.ftr-legal a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .ftr .lang-switch { flex: none; margin-left: 0; font-family: var(--sans); letter-spacing: 0; text-transform: none; background: rgba(21, 18, 15, .06); }
 .ftr-base small { color: var(--ink-3); font-size: 12px; }
 @media (max-width: 960px) {
-  .ftr-band { height: 172px; } .ftr-band i { height: 208px; }
-  .ftr-top { flex-wrap: wrap; height: auto; padding-block: 26px 22px; row-gap: 18px; }
+  .ftr-voices { height: 96px; }
+  .ftr-top { flex-wrap: wrap; padding-block: 4px 22px; row-gap: 18px; }
   .ftr-nav { order: 3; flex: 1 0 100%; margin: 0; gap: 8px 22px; }
   .ftr-social { margin-left: auto; }
   .ftr-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .ftr-row ul { justify-content: flex-start; gap: 8px 22px; }
-  .ftr-base nav { margin-inline: 0; flex: 1 0 100%; order: 2; }
+  .ftr-legal { margin-inline: 0; flex: 1 0 100%; order: 2; }
   .ftr .lang-switch { order: 1; margin-left: auto; }
   .ftr-base small { order: 3; }
 }
@@ -381,7 +381,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .ftr-nav a { font-size: 17px; }
   .ftr-row a, .ftr-row .off { font-size: 15.5px; }
   .ftr-base { gap: 18px 24px; font-size: 12px; }
-  .ftr-base nav { gap: 14px 24px; }
+  .ftr-legal { gap: 14px 24px; }
 }
 
 /* ---- reveal on scroll (content is visible without JS) ---- */
