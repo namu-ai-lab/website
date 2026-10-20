@@ -322,6 +322,82 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .gs-btn:hover svg { transform: translate(2px, -2px); }
 @media (max-width: 860px) { .gs { margin-top: 88px; padding: 64px 0 80px; } .gs-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; } .gs-card { min-height: 0; padding: 26px 24px; } .gs-card ul { margin-bottom: 32px; } }
 
+/* ---- use cases (src/components/UseCases.tsx), after openai.com's: a centred head with two ways in, then six cards,
+   each a picture with its icon, a title and a sentence, and a button that opens what the use case sounds like */
+.uc-head { display: grid; justify-items: center; gap: 14px; margin-bottom: 44px; text-align: center; }
+.uc-head .h2 { margin: 0; }
+.uc-head > p { margin: 0; max-width: 34em; color: var(--ink-2); font-size: 19px; line-height: 1.45; }
+.uc-ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
+.uc-btn { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 20px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: 15.5px;
+  text-decoration: none; transition: background-color .25s var(--ease), color .25s var(--ease); }
+.uc-btn.light { background: #f5f2ee; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .1); }
+.uc-btn:hover { background: var(--sahel); color: #1c1410; }
+.uc-btn svg { transition: transform .3s var(--ease); }
+.uc-btn:hover svg { transform: translate(2px, -2px); }
+.uc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.uc-card { display: flex; flex-direction: column; padding: 8px; border-radius: 24px; background: #f5f2ee; }
+.uc-pic { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 17px; background: #ece4d6; }
+.uc-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease); }
+.uc-card:hover .uc-pic img { transform: scale(1.04); }
+/* until a photograph is chosen, a soft haze in Namu's colours, one per case */
+.uc-haze { position: absolute; inset: 0; background: var(--haze); }
+.uc-haze::after { content: ""; position: absolute; inset: 0; opacity: .22; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E"); }
+.uc-card[data-case="education"] { --haze: radial-gradient(120% 90% at 18% 20%, #fff3e3 0, transparent 55%), radial-gradient(90% 80% at 85% 85%, #e8935a 0, transparent 60%), linear-gradient(135deg, #f7e6cf, #f2c79f); }
+.uc-card[data-case="health"] { --haze: radial-gradient(110% 90% at 80% 15%, #fff7ee 0, transparent 55%), radial-gradient(100% 90% at 15% 90%, #ec9b8a 0, transparent 60%), linear-gradient(160deg, #f6dccd, #e9b39b); }
+.uc-card[data-case="translation"] { --haze: radial-gradient(100% 90% at 25% 25%, #f7f0e3 0, transparent 55%), radial-gradient(90% 90% at 80% 75%, #a8b6cf 0, transparent 60%), linear-gradient(135deg, #e9e2d6, #c9c8d0); }
+.uc-card[data-case="farming"] { --haze: radial-gradient(110% 80% at 50% 0, #fff2d6 0, transparent 50%), radial-gradient(100% 90% at 20% 95%, #c98a3f 0, transparent 60%), linear-gradient(170deg, #f3dfb3, #d9a85d); }
+.uc-card[data-case="public"] { --haze: radial-gradient(110% 90% at 75% 20%, #f7f0e3 0, transparent 55%), radial-gradient(100% 90% at 20% 85%, #b98c6a 0, transparent 60%), linear-gradient(150deg, #ecdcc6, #c9a184); }
+.uc-card[data-case="heritage"] { --haze: radial-gradient(100% 90% at 30% 25%, #e8935a 0, transparent 55%), radial-gradient(110% 90% at 80% 85%, #6b3e1e 0, transparent 60%), linear-gradient(140deg, #8a5a3a, #3a2214); }
+.uc-tile { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: #fff; color: var(--ink);
+  transform: translate(-50%, -50%); box-shadow: 0 6px 18px -8px rgba(28, 20, 16, .35); transition: transform .5s var(--ease); }
+.uc-card:hover .uc-tile { transform: translate(-50%, -50%) scale(1.05); }
+.uc-pic img ~ .uc-tile { left: 14px; top: 14px; width: 46px; height: 46px; border-radius: 13px; transform: none; }
+.uc-pic img ~ .uc-tile svg { width: 21px; height: 21px; }
+.uc-card:hover .uc-pic img ~ .uc-tile { transform: none; }
+.uc-credit { position: absolute; right: 10px; bottom: 8px; max-width: 70%; color: rgba(255, 255, 255, .86); font-size: 10.5px; line-height: 1.3; text-align: right; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
+.uc-body { padding: 18px 14px 4px; }
+.uc-body h3 { margin: 0 0 8px; color: var(--ink); font-size: 22px; font-weight: 500; letter-spacing: -.015em; }
+.uc-body p { margin: 0; color: var(--ink-2); font-size: 15.5px; line-height: 1.5; }
+.uc-more { display: grid; gap: 10px; margin: 14px 14px 0; padding-top: 14px; border-top: 1px solid rgba(21, 18, 15, .1); animation: uc-open .45s var(--ease) both; }
+.uc-more[hidden] { display: none; }
+@keyframes uc-open { from { opacity: 0; transform: translateY(-6px); } }
+.uc-play { display: flex; align-items: center; gap: 12px; width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 14px; background: #fff; color: var(--ink); cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(21, 18, 15, .06); }
+.uc-play:hover { box-shadow: 0 0 0 1px rgba(21, 18, 15, .16); }
+.uc-bars { display: flex; flex: 1; align-items: center; justify-content: space-between; height: 24px; }
+.uc-bars i { width: 3px; border-radius: 2px; background: var(--ink); opacity: .32; transform-origin: center; }
+.uc-play.on .uc-bars i { opacity: .85; animation: uc-bar .9s ease-in-out infinite alternate; }
+.uc-play.on .uc-bars i:nth-child(3n) { animation-delay: -.3s; } .uc-play.on .uc-bars i:nth-child(3n+1) { animation-delay: -.6s; }
+@keyframes uc-bar { to { transform: scaleY(.4); } }
+.uc-line { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; margin: 0; align-items: baseline; }
+.uc-by { color: var(--ink-3); font-size: 12px; letter-spacing: .02em; }
+.uc-line q { quotes: none; color: var(--ink); font-size: 17px; line-height: 1.4; transition: color .3s var(--ease); }
+.uc-line.now q { color: #b4552a; }
+.uc-heard samp { color: var(--ink-2); font: 400 14px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+.uc-gloss { margin: 0 0 0 74px; color: var(--ink-2); font-size: 14.5px; line-height: 1.45; }
+.uc-note { margin: 2px 0 0; color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+.uc-models { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; color: var(--ink-3); font-size: 13px; }
+.uc-models span { margin-right: 4px; }
+.uc-models em { padding: 3px 10px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .07); color: var(--ink); font-style: normal; }
+.uc-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; margin: 16px 8px 8px; border: 0; border-radius: var(--r-pill); background: rgba(21, 18, 15, .07);
+  color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; transition: background-color .25s var(--ease); }
+.uc-toggle:hover { background: rgba(21, 18, 15, .12); }
+.uc-toggle svg { transition: transform .35s var(--ease); }
+.uc-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+@media (max-width: 1000px) { .uc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* phones: the cards run in a row that scrolls sideways, one and a bit in view */
+@media (max-width: 640px) {
+  .uc-head { margin-bottom: 28px; }
+  .uc-head > p { font-size: 17px; }
+  .uc-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); }
+  .uc-grid::-webkit-scrollbar { display: none; }
+  .uc-card { scroll-snap-align: start; }
+  .uc-body h3 { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .uc-more, .uc-play.on .uc-bars i { animation: none; } .uc-card:hover .uc-pic img { transform: none; } }
+
 /* ---- footer ---- */
 /* Footer, after labs.google's: Namu's shapes in a pile on the top line, the Get started row under it, the Lab's
    name across the whole width, the parent company's row in small capitals. Warm off-white, like the console panel.

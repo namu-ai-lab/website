@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HeroRing } from "@/components/Art";
 import { Playground } from "@/components/Playground";
+import { UseCases } from "@/components/UseCases";
 import { playground } from "@/content/playground";
 import { Icon } from "@/components/Icon";
 import { Explorer, Rail, Reveal } from "@/components/Interactive";
@@ -124,6 +125,8 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           />
         </div>
       </section>
+
+      <UseCases lang={lang} />
 
       {/* Get started, after openai.com/api's: organisations partner with Namu to deploy in their programmes; developers go to the API platform */}
       <section className="gs" aria-labelledby="h-start">
