@@ -4,76 +4,73 @@
    follows: the shapes' size for the width of the screen, the box's proportions, the engine's 180 steps a second, the
    bodies' friction and bounce, the soft drag, the hop when the cursor touches a shape, the shove when the page is
    scrolled or the window moved, and the fade in. Like labs.google's, the shapes are flat and still until someone
-   touches them. Each is a thing the Lab is named after. Three of its research programmes follow grain through a
-   Sahel household, the way the Lab treats speech: the granary that keeps it (Rumbu), the sieve that sifts it
-   (Tankaɗe), the bowl that measures it (Maʼauni). Hira, conversation, is a greeting and its answer, "sannu" and
-   "yauwa". Aïr is the massif it is named after, Kora the calabash harp, and the Blossom is the logo. As on
+   touches them, and in Namu's own colours. They are the Lab's own: a greeting in each of the four languages it works
+   in (Hausa sannu, Zarma fofo, Fulfulde jam, and Tamasheq alxer written in Tifinagh), the granary and the measuring
+   bowl that two of its research programmes are named after (Rumbu, Maʼauni), the Aïr massif its voice agent is
+   named after, and the Blossom of the logo. As on
    labs.google the box is open at the top, so a shape lifted above the line stays in sight, and walls at the sides
    and a ceiling high above keep every shape on the page. */
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type * as MatterNS from "matter-js";
 
-type Kind = "ask" | "answer" | "granary" | "sieve" | "bowl" | "massif" | "kora" | "blossom";
-/* w and h in units of S, the size of one shape (labs.google's 280 px, scaled for the screen's width) */
-type Def = { kind: Kind; w: number; h: number; fill: string; phone?: boolean };
+type Kind = "greet" | "granary" | "bowl" | "massif" | "blossom";
+/* w and h in units of S, the size of one shape (labs.google's 280 px, scaled for the screen's width); a greeting has its
+   word, its language and the side its tail points to */
+type Def = { kind: Kind; w: number; h: number; fill: string; ink?: string; word?: string; lang?: string; tail?: "left" | "right"; phone?: boolean };
+const greet = (word: string, lang: string, fill: string, ink: string, tail: "left" | "right"): Def => ({ kind: "greet", w: 1.12, h: 0.94, fill, ink, word, lang, tail, phone: true });
 
-const INK = "#2b2622", SAHEL = "#e8935a", STRAW = "#ffbe48";
+/* Tamasheq "alxer" in Tifinagh (ⴰⵍⵅⴻⵔ, Unicode's letters), as one outline cut from Noto Sans Tifinagh (SIL Open Font
+   Licence), so it reads the same on every device whether or not a Tifinagh font is installed */
+const TIFINAGH = { d: "M242 10C354 10 434 -60 434 -181C434 -302 354 -373 242 -373C130 -373 50 -302 50 -181C50 -60 130 10 242 10ZM242 -68C176 -68 139 -112 139 -181C139 -250 173 -295 242 -295C309 -295 345 -250 345 -181C345 -112 309 -68 242 -68ZM581 0H670V-131L804 -344C832 -389 851 -422 866 -463L871 -461C865 -425 864 -377 864 -310V0H953V-714H864V-584L728 -369C702 -328 685 -298 668 -252L663 -254C669 -290 670 -338 670 -405V-714H581ZM1084 0H1174L1278 -155C1313 -207 1354 -263 1364 -299H1369C1380 -264 1423 -199 1452 -155L1555 0H1657V-8L1420 -365L1650 -706V-714H1560L1490 -610C1457 -562 1430 -525 1404 -458L1399 -460C1412 -541 1411 -575 1411 -639V-714H1326V-639C1326 -575 1327 -539 1345 -460L1340 -458C1313 -523 1292 -559 1259 -608L1188 -714H1086V-706L1319 -357L1084 -8ZM1969 -460C2069 -460 2125 -512 2125 -592C2125 -673 2069 -725 1969 -725C1869 -725 1813 -673 1813 -592C1813 -512 1869 -460 1969 -460ZM1969 -534C1922 -534 1900 -557 1900 -592C1900 -627 1922 -650 1969 -650C2016 -650 2038 -627 2038 -592C2038 -557 2016 -534 1969 -534ZM1739 -318H2199V-397H1739ZM1969 10C2069 10 2125 -42 2125 -122C2125 -203 2069 -255 1969 -255C1869 -255 1813 -203 1813 -122C1813 -42 1869 10 1969 10ZM1969 -64C1923 -64 1900 -87 1900 -122C1900 -157 1922 -180 1969 -180C2016 -180 2038 -157 2038 -122C2038 -87 2016 -64 1969 -64ZM2638 10C2844 10 2968 -137 2968 -357C2968 -577 2842 -725 2638 -725C2434 -725 2309 -577 2309 -357C2309 -137 2432 10 2638 10ZM2638 -72C2485 -72 2404 -177 2404 -357C2404 -537 2484 -643 2638 -643C2792 -643 2873 -537 2873 -357C2873 -177 2791 -72 2638 -72Z", x: 15.663, y: 46.556, s: 0.026731 };
+
+/* Namu's palette: ink, kola, dry clay, muted, paper, and the Sahel orange for heat */
+const INK = "#1c1410", KOLA = "#6b3e1e", CLAY = "#edd9b0", CLAY_DEEP = "#4a2a12", MUTED = "#7a6352", PAPER = "#fffaf1", SAHEL = "#e8935a";
 
 /* Wider screens get all eight; up to 1024 px, as on labs.google, five (`phone`). */
+/* greetings in the four languages (to be checked by native speakers): Hausa and Zarma "hello", Fulfulde and
+   Tamasheq "peace", which is how a greeting opens and answers in both */
 const SHAPES: Def[] = [
-  { kind: "ask", w: 1.12, h: 0.94, fill: "#7c9bd2", phone: true },
-  { kind: "granary", w: 0.96, h: 1, fill: "#c8643b", phone: true },
-  { kind: "sieve", w: 0.9, h: 0.9, fill: "#c29be0" },
-  { kind: "massif", w: 1.2, h: 0.8, fill: "#2e3f6b" },
+  greet("sannu", "ha", SAHEL, INK, "left"),
+  { kind: "granary", w: 1, h: 0.86, fill: MUTED },
+  greet("fofo", "dje", CLAY, KOLA, "right"),
+  { kind: "massif", w: 1.2, h: 0.8, fill: CLAY_DEEP },
   { kind: "blossom", w: 0.94, h: 0.94, fill: INK, phone: true },
-  { kind: "kora", w: 0.7, h: 1, fill: STRAW, phone: true },
-  { kind: "bowl", w: 1, h: 0.6, fill: "#f0884f" },
-  { kind: "answer", w: 1.12, h: 0.94, fill: "#f5a3bb", phone: true },
+  greet("jam", "ff", KOLA, PAPER, "left"),
+  { kind: "bowl", w: 1, h: 0.6, fill: SAHEL },
+  greet("alxer", "taq", INK, PAPER, "right"),
 ];
 
 /* outlines in viewBox units (100 to S); the physics holds these exact edges */
 const OUTLINE = {
-  ask: "M22 0H90Q112 0 112 22V52Q112 74 90 74H46L21 94L25 74H22Q0 74 0 52V22Q0 0 22 0Z",
-  answer: "M90 0H22Q0 0 0 22V52Q0 74 22 74H66L91 94L87 74H90Q112 74 112 52V22Q112 0 90 0Z",
+  left: "M22 0H90Q112 0 112 22V52Q112 74 90 74H46L21 94L25 74H22Q0 74 0 52V22Q0 0 22 0Z",
+  right: "M90 0H22Q0 0 0 22V52Q0 74 22 74H66L91 94L87 74H90Q112 74 112 52V22Q112 0 90 0Z",
   /* a round clay granary under a thatched cone, as across the Sahel */
-  granary: "M44.5 3Q48 0 51.5 3L93 43Q96 47 91 47H84V82Q84 98 66 98H30Q12 98 12 82V47H5Q0 47 3 43Z",
+  granary: "M46.5 3Q50 0 53.5 3L97 37Q100 41 95 41H88V72Q88 84 76 84H24Q12 84 12 72V41H5Q0 41 3 37Z",
   /* a grain-measuring bowl, its rim on top */
   bowl: "M0 4Q0 0 4 0H96Q100 0 100 4V8Q98 8 96 10Q86 60 50 60Q14 60 4 10Q2 8 0 8Z",
   /* the Aïr: two worn granite domes */
   massif: "M0 80L34 12Q40 2 46 12L60 36L74 20Q80 12 86 20L120 80Z",
-  /* the kora: a long neck through a calabash */
-  kora: "M31 4Q31 0 35 0Q39 0 39 4V36.25A32 32 0 1 1 31 36.25Z",
 } as const;
 
 function art(s: Def): ReactNode {
   const W = s.w * 100, H = s.h * 100, vb = `0 0 ${W} ${H}`;
   switch (s.kind) {
-    case "ask": case "answer":    /* Hira: a greeting and its answer */
-      return <svg viewBox={vb}><path className="hit" d={OUTLINE[s.kind]} fill={s.fill} />
-        <text x={56} y={38} lang="ha" textAnchor="middle" dominantBaseline="central" fontSize={27} fontWeight={600} letterSpacing={-0.6} fill={INK}>{s.kind === "ask" ? "sannu" : "yauwa"}</text></svg>;
+    case "greet":                 /* a greeting, and the language it is in */
+      return <svg viewBox={vb}><path className="hit" d={OUTLINE[s.tail!]} fill={s.fill} />
+        {s.lang === "taq"
+          ? <path d={TIFINAGH.d} fill={s.ink} transform={`translate(${TIFINAGH.x} ${TIFINAGH.y}) scale(${TIFINAGH.s})`} />
+          : <text x={56} y={38} lang={s.lang} textAnchor="middle" dominantBaseline="central" fontSize={27} fontWeight={600} letterSpacing={-0.6} fill={s.ink}>{s.word}</text>}</svg>;
     case "granary":               /* Rumbu: clay below, the thatch and its bands above */
       return <svg viewBox={vb}><path className="hit" d={OUTLINE.granary} fill={s.fill} />
-        <path d="M44.5 3Q48 0 51.5 3L93 43Q96 47 91 47H5Q0 47 3 43Z" fill={STRAW} />
-        <path d="M27 24H69M15 35H81" stroke={INK} strokeWidth={2.6} strokeLinecap="round" opacity={0.5} />
-        <path d="M12 66H84" stroke={INK} strokeWidth={2.6} opacity={0.3} /></svg>;
-    case "sieve":                 /* Tankaɗe: a woven tray for sifting */
-      return <svg viewBox={vb}><defs><clipPath id="ftr-sieve"><circle cx={45} cy={45} r={34} /></clipPath></defs>
-        <circle className="hit" cx={45} cy={45} r={45} fill={s.fill} />
-        <g clipPath="url(#ftr-sieve)" stroke={INK} strokeWidth={1.8} opacity={0.5}>
-          {Array.from({ length: 13 }, (_, k) => { const o = -36 + k * 12; return <g key={k}><path d={`M${o} 0L${o + 90} 90`} /><path d={`M${o + 90} 0L${o} 90`} /></g>; })}
-        </g>
-        <circle cx={45} cy={45} r={34} fill="none" stroke={INK} strokeWidth={2.4} opacity={0.6} /></svg>;
+        <path d="M46.5 3Q50 0 53.5 3L97 37Q100 41 95 41H5Q0 41 3 37Z" fill={CLAY} />
+        <path d="M30 19H70M17 30H83" stroke={INK} strokeWidth={2.6} strokeLinecap="round" opacity={0.45} />
+        <path d="M12 60H88" stroke={INK} strokeWidth={2.6} opacity={0.3} /></svg>;
     case "bowl":                  /* Maʼauni: a bowl that measures, marked on its side */
       return <svg viewBox={vb}><path className="hit" d={OUTLINE.bowl} fill={s.fill} />
-        <path d="M0 4Q0 0 4 0H96Q100 0 100 4V8H0Z" fill="#c8643b" />
+        <path d="M0 4Q0 0 4 0H96Q100 0 100 4V8H0Z" fill={KOLA} />
         <path d="M70 22H80M72 32H80M75 42H80" stroke={INK} strokeWidth={2.6} strokeLinecap="round" opacity={0.6} /></svg>;
     case "massif":                /* Aïr */
       return <svg viewBox={vb}><path className="hit" d={OUTLINE.massif} fill={s.fill} /></svg>;
-    case "kora":                  /* Kora: the calabash, its skin, its strings */
-      return <svg viewBox={vb}><path className="hit" d={OUTLINE.kora} fill={INK} />
-        <circle cx={35} cy={68} r={27} fill={s.fill} />
-        <path d="M33 6L28 78M35 6V80M37 6L42 78" stroke={INK} strokeWidth={1.3} opacity={0.8} />
-        <rect x={31} y={72} width={8} height={11} rx={2} fill={INK} /></svg>;
     case "blossom":               /* the logo's open three-quarter ring, ending in the Sahel dot */
       return <svg viewBox="0 0 100 100"><circle className="hit" cx={50} cy={50} r={50} fill="none" /><path d="M87 50A37 37 0 1 0 50 87" fill="none" stroke={s.fill} strokeWidth={20} strokeLinecap="round" /><circle cx={50} cy={87} r={13} fill={SAHEL} /></svg>;
   }
@@ -136,8 +133,8 @@ export function FooterShapes() {
       /* each body, and where the middle of its picture sits relative to the body's centre of mass */
       const body = (i: number, x: number, y: number): [MatterNS.Body, MatterNS.Vector] => {
         const s = SHAPES[i], [w, h] = size[i];
-        if (s.kind === "blossom" || s.kind === "sieve") return [Bodies.circle(x, y, w / 2, { ...BODY }), { x: 0, y: 0 }];
-        const pts = sample(OUTLINE[s.kind], w / (s.w * 100)), c = Vertices.centre(pts);
+        if (s.kind === "blossom") return [Bodies.circle(x, y, w / 2, { ...BODY }), { x: 0, y: 0 }];
+        const pts = sample(OUTLINE[s.kind === "greet" ? s.tail! : s.kind], w / (s.w * 100)), c = Vertices.centre(pts);
         return [Bodies.fromVertices(x, y, [pts], { ...BODY }, true), { x: w / 2 - c.x, y: h / 2 - c.y }];
       };
 

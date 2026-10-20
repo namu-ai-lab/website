@@ -343,7 +343,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .ftr-shape .hit { pointer-events: visiblePainted; cursor: grab; }
 .ftr-shape.is-blossom .hit { pointer-events: fill; }               /* the whole disc, ring and middle, takes the hand */
-.ftr-shape.is-kora .hit { pointer-events: fill; }
 .ftr-pile.is-dragging, .ftr-pile.is-dragging * { cursor: grabbing !important; }
 @media (prefers-reduced-motion: reduce) { .ftr-pile.on .ftr-shape.in .ftr-in { animation: none; } }
 .ftr-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: baseline; padding-block: 52px 6px; }
@@ -356,12 +355,17 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-row a.ftr-api { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
 .ftr-row a.ftr-api svg { width: 14px; height: 14px; transition: transform .3s var(--ease); }
 .ftr-row a.ftr-api:hover svg { transform: translate(2px, -2px); }
-.ftr-row ul.ftr-social { gap: 10px; }
-.ftr-social a { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .24);
-  transition: background-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
-.ftr-social a:hover, .ftr-social a:focus-visible { background: var(--ink); color: #f5f2ee; box-shadow: inset 0 0 0 1px var(--ink); }
-.ftr-social svg { width: 18px; height: 18px; }
 .ftr-row .off em { margin-left: 8px; padding: 2px 8px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .06); color: var(--ink-2); font-size: 12px; font-style: normal; vertical-align: 2px; }
+/* the Lab's name speaks: a dark speech bubble off the end of it, tipped a little, holds where to follow the Lab */
+.ftr-sign { position: relative; margin-top: 112px; max-width: calc(var(--page) + 2 * var(--gutter)); margin-inline: auto; }
+.ftr-say { position: absolute; z-index: 1; right: var(--gutter); bottom: calc(100% + 18px); display: flex; gap: 4px; padding: 7px; border-radius: 30px; background: #1c1410;
+  transform: rotate(-4deg); transform-origin: 85% 100%; box-shadow: 0 12px 30px -16px rgba(28, 20, 16, .6); }
+.ftr-say::after { content: ""; position: absolute; right: 30px; top: calc(100% - 2px); width: 18px; height: 16px; background: #1c1410; clip-path: polygon(0 0, 100% 0, 78% 100%); }
+.ftr-say a { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fffaf1; transition: background-color .25s var(--ease), color .25s var(--ease); }
+.ftr-say a:hover, .ftr-say a:focus-visible { background: var(--sahel); color: #1c1410; }
+.ftr-say a:focus-visible { outline: 2px solid #fffaf1; outline-offset: -4px; }
+.ftr-say svg { width: 18px; height: 18px; }
+@media (max-width: 520px) { .ftr-sign { margin-top: 96px; } .ftr-say { gap: 2px; padding: 5px; bottom: calc(100% + 14px); } .ftr-say a { width: 38px; height: 38px; } .ftr-say::after { right: 22px; } }
 /* the Lab's name across the width, as "Google Labs" is: one line, sized to the page */
 .ftr-word { margin: 0; padding: 0 var(--gutter); max-width: var(--page); margin-inline: auto; box-sizing: content-box; color: #2b2622; font-size: min(calc((100vw - 2 * var(--gutter)) / 4.26), 304px); font-weight: 500;
   line-height: .9; letter-spacing: -.055em; white-space: nowrap; text-align: center; user-select: none; }
