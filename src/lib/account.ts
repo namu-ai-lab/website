@@ -8,8 +8,9 @@ export type Profile = {
   use_case: string | null; monthly_audio_seconds: number; created_at: string;
 };
 
+/* Users live in Neon Auth's own schema (neon_auth."user", uuid ids); profiles keep the id as text. */
 const PROFILE = `select p.user_id, u.email, u.name, p.beta_status, p.role, p.use_case, p.monthly_audio_seconds, p.created_at
-  from public.profiles p join public."user" u on u.id = p.user_id`;
+  from public.profiles p join neon_auth."user" u on u.id::text = p.user_id`;
 
 /** A user's profile, created as pending if the sign-up trigger has not run (e.g. users from before the migration). */
 export async function profileOf(userId: string): Promise<Profile> {
@@ -19,6 +20,9 @@ export async function profileOf(userId: string): Promise<Profile> {
 }
 
 export const allProfiles = () => sql<Profile>(`${PROFILE} order by p.created_at desc limit 500`);
+
+/** Where to go after signing in: a path on this site only, never another origin; the console by default. */
+export const nextPath = (lang: Lang, raw?: string) => (raw && /^\/(?!\/)[\w\-/]*$/.test(raw) ? raw : lp(lang, "/account"));
 
 /* Every account page starts here: a verified user and their profile, or a trip to the sign-in page. */
 export async function requireAccount(lang: Lang, path: string) {

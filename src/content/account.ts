@@ -1,4 +1,4 @@
-/* Copy for the developer platform: sign-in, the keys dashboard, usage and beta review.
+/* Copy for the developer platform: log in and sign up, the keys dashboard, usage and beta review.
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication.
    Claims gate (same as content/api.ts): no prices, no performance numbers; limits are the gateway's real ones. */
 import type { Lang } from "@/i18n/config";
@@ -8,9 +8,21 @@ const n = " ";   // narrow no-break space before French high punctuation
 export type AccountCopy = {
   nav: { keys: string; usage: string; docs: string; admin: string; signOut: string; signIn: string; dashboard: string };
   notConfigured: string;
-  login: {
-    meta: [string, string]; eyebrow: string; h1: string; lede: string; sending: string;
-    google: string; github: string; error: string; terms: string; none: string;
+  /** The doors (log in, sign up, reset), after auth.openai.com: one question per screen. */
+  auth: {
+    meta: { login: [string, string]; signup: [string, string]; reset: [string, string] };
+    welcome: string; create: string; setup: string; passwordH: string;
+    email: string; password: string; name: string; continue: string; edit: string; show: string; hide: string; forgot: string;
+    noAccount: string; signUp: string; haveAccount: string; logIn: string; or: string; google: string; github: string;
+    rule: string; beta: string;
+    verifyH: string; verifyLede: (email: string) => string; code: string; resend: string; resent: string; wait: (s: number) => string;
+    aboutH: string; aboutLede: string; project: string; skip: string;
+    resetH: string; resetLede: string; sentH: string; sentLede: (email: string) => string; back: string;
+    newH: string; newPassword: string; doneH: string; doneLede: string; expiredH: string; expiredLede: string; again: string;
+    err: {
+      generic: string; email: string; wrong: string; exists: string; short: string; long: string; name: string;
+      code: string; expired: string; tries: string; rate: string; oauth: string;
+    };
   };
   beta: {
     pendingH: string; pendingBody: string; useCase: string; useCasePh: string; save: string; saved: string;
@@ -38,13 +50,36 @@ export const accountCopy: Record<Lang, AccountCopy> = {
   en: {
     nav: { keys: "API keys", usage: "Usage", docs: "Docs", admin: "Beta review", signOut: "Sign out", signIn: "Sign in", dashboard: "Dashboard" },
     notConfigured: "Accounts are not switched on for this deployment yet.",
-    login: {
-      meta: ["Sign in", "Sign in to the Namu API to create keys and see your usage."],
-      eyebrow: "Namu API · Private beta", h1: "Sign in to build with Namu",
-      lede: "Use your GitHub or Google account. We never see your password.",
-      sending: "Opening…", google: "Continue with Google", github: "Continue with GitHub",
-      error: "Sign-in did not complete. Try again.", none: "Sign-in is not switched on for this deployment yet.",
-      terms: "The API is in private beta: after you sign in, we review each request by hand.",
+    auth: {
+      meta: {
+        login: ["Log in", "Log in to the Namu API to create keys and see your usage."],
+        signup: ["Create an account", "Create an account for the Namu API."],
+        reset: ["Reset your password", "Set a new password for your Namu API account."],
+      },
+      welcome: "Welcome back", create: "Create an account", setup: "Set up your account", passwordH: "Enter your password",
+      email: "Email address", password: "Password", name: "Full name", continue: "Continue", edit: "Edit",
+      show: "Show password", hide: "Hide password", forgot: "Forgot password?",
+      noAccount: "Don’t have an account?", signUp: "Sign up", haveAccount: "Already have an account?", logIn: "Log in", or: "or",
+      google: "Continue with Google", github: "Continue with GitHub",
+      rule: "At least 8 characters", beta: "The Namu API is in private beta: we review each new account by hand.",
+      verifyH: "Check your inbox", verifyLede: e => `Enter the 6-digit code we sent to ${e}. It works for 15 minutes.`,
+      code: "Code", resend: "Send a new code", resent: "A new code is on its way.", wait: s => `New code in ${s}s`,
+      aboutH: "What are you building?",
+      aboutLede: "We review every account for the private beta by hand. A sentence or two helps us say yes sooner.",
+      project: "Your project", skip: "Skip for now",
+      resetH: "Reset your password", resetLede: "Enter your email address and we will send you a link to set a new one.",
+      sentH: "Check your inbox", sentLede: e => `If there is an account for ${e}, a link to set a new password is on its way. It works for 15 minutes.`,
+      back: "Back to log in",
+      newH: "Set a new password", newPassword: "New password", doneH: "Your password is changed", doneLede: "Log in with your new password.",
+      expiredH: "This link has expired", expiredLede: "Reset links work once, for 15 minutes. Ask for a new one.", again: "Send a new link",
+      err: {
+        generic: "Something went wrong. Try again.", email: "Enter a valid email address.",
+        wrong: "Incorrect email address or password.", exists: "There is already an account with this email address. Log in instead.",
+        short: "Use at least 8 characters.", long: "Use 128 characters or fewer.", name: "Enter your name.",
+        code: "That code is not right. Check it and try again.", expired: "That code has expired. Send a new one.",
+        tries: "Too many tries with this code. Send a new one.", rate: "Too many attempts. Wait a minute, then try again.",
+        oauth: "Sign-in did not complete. Try again.",
+      },
     },
     beta: {
       pendingH: "Your beta request is in",
@@ -86,13 +121,38 @@ export const accountCopy: Record<Lang, AccountCopy> = {
   fr: {
     nav: { keys: "Clés d’API", usage: "Consommation", docs: "Documentation", admin: "Validation bêta", signOut: "Se déconnecter", signIn: "Se connecter", dashboard: "Tableau de bord" },
     notConfigured: "Les comptes ne sont pas encore activés sur ce déploiement.",
-    login: {
-      meta: ["Connexion", "Connectez-vous à l’API Namu pour créer des clés et suivre votre consommation."],
-      eyebrow: "API Namu · Bêta privée", h1: "Connectez-vous pour construire avec Namu",
-      lede: "Utilisez votre compte GitHub ou Google. Nous ne voyons jamais votre mot de passe.",
-      sending: "Ouverture…", google: "Continuer avec Google", github: "Continuer avec GitHub",
-      error: "La connexion n’a pas abouti. Réessayez.", none: "La connexion n’est pas encore activée sur ce déploiement.",
-      terms: "L’API est en bêta privée : après votre connexion, nous examinons chaque demande à la main.".replace(" :", `${n}:`),
+    auth: {
+      meta: {
+        login: ["Connexion", "Connectez-vous à l’API Namu pour créer des clés et suivre votre consommation."],
+        signup: ["Créer un compte", "Créez un compte pour l’API Namu."],
+        reset: ["Réinitialiser le mot de passe", "Choisissez un nouveau mot de passe pour votre compte API Namu."],
+      },
+      welcome: "Bon retour", create: "Créer un compte", setup: "Configurez votre compte", passwordH: "Saisissez votre mot de passe",
+      email: "Adresse e-mail", password: "Mot de passe", name: "Nom complet", continue: "Continuer", edit: "Modifier",
+      show: "Afficher le mot de passe", hide: "Masquer le mot de passe", forgot: `Mot de passe oublié${n}?`,
+      noAccount: `Vous n’avez pas de compte${n}?`, signUp: "S’inscrire", haveAccount: `Vous avez déjà un compte${n}?`, logIn: "Se connecter", or: "ou",
+      google: "Continuer avec Google", github: "Continuer avec GitHub",
+      rule: "Au moins 8 caractères", beta: `L’API Namu est en bêta privée${n}: nous examinons chaque nouveau compte à la main.`,
+      verifyH: "Consultez votre boîte de réception", verifyLede: e => `Saisissez le code à 6 chiffres envoyé à ${e}. Il est valable 15 minutes.`,
+      code: "Code", resend: "Envoyer un nouveau code", resent: "Un nouveau code est en route.", wait: s => `Nouveau code dans ${s}${n}s`,
+      aboutH: `Que construisez-vous${n}?`,
+      aboutLede: "Nous examinons chaque compte de la bêta privée à la main. Une phrase ou deux nous aide à répondre plus vite.",
+      project: "Votre projet", skip: "Plus tard",
+      resetH: "Réinitialisez votre mot de passe", resetLede: "Saisissez votre adresse e-mail et nous vous enverrons un lien pour en choisir un nouveau.",
+      sentH: "Consultez votre boîte de réception", sentLede: e => `Si un compte existe pour ${e}, un lien pour choisir un nouveau mot de passe est en route. Il est valable 15 minutes.`,
+      back: "Retour à la connexion",
+      newH: "Choisissez un nouveau mot de passe", newPassword: "Nouveau mot de passe", doneH: "Votre mot de passe a été modifié",
+      doneLede: "Connectez-vous avec votre nouveau mot de passe.",
+      expiredH: "Ce lien a expiré", expiredLede: "Un lien de réinitialisation sert une fois, pendant 15 minutes. Demandez-en un nouveau.",
+      again: "Recevoir un nouveau lien",
+      err: {
+        generic: "Une erreur s’est produite. Réessayez.", email: "Saisissez une adresse e-mail valide.",
+        wrong: "Adresse e-mail ou mot de passe incorrect.", exists: "Un compte existe déjà avec cette adresse. Connectez-vous.",
+        short: "Utilisez au moins 8 caractères.", long: "Utilisez 128 caractères au maximum.", name: "Indiquez votre nom.",
+        code: "Ce code est incorrect. Vérifiez-le et réessayez.", expired: "Ce code a expiré. Demandez-en un nouveau.",
+        tries: "Trop d’essais avec ce code. Demandez-en un nouveau.", rate: "Trop de tentatives. Patientez une minute, puis réessayez.",
+        oauth: "La connexion n’a pas abouti. Réessayez.",
+      },
     },
     beta: {
       pendingH: "Votre demande d’accès est enregistrée",

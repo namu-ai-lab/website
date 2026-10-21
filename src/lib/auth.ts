@@ -1,42 +1,24 @@
-import { betterAuth } from "better-auth";
-import { nextCookies } from "better-auth/next-js";
-import { headers } from "next/headers";
-import { db } from "./db";
+import { createNeonAuth } from "@neondatabase/auth/next/server";
 
-/* Sign-in for the developer dashboard (Better Auth, sessions stored in Neon). Providers switch on when their
-   OAuth credentials are set: GitHub (GITHUB_CLIENT_ID/SECRET) and Google (GOOGLE_CLIENT_ID/SECRET).
-   Each provider's callback URL is <site>/api/auth/callback/<provider>. Server-only. */
+/* Sign-in for the developer console: Neon Auth, the managed Better Auth that lives beside the database. Users and
+   sessions are kept by Neon in the neon_auth schema; the browser talks to it through this site's /api/auth/*, and the
+   session rides in this site's own signed, httpOnly cookies. The methods (email and password with a 6-digit code to
+   verify the address, Google, GitHub) and the trusted domains are switched on in the Neon Console, under Auth.
+   Server-only. */
 let instance: ReturnType<typeof create> | null = null;
 
-/** The site's own address: BETTER_AUTH_URL if set; otherwise, on Vercel, the branch URL for a preview
-    (so each PR signs in on its own preview) and the production URL in production. */
-function siteURL(): string | undefined {
-  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
-  const host = process.env.VERCEL_ENV === "preview" ? process.env.VERCEL_BRANCH_URL : process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  return host ? `https://${host}` : undefined;
-}
-
 function create() {
-  const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {};
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET)
-    socialProviders.github = { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET };
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
-    socialProviders.google = { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET };
-  return betterAuth({
-    database: db(),
-    secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: siteURL(),
-    socialProviders,
-    session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },   // two weeks, renewed daily
-    plugins: [nextCookies()],
+  return createNeonAuth({
+    baseUrl: process.env.NEON_AUTH_BASE_URL!,
+    cookies: { secret: process.env.NEON_AUTH_COOKIE_SECRET! },    // 32 characters or more
   });
 }
 
-/** Created on first use, so builds without DATABASE_URL never touch it. */
+/** Created on first use, so builds and public pages never need the auth settings. */
 export const auth = () => (instance ??= create());
 
-/** The signed-in user, verified against the session table, or null. */
+/** The signed-in user, checked with Neon Auth (cached in a signed cookie for five minutes), or null. */
 export async function currentUser() {
-  const s = await auth().api.getSession({ headers: await headers() });
-  return s?.user ?? null;
+  const { data } = await auth().getSession();
+  return data?.user ?? null;
 }

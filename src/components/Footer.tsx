@@ -31,7 +31,7 @@ export function Footer({ lang }: { lang: Lang }) {
         <h2>{f.stay}</h2>
         <div className="ftr-stay-acts">
           <a href={NEWSLETTER}>{f.join}</a>
-          <a href={L("/api")}>{f.build}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
+          <a href={L("/signup")}>{f.build}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
         </div>
         <nav className="ftr-social" aria-label={f.follow}>
           {SOCIALS.map(x => <a key={x.label} href={x.href} aria-label={x.label} target="_blank" rel="noopener">{x.icon}</a>)}

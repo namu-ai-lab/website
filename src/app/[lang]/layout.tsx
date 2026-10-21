@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import "@/styles/lab.css";
 import "@/styles/figures.css";
+import "@/styles/console.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { SiteChrome } from "@/components/SiteChrome";
 import { site } from "@/content/site";
 import { getProgrammes } from "@/content";
 import { isLang, locales, type Lang } from "@/i18n/config";
@@ -46,9 +48,11 @@ export default async function RootLayout({ children, params }: { children: React
         }) }} />
       </head>
       <body>
-        <Header lang={lang} c={{ nav: c.nav, models: c.models, status: c.status }} programmes={getProgrammes(lang).map(p => ({ slug: p.slug, name: p.name, title: p.title }))} />
-        <main id="main">{children}</main>
-        <Footer lang={lang} />
+        <SiteChrome
+          header={<Header lang={lang} c={{ nav: c.nav, models: c.models, status: c.status }} programmes={getProgrammes(lang).map(p => ({ slug: p.slug, name: p.name, title: p.title }))} />}
+          footer={<Footer lang={lang} />}>
+          {children}
+        </SiteChrome>
       </body>
     </html>
   );

@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LANG_COOKIE, countryFrom, pickLang } from "@/i18n/config";
+import { hasAccounts } from "@/lib/env";
+
+/* Back from Google or GitHub, Neon Auth adds a one-time verifier to the page's address; it is swapped here for the
+   session cookie, before the page renders, and the visitor lands on the same address without it. */
+const VERIFIER = "neon_auth_session_verifier";
 
 /* Language routing for the Lab site (Next 16 Proxy, formerly Middleware).
    - /fr/...           French, served as is.
@@ -8,8 +13,15 @@ import { LANG_COOKIE, countryFrom, pickLang } from "@/i18n/config";
                        everyone else is served English (rewritten internally to /en/...).
    The country comes from the host's geolocation header (Vercel, Cloudflare, AWS, Netlify, Fastly).
    Nothing is stored: no IP address, no third-party lookup. In development, ?country=NE simulates a country. */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+
+  if (searchParams.has(VERIFIER) && hasAccounts()) {
+    const { auth } = await import("@/lib/auth");
+    const login = pathname === "/fr" || pathname.startsWith("/fr/") ? "/fr/login" : "/login";
+    const res = await auth().middleware({ loginUrl: `${login}?error=1` })(request);
+    if (res.headers.has("location")) return res;       // signed in, or the exchange failed and sign-in says so
+  }
 
   if (pathname === "/fr" || pathname.startsWith("/fr/")) return NextResponse.next();
 

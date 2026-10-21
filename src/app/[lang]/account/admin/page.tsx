@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AccountShell, NotConfigured } from "@/components/account/AccountShell";
+import { NotConfigured } from "@/components/account/AccountShell";
+import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { AdminBeta } from "@/components/account/AdminBeta";
 import { accountCopy } from "@/content/account";
 import { isLang, type Lang } from "@/i18n/config";
@@ -27,8 +28,8 @@ export default async function Admin({ params }: { params: Promise<{ lang: string
   const rows = (await allProfiles()).sort((a, b) => order[a.beta_status] - order[b.beta_status]);
 
   return (
-    <AccountShell lang={lang} active="admin" admin h1={t.h1} lede={t.lede}>
+    <ConsoleShell lang={lang} page="admin" admin user={user} access={profile.beta_status} title={t.h1} lede={t.lede}>
       <AdminBeta lang={lang} initial={rows} me={user.id} />
-    </AccountShell>
+    </ConsoleShell>
   );
 }

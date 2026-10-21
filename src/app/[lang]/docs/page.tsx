@@ -25,7 +25,7 @@ export default async function Docs({ params }: { params: Promise<{ lang: string 
         <p className="eyebrow">{d.eyebrow}</p>
         <h1 className="h1">{d.h1}</h1>
         <p className="lede">{d.lede}</p>
-        <div className="acts"><a className="pill lg dark" href={lp(lang, "/account/keys")}>{d.getKey}</a></div>
+        <div className="acts"><a className="pill lg dark" href={`${lp(lang, "/signup")}?next=${encodeURIComponent(lp(lang, "/account/keys"))}`}>{d.getKey}</a></div>
       </header>
 
       <div className="docs-grid">

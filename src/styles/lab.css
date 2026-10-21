@@ -107,7 +107,12 @@ button { font: inherit; letter-spacing: inherit; color: inherit; }
 .nav > a[aria-current="page"] { background: rgba(21, 18, 15, .06); }
 .nav > button svg { width: 14px; height: 14px; transition: transform .3s var(--ease); }
 .nav > button[aria-expanded="true"] svg { transform: rotate(180deg); }
-.hdr-cta { margin-left: auto; display: flex; gap: 8px; }
+.hdr-cta { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+/* Log in reads as a nav link; Start building is the one dark pill (after openai.com's header) */
+.hdr-login { height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: var(--r-pill); font-size: 15px; font-weight: 450;
+  color: var(--ink); text-decoration: none; white-space: nowrap; transition: background-color .2s var(--ease); }
+.hdr-login:hover { background: rgba(21, 18, 15, .05); }
+.hdr-cta .pill { white-space: nowrap; }
 .menu-toggle { display: none; margin-left: auto; width: 40px; height: 40px; border: 0; background: none; border-radius: var(--r-pill); cursor: pointer; place-items: center; }
 .menu-toggle svg { width: 22px; height: 22px; }
 
@@ -633,8 +638,10 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .hdr:not(.solid):not(.open) .lang-switch { background: rgba(255, 255, 255, .4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .hdr-cta { margin-left: 12px; }
 @media (max-width: 1120px) { .menu-toggle { margin-left: 8px; } }
-/* on narrower desktops the parent-site pill gives way to the nav; namu-ai.org stays in the footer */
-@media (max-width: 1280px) { .hdr-cta .parent { display: none; } }
+/* on narrower desktops the parent-site pill gives way to the nav and to Log in / Start building; namu-ai.org stays in
+   the footer and the phone menu. Below 1280 the menu also moves closer to the logo, which French needs. */
+@media (max-width: 1400px) { .hdr-cta .parent { display: none; } }
+@media (max-width: 1280px) { .nav { margin-left: 20px; } }
 
 /* ---- API landing page (/api): the studio hero, then openai.com/api's sequence adapted to Namu ---- */
 .api-status { display: inline-flex; align-items: center; gap: 8px; height: 32px; margin: 0; padding: 0 14px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 14.5px; }
@@ -1068,13 +1075,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .check { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 15.5px; cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--ink); }
 .acct-form .pill.lg { margin-top: 16px; width: 100%; justify-content: center; }
-.acct-error { margin: 12px 0 0; color: #8a2f1f; font-size: 14.5px; }
-.acct-note { margin: 32px auto 0; max-width: 30em; padding: 16px 20px; border-radius: var(--r-thumb); background: var(--surface); }
-.acct-intro .acct-login { width: min(420px, 100%); margin: 32px auto 0; text-align: left; }
-.acct-terms { max-width: 32em; margin: 24px auto 0; }
-.acct-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--ink-3); font-size: 14px; }
-.acct-or::before, .acct-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.acct-oauth { display: grid; gap: 8px; } .acct-oauth .pill { justify-content: center; cursor: pointer; }
 .acct-dialog { width: min(520px, calc(100vw - 32px)); padding: 28px; border: 0; border-radius: var(--r-card); box-shadow: 0 30px 80px -30px rgba(21, 18, 15, .5); color: var(--ink); }
 .acct-dialog::backdrop { background: rgba(21, 18, 15, .35); backdrop-filter: blur(4px); }
 .acct-dialog .muted { margin: 8px 0 0; font-size: 15.5px; }
