@@ -24,11 +24,11 @@ export const SAMPLE_HA = "Barka da safiya! Ga labaran yau.";
 export const docsCopy: Record<Lang, DocsCopy> = {
   en: {
     meta: ["API docs", "Call the Namu speech models from your own app: authentication, endpoints, errors and limits."],
-    eyebrow: "Namu API · Private beta", h1: "API documentation",
+    eyebrow: "Namu API · Beta", h1: "API documentation",
     lede: "One REST API for the Lab’s speech models. Send audio or text with your key, get text or audio back.",
     toc: "On this page",
     quickH: "Quickstart",
-    quick: ["Sign in and request beta access.", "Once approved, create a key in the dashboard and store it as NAMU_API_KEY on your server.", "Call an endpoint, for example text to speech:"],
+    quick: ["Create an account: it is free during the beta.", "Create a key in the dashboard and store it as NAMU_API_KEY on your server.", "Call an endpoint, for example text to speech:"],
     getKey: "Get an API key",
     authH: "Authentication",
     auth: "Send your key in the Authorization header of every request: Authorization: Bearer namu_sk_… Keys can be limited to some models when you create them, and revoked at any time.",
@@ -56,7 +56,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     errorsH: "Errors", errorsSub: "Errors are JSON: { \"error\": { \"type\", \"message\" } }. Retry 429 after the Retry-After header, and 502 or 504 after a short wait.",
     errors: [
       ["401", "missing_api_key · invalid_api_key · key_revoked", "No key, an unknown key, or a revoked one."],
-      ["403", "beta_pending · insufficient_scope", "The account is not approved yet, or the key may not call this model."],
+      ["403", "account_paused · insufficient_scope", "The account is paused, or the key may not call this model."],
       ["413", "payload_too_large · audio_too_long · text_too_long", "Over a request limit (below)."],
       ["415", "unsupported_audio", "The audio could not be decoded."],
       ["429", "rate_limited · quota_exceeded", "Too many requests this minute, or the monthly allowance is used up."],
@@ -68,15 +68,15 @@ export const docsCopy: Record<Lang, DocsCopy> = {
       ["Monthly audio", "30 minutes per account during the beta (can be raised)"], ["Active keys", "10 per account"], ["First request", "slower while a model wakes up"]],
     livekitH: "Voice agents (LiveKit)",
     livekit: "Building a phone or WebRTC agent? Call /v1/transcribe and /v1/speech from your agent’s server.",
-    status: "Endpoints are provisional during the private beta and may change. Translation, French speech recognition and conversation replies use Google Gemini through OpenRouter.",
+    status: "Endpoints are provisional during the beta and may change. Translation, French speech recognition and conversation replies use Google Gemini through OpenRouter.",
   },
   fr: {
     meta: ["Documentation de l’API", `Appelez les modèles de parole de Namu depuis votre application${n}: authentification, points d’accès, erreurs et limites.`],
-    eyebrow: "API Namu · Bêta privée", h1: "Documentation de l’API",
+    eyebrow: "API Namu · Bêta", h1: "Documentation de l’API",
     lede: "Une API REST pour les modèles de parole du Lab. Envoyez de l’audio ou du texte avec votre clé, recevez du texte ou de l’audio.",
     toc: "Sur cette page",
     quickH: "Démarrage rapide",
-    quick: ["Connectez-vous et demandez l’accès à la bêta.", "Une fois validé, créez une clé dans le tableau de bord et gardez-la sur votre serveur sous le nom NAMU_API_KEY.", `Appelez un point d’accès, par exemple la synthèse vocale${n}:`],
+    quick: [`Créez un compte${n}: c’est gratuit pendant la bêta.`, "Créez une clé dans le tableau de bord et gardez-la sur votre serveur sous le nom NAMU_API_KEY.", `Appelez un point d’accès, par exemple la synthèse vocale${n}:`],
     getKey: "Obtenir une clé d’API",
     authH: "Authentification",
     auth: `Envoyez votre clé dans l’en-tête Authorization de chaque requête${n}: Authorization: Bearer namu_sk_… Une clé peut être limitée à certains modèles à sa création, et révoquée à tout moment.`,
@@ -104,7 +104,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     errorsH: "Erreurs", errorsSub: `Les erreurs sont en JSON${n}: { "error": { "type", "message" } }. Réessayez un 429 après l’en-tête Retry-After, et un 502 ou 504 après une courte attente.`,
     errors: [
       ["401", "missing_api_key · invalid_api_key · key_revoked", "Pas de clé, une clé inconnue ou une clé révoquée."],
-      ["403", "beta_pending · insufficient_scope", "Le compte n’est pas encore validé, ou la clé n’a pas accès à ce modèle."],
+      ["403", "account_paused · insufficient_scope", "Le compte est en pause, ou la clé n’a pas accès à ce modèle."],
       ["413", "payload_too_large · audio_too_long · text_too_long", "Au-delà d’une limite de requête (ci-dessous)."],
       ["415", "unsupported_audio", "L’audio n’a pas pu être décodé."],
       ["429", "rate_limited · quota_exceeded", "Trop de requêtes cette minute, ou le quota mensuel est épuisé."],
@@ -116,7 +116,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
       ["Audio mensuel", "30 minutes par compte pendant la bêta (peut être relevé)"], ["Clés actives", "10 par compte"], ["Première requête", "plus lente, le temps qu’un modèle démarre"]],
     livekitH: "Agents vocaux (LiveKit)",
     livekit: `Vous construisez un agent téléphonique ou WebRTC${n}? Appelez /v1/transcribe et /v1/speech depuis le serveur de votre agent.`,
-    status: `Les points d’accès sont provisoires pendant la bêta privée et peuvent changer. La traduction, la reconnaissance du français et les réponses de conversation s’appuient sur Google Gemini via OpenRouter.`,
+    status: `Les points d’accès sont provisoires pendant la bêta et peuvent changer. La traduction, la reconnaissance du français et les réponses de conversation s’appuient sur Google Gemini via OpenRouter.`,
   },
 };
 

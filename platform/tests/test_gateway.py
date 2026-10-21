@@ -156,11 +156,11 @@ def test_revocation_applies_within_cache_ttl(env):
     assert post_audio(c, "/v1/transcribe").status_code == 401
 
 
-def test_pending_beta_is_403(env):
+def test_paused_account_is_403(env):
     c, store, *_ = env
-    store.keys[gw.hash_key(GOOD, PEPPER)].beta_status = "pending"
+    store.keys[gw.hash_key(GOOD, PEPPER)].beta_status = "denied"
     r = post_audio(c, "/v1/transcribe")
-    assert r.status_code == 403 and r.json()["error"]["type"] == "beta_pending"
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
 
 
 def test_missing_scope_is_403(env):

@@ -213,8 +213,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if rec.revoked:
             return None, err(401, "key_revoked", "This API key has been revoked.")
         if rec.beta_status != "approved":
-            return None, err(403, "beta_pending",
-                             "Your account is waiting for private-beta approval.")
+            return None, err(403, "account_paused",
+                             "This account is paused. Write to contact@namuai.org.")
         if scope not in rec.scopes:
             return None, err(403, "insufficient_scope",
                              f"This key is not allowed to call '{scope}'.")

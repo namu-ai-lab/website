@@ -3,7 +3,7 @@ import { profileOf } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { fail, signedIn } from "@/lib/http";
 
-/* A pending developer tells us what they are building. That is the only field a user can change. */
+/* A developer tells us what they are building (optional, asked once after sign-up). That is the only field a user can change. */
 export async function POST(req: NextRequest) {
   const s = await signedIn(req, true);
   if (s.e) return s.e;

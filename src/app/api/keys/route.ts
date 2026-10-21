@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!isScopeList(body?.scopes)) return fail(400, "bad_scopes", "Pick at least one model.");
   const scopes = [...new Set(body.scopes)];
 
-  if ((await profileOf(s.user.id)).beta_status !== "approved") return fail(403, "beta_pending", "Your account is waiting for beta approval.");
+  if ((await profileOf(s.user.id)).beta_status !== "approved") return fail(403, "account_paused", "This account is paused.");
   const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.api_keys where user_id = $1 and revoked_at is null", [s.user.id]);
   if (n >= MAX_ACTIVE_KEYS) return fail(409, "too_many_keys", `Revoke a key first: ${MAX_ACTIVE_KEYS} active keys at most.`);
 

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BetaRequest } from "@/components/account/BetaRequest";
+import { AccountPaused } from "@/components/account/AccountPaused";
 import { ConsoleShell, type Access } from "@/components/console/ConsoleShell";
 import { KeysTable } from "@/components/console/KeysTable";
 import { Overview } from "@/components/console/Overview";
@@ -11,7 +11,7 @@ import { apiBase } from "@/lib/env";
 import type { KeyRow, Scope } from "@/lib/key-shape";
 
 /* Development only: the console with made-up keys and usage, so it can be designed and tested without the accounts
-   database. /account/preview?view=overview|keys|usage|empty|pending. Not served in production. */
+   database. /account/preview?view=overview|keys|usage|empty|paused. Not served in production. */
 export const dynamic = "force-dynamic";
 
 const ago = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
@@ -28,7 +28,7 @@ export default async function Preview({ params, searchParams }: { params: Promis
   const lang = (await params).lang as Lang;
   const view = (await searchParams).view ?? "overview";
   const user = { name: "Mouhamad Mamane", email: "mouhamad@namu-ai.org" };
-  const access: Access = view === "pending" ? "pending" : "approved";
+  const access: Access = view === "paused" ? "denied" : "approved";
   const month = new Date().toISOString().slice(0, 7), today = new Date().getUTCDate();
   const daily: UsageDay[] = [];
   const seed = (i: number, k: number) => Math.abs(Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1;
@@ -51,7 +51,7 @@ export default async function Preview({ params, searchParams }: { params: Promis
       {page === "usage" && <UsageView lang={lang} month={month} limitMin={600} daily={daily} totals={totals} />}
       {page === "overview" && <Overview lang={lang} apiBase={apiBase} approved={access === "approved"} usedMin={used} limitMin={600}
         requests={totals.reduce((s, r) => s + r.requests, 0)} activeKeys={4}
-        beta={access === "approved" ? undefined : <BetaRequest lang={lang} status="pending" useCase={null} />} />}
+        notice={access === "approved" ? undefined : <AccountPaused lang={lang} />} />}
     </ConsoleShell>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NotConfigured } from "@/components/account/AccountShell";
-import { BetaRequest } from "@/components/account/BetaRequest";
+import { AccountPaused } from "@/components/account/AccountPaused";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { KeysTable } from "@/components/console/KeysTable";
 import { accountCopy } from "@/content/account";
@@ -32,7 +32,7 @@ export default async function Keys({ params }: { params: Promise<{ lang: string 
       title={accountCopy[lang].keys.h1} lede={consoleCopy[lang].keys.lede}>
       {approved
         ? <KeysTable lang={lang} initial={data} apiBase={apiBase} />
-        : <BetaRequest lang={lang} status={profile.beta_status as "pending" | "denied"} useCase={profile.use_case} />}
+        : <AccountPaused lang={lang} />}
     </ConsoleShell>
   );
 }

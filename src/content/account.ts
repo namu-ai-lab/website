@@ -1,4 +1,4 @@
-/* Copy for the developer platform: log in and sign up, the keys dashboard, usage and beta review.
+/* Copy for the developer platform: log in and sign up, the keys dashboard, usage and accounts.
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication.
    Claims gate (same as content/api.ts): no prices, no performance numbers; limits are the gateway's real ones. */
 import type { Lang } from "@/i18n/config";
@@ -14,9 +14,9 @@ export type AccountCopy = {
     welcome: string; create: string; setup: string; passwordH: string;
     email: string; password: string; name: string; continue: string; edit: string; show: string; hide: string; forgot: string;
     noAccount: string; signUp: string; haveAccount: string; logIn: string; or: string; google: string; github: string;
-    rule: string; beta: string;
+    rule: string; free: string;
     verifyH: string; verifyLede: (email: string) => string; code: string; resend: string; resent: string; wait: (s: number) => string;
-    aboutH: string; aboutLede: string; project: string; skip: string;
+    aboutH: string; aboutLede: string; project: string; projectPh: string; skip: string;
     resetH: string; resetLede: string; sentH: string; sentLede: (email: string) => string; back: string;
     newH: string; newPassword: string; doneH: string; doneLede: string; expiredH: string; expiredLede: string; again: string;
     err: {
@@ -24,10 +24,7 @@ export type AccountCopy = {
       code: string; expired: string; tries: string; rate: string; oauth: string;
     };
   };
-  beta: {
-    pendingH: string; pendingBody: string; useCase: string; useCasePh: string; save: string; saved: string;
-    deniedH: string; deniedBody: string; contact: string;
-  };
+  paused: { h: string; body: string; contact: string };
   keys: {
     meta: [string, string]; h1: string; lede: string; create: string; name: string; namePh: string; scopes: string;
     scopeNames: Record<string, string>; cancel: string; createIt: string; creating: string;
@@ -42,13 +39,13 @@ export type AccountCopy = {
   };
   admin: {
     meta: [string, string]; h1: string; lede: string; th: { email: string; useCase: string; status: string; joined: string; allowance: string };
-    approve: string; deny: string; status: Record<string, string>; minutes: string; empty: string;
+    pause: string; resume: string; save: string; status: Record<string, string>; minutes: string; empty: string;
   };
 };
 
 export const accountCopy: Record<Lang, AccountCopy> = {
   en: {
-    nav: { keys: "API keys", usage: "Usage", docs: "Docs", admin: "Beta review", signOut: "Sign out", signIn: "Sign in", dashboard: "Dashboard" },
+    nav: { keys: "API keys", usage: "Usage", docs: "Docs", admin: "Accounts", signOut: "Sign out", signIn: "Sign in", dashboard: "Dashboard" },
     notConfigured: "Accounts are not switched on for this deployment yet.",
     auth: {
       meta: {
@@ -61,12 +58,12 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       show: "Show password", hide: "Hide password", forgot: "Forgot password?",
       noAccount: "Don’t have an account?", signUp: "Sign up", haveAccount: "Already have an account?", logIn: "Log in", or: "or",
       google: "Continue with Google", github: "Continue with GitHub",
-      rule: "At least 8 characters", beta: "The Namu API is in private beta: we review each new account by hand.",
+      rule: "At least 8 characters", free: "Free during the beta, with 30 minutes of audio a month.",
       verifyH: "Check your inbox", verifyLede: e => `Enter the 6-digit code we sent to ${e}. It works for 15 minutes.`,
       code: "Code", resend: "Send a new code", resent: "A new code is on its way.", wait: s => `New code in ${s}s`,
       aboutH: "What are you building?",
-      aboutLede: "We review every account for the private beta by hand. A sentence or two helps us say yes sooner.",
-      project: "Your project", skip: "Skip for now",
+      aboutLede: "Optional. A sentence or two helps us decide what to build next.",
+      project: "Your project", projectPh: "A Hausa voice line for a clinic in Maradi, captions for a radio station…", skip: "Skip for now",
       resetH: "Reset your password", resetLede: "Enter your email address and we will send you a link to set a new one.",
       sentH: "Check your inbox", sentLede: e => `If there is an account for ${e}, a link to set a new password is on its way. It works for 15 minutes.`,
       back: "Back to log in",
@@ -81,13 +78,9 @@ export const accountCopy: Record<Lang, AccountCopy> = {
         oauth: "Sign-in did not complete. Try again.",
       },
     },
-    beta: {
-      pendingH: "Your beta request is in",
-      pendingBody: "We review every account by hand and write to you when your keys are ready. Tell us what you are building, it helps us prioritise.",
-      useCase: "What are you building?", useCasePh: "A Hausa voice line for a clinic in Maradi, captions for a radio station…",
-      save: "Send", saved: "Thank you, we have it.",
-      deniedH: "We cannot open the beta to this account yet",
-      deniedBody: "Space in the private beta is limited. Write to us if you think we got this wrong.", contact: "Contact us",
+    paused: {
+      h: "This account is paused",
+      body: "Its API keys don’t work while it is paused. Write to us and we will sort it out.", contact: "Contact us",
     },
     keys: {
       meta: ["API keys", "Create and revoke your Namu API keys."],
@@ -111,15 +104,15 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       empty: "No requests yet this month.", note: "Audio minutes count both what you send and the speech we return.",
     },
     admin: {
-      meta: ["Beta review", "Approve developers for the private beta."],
-      h1: "Beta review", lede: "Approving an account lets it create keys. Denying it also stops its existing keys.",
+      meta: ["Accounts", "Every developer account, its status and its monthly allowance."],
+      h1: "Accounts", lede: "Every account can create keys from sign-up. Pausing one stops its keys at once; resuming turns them back on.",
       th: { email: "Email", useCase: "Building", status: "Status", joined: "Joined", allowance: "Minutes / month" },
-      approve: "Approve", deny: "Deny", status: { pending: "Pending", approved: "Approved", denied: "Denied" }, minutes: "min",
+      pause: "Pause", resume: "Resume", save: "Save", status: { pending: "Setting up", approved: "Active", denied: "Paused" }, minutes: "min",
       empty: "Nobody has signed up yet.",
     },
   },
   fr: {
-    nav: { keys: "Clés d’API", usage: "Consommation", docs: "Documentation", admin: "Validation bêta", signOut: "Se déconnecter", signIn: "Se connecter", dashboard: "Tableau de bord" },
+    nav: { keys: "Clés d’API", usage: "Consommation", docs: "Documentation", admin: "Comptes", signOut: "Se déconnecter", signIn: "Se connecter", dashboard: "Tableau de bord" },
     notConfigured: "Les comptes ne sont pas encore activés sur ce déploiement.",
     auth: {
       meta: {
@@ -132,12 +125,12 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       show: "Afficher le mot de passe", hide: "Masquer le mot de passe", forgot: `Mot de passe oublié${n}?`,
       noAccount: `Vous n’avez pas de compte${n}?`, signUp: "S’inscrire", haveAccount: `Vous avez déjà un compte${n}?`, logIn: "Se connecter", or: "ou",
       google: "Continuer avec Google", github: "Continuer avec GitHub",
-      rule: "Au moins 8 caractères", beta: `L’API Namu est en bêta privée${n}: nous examinons chaque nouveau compte à la main.`,
+      rule: "Au moins 8 caractères", free: "Gratuit pendant la bêta, avec 30 minutes d’audio par mois.",
       verifyH: "Consultez votre boîte de réception", verifyLede: e => `Saisissez le code à 6 chiffres envoyé à ${e}. Il est valable 15 minutes.`,
       code: "Code", resend: "Envoyer un nouveau code", resent: "Un nouveau code est en route.", wait: s => `Nouveau code dans ${s}${n}s`,
       aboutH: `Que construisez-vous${n}?`,
-      aboutLede: "Nous examinons chaque compte de la bêta privée à la main. Une phrase ou deux nous aide à répondre plus vite.",
-      project: "Votre projet", skip: "Plus tard",
+      aboutLede: "Facultatif. Une phrase ou deux nous aide à décider quoi construire ensuite.",
+      project: "Votre projet", projectPh: "Une ligne vocale en haoussa pour un centre de santé à Maradi, des sous-titres pour une radio…", skip: "Plus tard",
       resetH: "Réinitialisez votre mot de passe", resetLede: "Saisissez votre adresse e-mail et nous vous enverrons un lien pour en choisir un nouveau.",
       sentH: "Consultez votre boîte de réception", sentLede: e => `Si un compte existe pour ${e}, un lien pour choisir un nouveau mot de passe est en route. Il est valable 15 minutes.`,
       back: "Retour à la connexion",
@@ -154,13 +147,9 @@ export const accountCopy: Record<Lang, AccountCopy> = {
         oauth: "La connexion n’a pas abouti. Réessayez.",
       },
     },
-    beta: {
-      pendingH: "Votre demande d’accès est enregistrée",
-      pendingBody: "Nous examinons chaque compte à la main et vous écrivons quand vos clés sont prêtes. Dites-nous ce que vous construisez, cela nous aide à prioriser.",
-      useCase: `Que construisez-vous${n}?`, useCasePh: "Une ligne vocale en haoussa pour un centre de santé à Maradi, des sous-titres pour une radio…",
-      save: "Envoyer", saved: "Merci, c’est noté.",
-      deniedH: "Nous ne pouvons pas encore ouvrir la bêta à ce compte",
-      deniedBody: "Les places de la bêta privée sont limitées. Écrivez-nous si vous pensez que c’est une erreur.", contact: "Nous écrire",
+    paused: {
+      h: "Ce compte est en pause",
+      body: "Ses clés d’API ne fonctionnent pas tant qu’il est en pause. Écrivez-nous et nous réglerons cela.", contact: "Nous écrire",
     },
     keys: {
       meta: ["Clés d’API", "Créez et révoquez vos clés d’API Namu."],
@@ -184,10 +173,10 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       empty: "Aucune requête ce mois-ci.", note: "Les minutes comptent l’audio envoyé et la parole renvoyée.",
     },
     admin: {
-      meta: ["Validation bêta", "Validez les développeurs de la bêta privée."],
-      h1: "Validation bêta", lede: "Valider un compte lui permet de créer des clés. Le refuser bloque aussi ses clés existantes.",
+      meta: ["Comptes", "Chaque compte développeur, son statut et son allocation mensuelle."],
+      h1: "Comptes", lede: `Chaque compte peut créer des clés dès l’inscription. Mettre un compte en pause bloque ses clés aussitôt${n}; le réactiver les rétablit.`,
       th: { email: "Adresse", useCase: "Projet", status: "Statut", joined: "Inscription", allowance: "Minutes / mois" },
-      approve: "Valider", deny: "Refuser", status: { pending: "En attente", approved: "Validé", denied: "Refusé" }, minutes: "min",
+      pause: "Mettre en pause", resume: "Réactiver", save: "Enregistrer", status: { pending: "Configuration", approved: "Actif", denied: "En pause" }, minutes: "min",
       empty: "Personne ne s’est encore inscrit.",
     },
   },
