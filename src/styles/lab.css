@@ -902,7 +902,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 
 /* the panel: one warm grey surface, tabs across the top */
 .pg { --pg-bg: #f5f2ee; position: relative; border-radius: 24px; background: var(--pg-bg); overflow: hidden; }
-.pg-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 6px; }
+.pg-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px; }
 .pg-tabs button { height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 16px; border: 0; border-radius: 14px; background: none;
   color: var(--ink-2); font: inherit; font-size: 18px; font-weight: 400; letter-spacing: 0; cursor: pointer; white-space: nowrap; transition: background-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
 .pg-tabs button:hover { color: var(--ink); }
@@ -910,7 +910,8 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-tabs button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .pg-tabs .dot { width: 12px; height: 12px; flex: none; border-radius: 50%; background: radial-gradient(circle at 34% 30%, var(--c2) 0, var(--c1) 48%, var(--c3) 100%); }
 .pg-panel { display: flex; flex-direction: column; padding: 0 32px 24px; animation: pg-in calc(.45s * var(--motion)) var(--ease-out) both; }
-.pg-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 470px; padding: 32px 0 28px; }
+/* every tab is as tall as the tallest (Text to speech), so switching tabs never moves the page */
+.pg-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 522px; padding: 32px 0 28px; }
 
 /* the bar: choices in the middle, the way in on the right */
 .pg-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; }
@@ -923,9 +924,8 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-cta { justify-self: end; display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: 16px; text-decoration: none; white-space: nowrap; transition: background-color .25s var(--ease); }
 .pg-cta:hover { background: #3a332d; }
 
-/* Speak: the voice reel (src/components/VoiceReel.tsx). The orbs are painted on one canvas; the names and
+/* Text to speech: the voice reel (src/components/VoiceReel.tsx). The orbs are painted on one canvas; the names and
    the play button sit over it. The reel fades out at the panel's edges, as elevenlabs.io's does. */
-.pg-speak { --disc: 256px; }
 .vr { position: relative; width: 100%; border-radius: 20px; }
 .vr:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
 .vr-sizer { width: var(--disc); height: 0; }
@@ -975,7 +975,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 @keyframes ring { from { opacity: .6; transform: scale(1); } to { opacity: 0; transform: scale(calc(1 + .22 * var(--motion))); } }
 
 /* API: the code window from before the redesign */
-.pg-api { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: center; min-height: 510px; padding-bottom: 8px; }
+.pg-api { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: center; min-height: 562px; padding-bottom: 8px; }
 .pg-code { width: min(760px, 100%); min-width: 0; border-radius: 24px; background: #fff; box-shadow: 0 1px 2px rgba(21, 18, 15, .06), 0 24px 50px -28px rgba(21, 18, 15, .45); overflow: hidden; }
 .pg-code-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .pg-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .06); }
@@ -997,26 +997,137 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-file .bars i:nth-child(3n) { animation-delay: -.3s; } .pg-file .bars i:nth-child(3n+1) { animation-delay: -.6s; }
 @keyframes bar { to { transform: scaleY(calc(1 - .55 * var(--motion))); } }
 
+/* the white card the live tabs share: Speak & listen's text, Translate's translation */
+.pg-card { width: min(720px, 100%); border-radius: 20px; background: #fff; text-align: left;
+  box-shadow: 0 0 0 1px rgba(21, 18, 15, .04), 0 18px 40px -28px rgba(21, 18, 15, .4); transition: box-shadow .25s var(--ease); }
+.pg-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pg-tag { display: inline-flex; align-items: center; gap: 8px; min-width: 0; margin-right: auto; color: var(--ink-3); font-size: 13px; }
+.pg-tag::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--ink-3); opacity: .45; }
+.pg-tag.live::before { background: var(--sahel); opacity: 1; }
+.pg-count { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pg-count.full { color: #8a2f1f; }
+.pg-mini { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: var(--r-pill); background: rgba(21, 18, 15, .05);
+  color: var(--ink); font: inherit; font-size: 13.5px; text-decoration: none; white-space: nowrap; cursor: pointer; transition: background-color .2s var(--ease); }
+.pg-mini:hover { background: rgba(21, 18, 15, .09); }
+.pg-mini svg { width: 15px; height: 15px; flex: none; }
+.pg-go { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 0; border-radius: var(--r-pill); background: var(--ink); color: #fff;
+  font: inherit; font-size: 14.5px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: background-color .2s var(--ease); }
+.pg-go:hover { background: #3a332d; }
+.pg-go:disabled { opacity: .65; cursor: progress; }
+.pg-go svg { width: 15px; height: 15px; }
+.pg-mini:focus-visible, .pg-go:focus-visible, .pg-call:focus-visible, .pg-pills button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pg-call:disabled { opacity: .55; cursor: progress; transform: none; }
+
+/* Speak & listen: the voice reel over one card that goes both ways. Read aloud, the words still to come are soft,
+   the words said are ink, and the word being said takes a warm stroke that sweeps across it for as long as it lasts;
+   heard, the words arrive one after another, coming into focus out of the same warm colour. */
+.pg-sl { --disc: 164px; }
+.pg-sl .vr-names { height: 72px; margin-top: 4px; }
+.pg-sl .vr.duo .vr-name { width: 140px; margin-left: -70px; }   /* the two orbs sit close: each note wraps under its own orb */
+.pg-sl .pg-text { margin-top: 2px; }
+.pg-stage.pg-sl { min-height: 480px; padding: 20px 0 16px; }   /* its bar has two rows: the stage gives the second one back, so every tab is one height */
+.pg-text { margin-top: 6px; padding: 18px 20px 12px; }
+.pg-text.hearing { box-shadow: 0 0 0 1.5px rgba(180, 85, 42, .35), 0 18px 40px -28px rgba(21, 18, 15, .4); }
+.pg-read { margin: 0; min-height: 1.4em; max-height: 8.4em; overflow-y: auto; color: var(--ink); font-size: clamp(18px, 1.5vw, 21px); line-height: 1.4;
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.pg-read.waiting { color: var(--ink-3); }
+.pg-read .w { border-radius: 3px; transition: color .35s var(--ease); }
+.pg-read.reading .w { color: rgba(21, 18, 15, .32); }
+.pg-read.reading .w.said { color: var(--ink); }
+.pg-read.reading .w.now { color: var(--ink); background: linear-gradient(rgba(232, 147, 90, .34), rgba(232, 147, 90, .34)) 0 92% / 0% 34% no-repeat;
+  animation: pg-sweep var(--d) linear forwards; }
+@keyframes pg-sweep { to { background-size: 100% 34%; } }
+.pg-read.typing .w { opacity: 0; animation: pg-word .55s var(--ease-out) forwards; animation-delay: calc(var(--i) * 70ms); }
+@keyframes pg-word { from { opacity: 0; filter: blur(4px); color: var(--sahel-deep); } 55% { color: var(--sahel-deep); } to { opacity: 1; filter: blur(0); color: var(--ink); } }
+.pg-mic { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(21, 18, 15, .06); color: var(--ink); cursor: pointer; transition: background-color .25s var(--ease), color .25s var(--ease); }
+.pg-mic:hover { background: rgba(21, 18, 15, .11); }
+.pg-mic.on { background: var(--sahel-deep); color: #fff; }
+.pg-mic.on::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px solid rgba(180, 85, 42, .55); animation: ring 1.8s var(--ease-out) infinite; }
+.pg-mic:disabled { opacity: .45; cursor: default; }
+.pg-mic:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pg-tag.heard::before { background: var(--kola); opacity: .85; }
+/* the bar: two labelled rows, what Tafiya can say and what Tatsuniya can hear */
+.pg-groups { display: grid; gap: 2px; min-width: 0; }
+.pg-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pg-glabel { width: 96px; flex: none; color: var(--ink-3); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-align: right; text-transform: uppercase; }
+.pg-text:focus-within { box-shadow: 0 0 0 1.5px rgba(21, 18, 15, .2), 0 18px 40px -28px rgba(21, 18, 15, .4); }
+.pg-text textarea { display: block; width: 100%; min-height: 1.4em; max-height: 8.4em; padding: 0; border: 0; background: none; color: var(--ink);
+  font: inherit; font-size: clamp(18px, 1.5vw, 21px); line-height: 1.4; resize: none; overflow-y: auto; }
+.pg-text textarea:focus { outline: 0; }
+.pg-text textarea::placeholder { color: var(--ink-3); }
+.pg-gloss { margin: 6px 0 0; color: var(--ink-3); font-size: 14.5px; line-height: 1.45; }
+.pg-sl > .pg-call-state, .pg-sl > .pg-error { margin-top: 12px; }
+
+/* Translate: a listening orb with a record button, and what came back under it */
+.pg-listen { --disc: 176px; }
+.pg-bar-l { display: flex; align-items: center; justify-self: start; min-width: 0; }
+.pg-dir button { height: 32px; padding: 0 14px; font-size: 14px; }
+.pg-dir button:disabled { cursor: default; }
+.pg-dir-top { display: none; }
+.pg-heard { margin-top: 18px; padding: 14px 20px 18px; }
+.pg-heard.has { animation: pg-in calc(.4s * var(--motion)) var(--ease-out) both; }
+.pg-row + .pg-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pg-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; }
+.pg-row-acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.pg-row p { margin: 4px 0 0; }
+.pg-row-from .pg-label { display: block; min-height: 20px; }
+.pg-row-from p { color: var(--ink-2); font-size: 15.5px; line-height: 1.45; }
+.pg-heard .said { max-height: 7em; overflow-y: auto; font-size: clamp(18px, 1.5vw, 21px); line-height: 1.4; color: var(--ink); overflow-wrap: anywhere; }
+.pg-heard .muted { color: var(--ink-3); }
+.pg-heard .pg-label .muted { font-weight: 400; }
+.pg-pills button:disabled { opacity: .45; cursor: default; }
+.pg-pills .pg-upload { margin-left: 6px; box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .14); }
+
 @media (max-width: 1000px) {
+  /* the tabs no longer fit in equal columns: they become a row that scrolls sideways to the chosen one */
+  .pg-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 36px), transparent); }
+  .pg-tabs { scroll-padding-inline: 40px; }   /* the chosen tab scrolls clear of the faded edges */
+  .pg-tabs::-webkit-scrollbar { display: none; }
+  .pg-tabs button { flex: 1 0 auto; padding: 0 16px; font-size: 16px; }
+  .pg-bar-l { display: none; }
+  .pg-dir-top { display: inline-flex; margin-bottom: 15px; }   /* Translate's direction moves above the orb */
   .pg-bar { display: flex; flex-wrap: wrap; justify-content: center; row-gap: 14px; }
   .pg-bar > span[aria-hidden] { display: none; }
   .pg-bar-c { order: -1; flex: 1 0 100%; overflow-x: auto; scrollbar-width: none; }
   .pg-bar-c::-webkit-scrollbar { display: none; }
   .pg-bar-c:has(.pg-pills) { justify-content: flex-start; }
   .pg-bar-c:empty { display: none; }
-  .pg-stage.pg-converse { min-height: 524px; }   /* these two stand in for the row of pills Speak wraps onto */
-  .pg-api { min-height: 564px; }
+  .pg-stage, .pg-stage.pg-converse { min-height: 540px; }   /* these stand in for the rows the bar wraps onto */
+  .pg-stage.pg-sl { min-height: 498px; }
+  .pg-api { min-height: 634px; }
   .pg-pills { margin-inline: auto; }
 }
 @media (max-width: 640px) {
   .pg { border-radius: 20px; }
   .pg-tabs { padding: 4px; }
-  .pg-tabs button { height: 40px; padding: 0 6px; border-radius: 12px; font-size: 14.5px; }
+  .pg-tabs button { height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
   .pg-tabs .dot { display: none; }
+  .pg-listen { --disc: 136px; }
+  .pg-sl { --disc: 126px; }
+  .pg-sl .vr-names { height: 86px; margin-top: 2px; }   /* room for a voice's note on two or three lines (French) */
+  .pg-sl .vr.duo .vr-name { width: 30vw; margin-left: -15vw; }
+  .pg-stage.pg-sl { min-height: 520px; padding: 16px 0 12px; }
+  .pg-sl .pg-tag { order: -1; }                         /* where the words came from, on its own line above the controls */
+  .pg-dl span { display: none; }
+  /* each row of the bar scrolls sideways under its label, so every example and sample stays one tap away */
+  .pg-groups { width: 100%; }
+  .pg-group { gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .pg-group::-webkit-scrollbar { display: none; }
+  .pg-group .pg-pills { flex-wrap: nowrap; justify-content: flex-start; margin-inline: 0; }
+  .pg-glabel { width: 74px; font-size: 11px; text-align: left; }
+  .pg-text { padding: 14px 16px 10px; }
+  .pg-card-foot { flex-wrap: wrap; row-gap: 8px; }
+  .pg-tag { flex: 1 0 100%; }
+  .pg-count { margin-right: auto; }
+  .pg-heard { padding: 12px 16px 14px; }
+  .pg-row-head { flex-wrap: wrap; }
+  .pg-dir button { padding: 0 10px; font-size: 13px; }
   .pg-panel { padding: 0 14px 16px; }
-  .pg-stage { min-height: 424px; padding: 24px 0 20px; }
-  .pg-stage.pg-converse { min-height: 474px; }
-  .pg-speak, .pg-converse { --disc: 200px; }
+  .pg-stage { min-height: 518px; padding: 24px 0 20px; }
+  .pg-stage.pg-converse { min-height: 558px; }
+  .pg-converse { --disc: 200px; }
   .vr-arrow.prev { left: calc(50% - 150px); }
   .vr-arrow.next { left: calc(50% + 118px); }
   .vr-stage { -webkit-mask-image: none; mask-image: none; width: calc(100% + 28px); margin-inline: -14px; }   /* side orbs run to the panel edge */
@@ -1025,7 +1136,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-bar-c:has(.pg-pills) { overflow: visible; justify-content: center; }
   .pg-pills { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
   .pg-cta { height: 36px; padding: 0 14px; font-size: 15px; }
-  .pg-api { min-height: 510px; padding: 24px 0 8px; }
+  .pg-api { min-height: 643px; padding: 24px 0 8px; }
   .pg-code pre { font-size: 12px; padding: 18px; }
   .pg-code-head { flex-wrap: wrap; }
   .pg-code-head .pg-seg button { padding: 0 10px; }
@@ -1104,9 +1215,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 }
 
 /* the console's live results */
-.pg-result { margin: 14px auto 0; max-width: 34em; text-align: center; }
-.pg-result .said { display: block; font-size: clamp(20px, 1.8vw, 24px); line-height: 1.38; color: var(--ink); }
-.pg-result .pg-label { display: block; margin-bottom: 6px; }
 .pg-error { margin: 12px 0 0; color: #8a2f1f; font-size: 14px; text-align: center; }
 .pg-note { margin: 14px 0 0; color: var(--ink-3); font-size: 13.5px; text-align: center; }
 .pg-clip { border: 0; padding: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
