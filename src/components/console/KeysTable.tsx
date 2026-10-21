@@ -1,9 +1,11 @@
 "use client";
 
 /* The API keys page, after platform.openai.com's: a table of keys (name, the secret's visible start, permissions,
-   created, last used) with the revoked ones folded away below it, and three dialogs: create (a name, then all
-   models or a chosen few), the secret shown exactly once with a copy button, and a revoke that says what will break.
-   Keys are created and revoked through /api/keys; the server keeps only a fingerprint of each secret. */
+   created, last used, then edit and revoke) with the revoked ones folded away below it, and four dialogs: create (a
+   name, then all models or a chosen few), the secret shown exactly once with a copy button and the line to put it in
+   an environment variable, edit (name and permissions), and a revoke that says what will break. Keys are created,
+   edited and revoked through /api/keys; the server keeps only a fingerprint of each secret. ?create=1 opens the
+   create dialog (the console's Home links here). */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "../Icon";
 import { consoleCopy } from "@/content/console";
@@ -15,7 +17,7 @@ const ENDPOINT: Record<Scope, string> = { transcribe: "/v1/transcribe", speech: 
 const day = (lang: Lang, iso: string | null) =>
   iso ? new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso)) : null;
 
-async function call(method: "POST" | "DELETE", url: string, body?: unknown) {
+async function call(method: "POST" | "PATCH" | "DELETE", url: string, body?: unknown) {
   const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.message ?? "error");
@@ -29,6 +31,31 @@ function useDialog(open: boolean) {
   return ref;
 }
 
+/* all four models, or a chosen few */
+function Perms({ t, all, setAll, chosen, setChosen, id }: { t: (typeof consoleCopy)["en"]["keys"]; all: boolean; setAll: (b: boolean) => void;
+  chosen: Scope[]; setChosen: (f: (xs: Scope[]) => Scope[]) => void; id: string }) {
+  return (
+    <div className="cx-field">
+      <span id={id}>{t.permsLabel}</span>
+      <div className="cx-seg" role="radiogroup" aria-labelledby={id}>
+        <button type="button" role="radio" aria-checked={all} onClick={() => setAll(true)}>{t.permsAll}</button>
+        <button type="button" role="radio" aria-checked={!all} onClick={() => setAll(false)}>{t.permsRestricted}</button>
+      </div>
+      {!all && (
+        <fieldset className="cx-scopes">
+          <legend>{t.permsHelp}</legend>
+          {SCOPES.map(s => (
+            <label key={s} className="cx-scope">
+              <input type="checkbox" checked={chosen.includes(s)} onChange={() => setChosen(xs => (xs.includes(s) ? xs.filter(x => x !== s) : [...xs, s]))} />
+              <span><strong>{t.models[s].name}</strong> {t.models[s].task}</span><code>{ENDPOINT[s]}</code>
+            </label>
+          ))}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
 export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: KeyRow[]; apiBase: string }) {
   const t = consoleCopy[lang].keys;
   const [keys, setKeys] = useState(initial);
@@ -39,15 +66,23 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ key: string; scopes: Scope[] } | null>(null);
-  const [copied, setCopied] = useState<"secret" | "base" | null>(null);
+  const [copied, setCopied] = useState<"secret" | "base" | "env" | null>(null);
   const [revoking, setRevoking] = useState<KeyRow | null>(null);
+  const [editing, setEditing] = useState<KeyRow | null>(null);
+  const [eName, setEName] = useState(""), [eAll, setEAll] = useState(true), [eChosen, setEChosen] = useState<Scope[]>([]);
   const [showRevoked, setShowRevoked] = useState(false);
-  const createRef = useDialog(creating), revokeRef = useDialog(!!revoking);
+  const createRef = useDialog(creating), revokeRef = useDialog(!!revoking), editRef = useDialog(!!editing);
+  useEffect(() => {                                     // ?create=1, from the console's Home
+    const u = new URL(window.location.href);
+    if (u.searchParams.get("create") !== "1") return;
+    u.searchParams.delete("create"); window.history.replaceState(null, "", u);
+    if (initial.filter(k => !k.revoked_at).length < MAX_ACTIVE_KEYS) setCreating(true);
+  }, [initial]);
 
   const live = keys.filter(k => !k.revoked_at), gone = keys.filter(k => k.revoked_at);
   const scopes: Scope[] = all ? [...SCOPES] : chosen;
   const isAll = (s: Scope[]) => SCOPES.every(x => s.includes(x));
-  const copy = async (text: string, what: "secret" | "base") => { await navigator.clipboard.writeText(text); setCopied(what); setTimeout(() => setCopied(null), 1600); };
+  const copy = async (text: string, what: "secret" | "base" | "env") => { await navigator.clipboard.writeText(text); setCopied(what); setTimeout(() => setCopied(null), 1600); };
 
   async function create(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
@@ -67,6 +102,17 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     finally { setBusy(false); }
   }
   const closeCreate = () => { setCreating(false); setSecret(null); setError(null); setAll(true); };
+  const openEdit = (k: KeyRow) => { setError(null); setEditing(k); setEName(k.name); setEAll(isAll(k.scopes)); setEChosen(isAll(k.scopes) ? ["speech", "transcribe"] : k.scopes); };
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setBusy(true); setError(null);
+    try {
+      const { data } = await call("PATCH", "/api/keys", { id: editing.id, name: eName.trim(), scopes: eAll ? [...SCOPES] : eChosen });
+      setKeys(ks => ks.map(x => (x.id === editing.id ? (data as KeyRow) : x))); setEditing(null);
+    } catch (err) { setError(err instanceof Error && err.message !== "error" ? err.message : t.error); }
+    finally { setBusy(false); }
+  }
 
   const perms = (s: Scope[]) => isAll(s)
     ? <span className="cx-perm">{t.all}</span>
@@ -79,6 +125,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
       <td>{day(lang, k.created_at)}</td>
       <td>{day(lang, k.last_used_at) ?? <span className="cx-muted">{t.never}</span>}</td>
       <td className="cx-acts">
+        {!k.revoked_at && !k.is_demo && <button type="button" className="cx-icon-btn" onClick={() => openEdit(k)} aria-label={t.editLabel(k.name)} title={t.editLabel(k.name)}><Icon name="pencil" size={17} stroke={1.5} /></button>}
         {!k.revoked_at && <button type="button" className="cx-icon-btn" onClick={() => { setError(null); setRevoking(k); }} aria-label={t.revokeLabel(k.name)} title={t.revokeLabel(k.name)}><Icon name="trash" size={17} stroke={1.5} /></button>}
       </td>
     </tr>
@@ -140,6 +187,13 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
               <button type="button" className="cx-btn" onClick={() => copy(secret.key, "secret")}><Icon name={copied === "secret" ? "check" : "copy"} size={16} stroke={1.6} />{copied === "secret" ? t.copied : t.copy}</button>
             </div>
             <p className="cx-dialog-meta"><span>{t.permsOf}</span>{isAll(secret.scopes) ? t.all : secret.scopes.map(x => t.models[x].name).join(", ")}</p>
+            <div className="cx-env-hint">
+              <p>{t.envHint}</p>
+              <div className="cx-env">
+                <pre className="cx-code"><code>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
+                <button type="button" className="cx-icon-btn" onClick={() => copy(`export NAMU_API_KEY="${secret.key}"`, "env")} aria-label={t.copy}><Icon name={copied === "env" ? "check" : "copy"} size={16} stroke={1.6} /></button>
+              </div>
+            </div>
             <div className="cx-dialog-acts"><button type="button" className="cx-btn primary" onClick={closeCreate}>{t.done}</button></div>
           </div>
         ) : (
@@ -148,28 +202,31 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
             <label className="cx-field"><span>{t.nameLabel}</span>
               <input required maxLength={60} value={name} onChange={e => setName(e.target.value)} placeholder={t.namePh} autoFocus />
             </label>
-            <div className="cx-field">
-              <span id="cx-perms-l">{t.permsLabel}</span>
-              <div className="cx-seg" role="radiogroup" aria-labelledby="cx-perms-l">
-                <button type="button" role="radio" aria-checked={all} onClick={() => setAll(true)}>{t.permsAll}</button>
-                <button type="button" role="radio" aria-checked={!all} onClick={() => setAll(false)}>{t.permsRestricted}</button>
-              </div>
-              {!all && (
-                <fieldset className="cx-scopes">
-                  <legend>{t.permsHelp}</legend>
-                  {SCOPES.map(s => (
-                    <label key={s} className="cx-scope">
-                      <input type="checkbox" checked={chosen.includes(s)} onChange={() => setChosen(xs => (xs.includes(s) ? xs.filter(x => x !== s) : [...xs, s]))} />
-                      <span><strong>{t.models[s].name}</strong> {t.models[s].task}</span><code>{ENDPOINT[s]}</code>
-                    </label>
-                  ))}
-                </fieldset>
-              )}
-            </div>
+            <Perms t={t} all={all} setAll={setAll} chosen={chosen} setChosen={setChosen} id="cx-perms-l" />
             {error && <p className="cx-error" role="alert">{error}</p>}
             <div className="cx-dialog-acts">
               <button type="button" className="cx-btn" onClick={closeCreate}>{t.cancel}</button>
               <button type="submit" className="cx-btn primary" disabled={busy || !name.trim() || scopes.length === 0}>{busy ? t.creating : t.create}</button>
+            </div>
+          </form>
+        )}
+      </dialog>
+
+      {/* edit: the name and the permissions */}
+      <dialog ref={editRef} className="cx-dialog" onClose={() => setEditing(null)} aria-labelledby="cx-edit-h">
+        {editing && (
+          <form className="cx-dialog-body" onSubmit={save}>
+            <h2 id="cx-edit-h">{t.editH}</h2>
+            <p className="cx-dialog-meta"><code>{editing.prefix}…</code></p>
+            <label className="cx-field"><span>{t.nameLabel}</span>
+              <input required maxLength={60} value={eName} onChange={e => setEName(e.target.value)} autoFocus />
+            </label>
+            <Perms t={t} all={eAll} setAll={setEAll} chosen={eChosen} setChosen={setEChosen} id="cx-eperms-l" />
+            <p className="cx-muted cx-small">{t.editNote}</p>
+            {error && <p className="cx-error" role="alert">{error}</p>}
+            <div className="cx-dialog-acts">
+              <button type="button" className="cx-btn" onClick={() => setEditing(null)}>{t.cancel}</button>
+              <button type="submit" className="cx-btn primary" disabled={busy || !eName.trim() || (!eAll && eChosen.length === 0)}>{busy ? t.saving : t.save}</button>
             </div>
           </form>
         )}

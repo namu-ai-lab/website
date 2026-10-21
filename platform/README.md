@@ -51,6 +51,10 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 - **Gateway checks**, in order: key present → known → not revoked → owner active (not paused) → scope → monthly audio
   quota → per-key rate limit (60/min by default) → size and duration caps (25 MB, 5 min, 2,000 characters),
   measured with ffprobe *before* any GPU is called.
+- **Console Playground**: the website holds one key marked `is_service` (NAMU_SERVICE_KEY). It is refused unless the
+  request names an account (`X-Namu-Account`), which the website sets only after checking the developer's session;
+  the gateway then applies that account's status, allowance and a per-account limit (20/min), and meters the request
+  to it. Its runs appear in the developer's Usage and Logs as "Playground".
 - **Demo**: the website holds one ordinary key marked `is_demo`. Only demo keys may pass the visitor's IP
   (`X-Namu-Client-IP`); the gateway limits each IP to 30 requests per hour, 15 s of audio and 300 characters.
 - **Conversation memory** is namespaced by account (`user_id:session_id`).
@@ -85,6 +89,9 @@ never printed by the scripts.
 5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` except `GATEWAY_DATABASE_URL`;
    give Production its own `NEON_AUTH_COOKIE_SECRET` (any random 32+ characters). Redeploy.
 6. **First admin**: sign up on the site, then `npm run db:admin -- you@example.org`.
+6b. **Console Playground**: after migration 0004 (`npm run db:migrate`) and the gateway deploy that reads
+   `namu_key_lookup_v2`, run `npm run db:admin -- --service` and set NAMU_SERVICE_KEY in Vercel (Production).
+   Order matters: migrate first, then deploy the gateway, then the website.
 7. **Demo key**: in `/account/keys`, create a key named `website demo`, save it as `NAMU_DEMO_KEY` (in Vercel),
    then `npm run db:admin -- --demo`. Raise the admin account's monthly minutes if the demo is busy.
 8. **Lock the model services** (last, after step 4 works end to end):
