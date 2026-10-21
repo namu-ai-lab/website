@@ -12,5 +12,14 @@ faithfully kept. Healthcare and Farming reuse `public/demo/clinic-nadia.m4a` and
 | `public.m4a` | Tafiya, female | Za mu taimaka muku ku cike fom ɗin, mataki-mataki. | We will help you fill in the form, step by step. |
 | `heritage.m4a` | Tafiya, male | Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari. | Once, in a village, there lived an old storyteller. |
 
+The home page playground's French samples (Translate, French → Hausa) were made on 2026-10-21 the same way as
+`translation-fr.m4a`: Kora's own spoken output (`POST /v1/translate`, target fr, `include_audio`), loudness-normalised
+to −18 LUFS. Each was checked by sending it back (target ha): Kora heard the French exactly.
+
+| File | Made from | Says | Sent back, Kora heard |
+|---|---|---|---|
+| `translation-fr-story.m4a` | `heritage.m4a` | Un jour, dans un village, il y avait un vieux conteur. | the same sentence |
+| `translation-fr-form.m4a` | `public.m4a` | Nous allons vous aider à remplir le formulaire étape par étape. | the same sentence |
+
 The heritage card also shows what Tatsuniya wrote down from `heritage.m4a`: "wata rana a wani ƙauye akwai wani tsoho
 mai bada labari." The Hausa has not yet been reviewed by a native speaker.

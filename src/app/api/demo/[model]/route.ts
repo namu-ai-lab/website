@@ -51,7 +51,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   }
   const type = res.headers.get("content-type") ?? "application/octet-stream";
   const out = new NextResponse(res.body, { status: res.status, headers: { "Content-Type": type, "Cache-Control": "no-store" } });
-  const retry = res.headers.get("retry-after");
+  const retry = res.headers.get("retry-after"), seconds = res.headers.get("x-audio-seconds");
   if (retry) out.headers.set("Retry-After", retry);
+  if (seconds) out.headers.set("X-Audio-Seconds", seconds);     // the length of the speech, for the API tab
   return out;
 }

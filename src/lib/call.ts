@@ -21,7 +21,8 @@ export type CallEvents = { state(s: CallState): void; heard?(text: string): void
 const LINES = ["hello", "ack1", "ack2", "ack3", "question", "think1", "think2", "think3", "almost", "unheard", "limit", "error"] as const;
 type Line = (typeof LINES)[number];
 
-const TAP = `class Tap extends AudioWorkletProcessor {
+/* The microphone tap, shared with the home playground's recorder: hands over 1,024 samples at a time. */
+export const TAP = `class Tap extends AudioWorkletProcessor {
   constructor() { super(); this.buf = new Float32Array(1024); this.n = 0; }
   process(inputs) {
     const ch = inputs[0] && inputs[0][0];
@@ -287,7 +288,7 @@ export class AirCall {
 }
 
 /* 16 kHz mono 16-bit WAV, each output sample the mean of the input samples it covers (a simple low-pass) */
-function wav16k(chunks: Float32Array[], rate: number): ArrayBuffer {
+export function wav16k(chunks: Float32Array[], rate: number): ArrayBuffer {
   const total = chunks.reduce((n, c) => n + c.length, 0), all = new Float32Array(total);
   let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
   const ratio = rate / 16000, n = Math.floor(total / ratio), b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
