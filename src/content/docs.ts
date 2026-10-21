@@ -215,9 +215,10 @@ with open("turn.wav", "rb") as f:
         "${base}/v1/converse",
         headers={"Authorization": f"Bearer {os.environ['NAMU_API_KEY']}"},
         files={"file": f},
-        data={"persona": "nadia", "session_id": "user-42"},
-        timeout=120,
+        data={"persona": "nadia", "session_id": "user-42"},   # reuse the session_id so Aïr remembers
+        timeout=300,                                           # the first turn can wait for the models to wake
     )
+r.raise_for_status()
 out = r.json()
 print(out["heard"], "->", out["reply"])
 open("reply.wav", "wb").write(base64.b64decode(out["audio"]))`,
