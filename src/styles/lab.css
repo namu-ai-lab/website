@@ -972,13 +972,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-agent { cursor: default; }
 .pg-agent.hearing .vr-agent { transform: scale(1.03); }
 .vr-agent { transition: transform .5s var(--ease); }
-/* what Aïr heard and what it said, in Hausa, two short lines under the orb */
-.pg-captions { display: grid; gap: 6px; width: min(560px, 100%); min-height: 3.2em; margin-top: 10px; padding-inline: 12px; }
-.pg-captions p { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; margin: 0; font-size: 15px; line-height: 1.4; animation: pg-rise .5s var(--ease) both; }
-.pg-captions span { color: var(--ink-3); font-size: 12px; letter-spacing: .02em; padding-top: 2px; }
-.pg-captions q { quotes: none; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-@keyframes pg-rise { from { opacity: 0; transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { .pg-captions p { animation: none; } }
 @keyframes ring { from { opacity: .6; transform: scale(1); } to { opacity: 0; transform: scale(calc(1 + .22 * var(--motion))); } }
 
 /* API: the code window from before the redesign */

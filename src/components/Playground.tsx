@@ -151,23 +151,20 @@ function Speak({ lang, cta }: { lang: Lang; cta: Cta }) {
 
 /* ---------------------------------------------------------------- Converse (Aïr) */
 /* A live call: Aïr greets, listens, answers aloud and listens again until the call ends (see lib/call). The orb moves
-   with whoever is speaking; under it, what Aïr heard and what it said, in Hausa. */
+   with whoever is speaking; the conversation is heard, not written out. */
 function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
   const c = playground[lang], t = c.converse, vs = voices[lang];
   const [persona, setPersona] = useState<Persona>("nadia");
   const [state, setState] = useState<CallState | "idle">("idle");
-  const [heard, setHeard] = useState(""), [said, setSaid] = useState("");
   const [error, setError] = useState<string | null>(null);
   const amp = useRef(0);
   const call = useRef<AirCall | null>(null);
   const voice = vs.find(v => v.id === persona) ?? vs[0];
 
   const start = () => {
-    setError(null); setHeard(""); setSaid("");
+    setError(null);
     const k = new AirCall(persona, {
       state: s => { if (call.current === k) setState(s === "ended" ? "idle" : s); },
-      heard: x => { setHeard(x); setSaid(""); },
-      reply: setSaid,
       problem: p => setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed),
     }, amp, reduced());
     call.current = k;
@@ -189,10 +186,6 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
           </button>
         </div>
         <p className={error && !live ? "pg-error" : "pg-call-state"} aria-live="polite">{line}</p>
-        <div className="pg-captions" aria-live="polite">
-          {heard && <p><span>{t.you}</span><q lang="ha">{heard}</q></p>}
-          {said && <p><span>{t.air}</span><q lang="ha">{said}</q></p>}
-        </div>
       </div>
       <Bar cta={cta}>
         <Pills items={vs.map(v => ({ id: v.id as Persona, label: v.name }))} value={persona} onPick={id => { if (id !== persona) { end(); setPersona(id); } }} label={t.voice} />
