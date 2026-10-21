@@ -1,6 +1,6 @@
 "use client";
 
-import { createAuthClient } from "better-auth/client";
+import { createAuthClient } from "@neondatabase/auth/next";
 
-/* Better Auth in the browser: starts sign-in and signs out. Sessions live in an httpOnly cookie. */
+/* Neon Auth in the browser: every call goes to this site's /api/auth/*, which relays it to Neon. */
 export const authClient = createAuthClient();

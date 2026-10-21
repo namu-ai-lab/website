@@ -1,12 +1,11 @@
 // npm run db:migrate — sets up the Neon database. Safe to run again.
-//   1. Better Auth's tables ("user", session, account, verification)
+//   1. checks that Neon Auth is switched on (its neon_auth schema holds the users; Neon creates it)
 //   2. the gateway's login role, namu_gateway, with a generated password (saved to .env.local as
 //      GATEWAY_DATABASE_URL, never printed)
 //   3. db/migrations/*.sql in order
 import { randomBytes } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import pg from "pg";
-import { getMigrations } from "better-auth/db/migration";
 import { loadEnv, readEnv, writeEnv } from "./env-file.mjs";
 
 loadEnv();
@@ -15,9 +14,8 @@ if (!url) { console.error("DATABASE_URL is missing (put it in .env.local)"); pro
 const pool = new pg.Pool({ connectionString: url, max: 1 });
 
 try {
-  const { toBeCreated, toBeAdded, runMigrations } = await getMigrations({ database: pool, secret: process.env.BETTER_AUTH_SECRET });
-  await runMigrations();
-  console.log(`auth tables: ${toBeCreated.length} created, ${toBeAdded.length} updated`);
+  const users = await pool.query(`select to_regclass('neon_auth."user"') is not null as ok`);
+  if (!users.rows[0].ok) console.warn("neon_auth.\"user\" not found: switch on Neon Auth for this branch (Neon Console → Auth) before signing in");
 
   const role = await pool.query("select 1 from pg_roles where rolname = 'namu_gateway'");
   if (!role.rowCount || !readEnv().GATEWAY_DATABASE_URL) {

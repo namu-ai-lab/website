@@ -1000,13 +1000,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .check { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 15.5px; cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--ink); }
 .acct-form .pill.lg { margin-top: 16px; width: 100%; justify-content: center; }
-.acct-error { margin: 12px 0 0; color: #8a2f1f; font-size: 14.5px; }
-.acct-note { margin: 32px auto 0; max-width: 30em; padding: 16px 20px; border-radius: var(--r-thumb); background: var(--surface); }
-.acct-intro .acct-login { width: min(420px, 100%); margin: 32px auto 0; text-align: left; }
-.acct-terms { max-width: 32em; margin: 24px auto 0; }
-.acct-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--ink-3); font-size: 14px; }
-.acct-or::before, .acct-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.acct-oauth { display: grid; gap: 8px; } .acct-oauth .pill { justify-content: center; cursor: pointer; }
 .acct-dialog { width: min(520px, calc(100vw - 32px)); padding: 28px; border: 0; border-radius: var(--r-card); box-shadow: 0 30px 80px -30px rgba(21, 18, 15, .5); color: var(--ink); }
 .acct-dialog::backdrop { background: rgba(21, 18, 15, .35); backdrop-filter: blur(4px); }
 .acct-dialog .muted { margin: 8px 0 0; font-size: 15.5px; }

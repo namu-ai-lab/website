@@ -190,3 +190,67 @@
   .cx-toolbar-end { width: 100%; justify-content: space-between; }
 }
 @media (prefers-reduced-motion: reduce) { .cx-dialog[open] { animation: none; } }
+
+/* ---- the doors: log in, sign up, reset a password (components/account/AuthFlow), after auth.openai.com. A narrow
+   column, one question per screen; fields whose label rises when they are focused or filled; ink for the way on,
+   outlined pills for Google and GitHub. */
+.cx-door { width: min(360px, 100%); text-align: center; animation: cx-door-in .32s var(--ease-out) both; }
+.cx-door h1 { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 500; letter-spacing: -.02em; text-wrap: balance; }
+.cx-door-lede { margin: 12px 0 0; color: var(--cx-ink-2); font-size: 15px; line-height: 1.5; text-wrap: pretty; overflow-wrap: anywhere; }
+.cx-door form { display: grid; gap: 12px; margin-top: 28px; text-align: left; }
+.cx-door > .cx-door-btn { margin-top: 28px; }
+
+.cx-float { position: relative; }
+.cx-float label { position: relative; display: block; }
+.cx-float input, .cx-float textarea { display: block; width: 100%; height: 52px; padding: 22px 16px 7px; border: 1px solid var(--cx-line-2); border-radius: 12px; background: #fff;
+  color: var(--cx-ink); font: inherit; font-size: 16px; transition: border-color .15s, box-shadow .15s; }
+.cx-float textarea { height: auto; min-height: 128px; padding-top: 28px; line-height: 1.45; resize: vertical; }
+.cx-float.has-trail input { padding-right: 52px; }
+.cx-float label > span { position: absolute; left: 17px; top: 26px; transform: translateY(-50%); transform-origin: left center; color: var(--cx-ink-3); font-size: 16px;
+  pointer-events: none; transition: top .16s var(--ease), transform .16s var(--ease), color .16s; }
+.cx-float input:focus + span, .cx-float input:not(:placeholder-shown) + span,
+.cx-float textarea:focus + span, .cx-float textarea:not(:placeholder-shown) + span { top: 15px; transform: translateY(-50%) scale(.78); color: var(--cx-ink-2); }
+.cx-float input:focus, .cx-float textarea:focus { outline: 0; border-color: var(--cx-ink); box-shadow: 0 0 0 3px rgba(232, 147, 90, .25); }
+.cx-float.bad input { border-color: #b42318; }
+.cx-float.bad input:focus { box-shadow: 0 0 0 3px rgba(180, 35, 24, .14); }
+.cx-float.bad label > span { color: #b42318; }
+.cx-door-eye { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 9px; background: none;
+  color: var(--cx-ink-2); cursor: pointer; }
+.cx-door-eye:hover { background: var(--cx-soft); color: var(--cx-ink); }
+.cx-door-code { font-variant-numeric: tabular-nums; letter-spacing: .35em; }
+
+.cx-door-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 52px; padding: 0 20px; border: 0; border-radius: var(--r-pill);
+  background: var(--cx-ink); color: #fffaf1; font: inherit; font-size: 16px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background-color .15s, opacity .15s; }
+.cx-door-btn:hover { background: #3a2a20; }
+.cx-door-btn.quiet { justify-content: flex-start; padding-left: 22px; background: #fff; color: var(--cx-ink); box-shadow: inset 0 0 0 1px var(--cx-line-2); }
+.cx-door-btn.quiet:hover { background: var(--cx-soft); }
+.cx-door > .cx-door-btn.quiet { justify-content: center; padding-left: 20px; }
+.cx-door-btn:disabled { opacity: .4; cursor: not-allowed; }
+.cx-door-btn[aria-busy="true"] { opacity: .65; cursor: progress; }
+.cx-door form .cx-door-btn { margin-top: 4px; }
+.cx-door-btn:focus-visible, .cx-door-link:focus-visible, .cx-door a:focus-visible, .cx-door-eye:focus-visible { outline: 2px solid var(--sahel); outline-offset: 2px; }
+
+.cx-door-who { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 6px 0 16px; border: 1px solid var(--cx-line); border-radius: 12px; background: var(--cx-soft); font-size: 16px; }
+.cx-door-who span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-door-link { padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--cx-ink); font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer; }
+.cx-door-link:hover { background: rgba(21, 18, 15, .06); }
+.cx-door-link:disabled { background: none; color: var(--cx-ink-3); cursor: default; }
+.cx-door-forgot { margin: 0; font-size: 14.5px; }
+.cx-door-forgot a, .cx-door-alt a { color: var(--cx-ink); font-weight: 500; text-decoration: underline; text-decoration-color: var(--cx-line-2); text-underline-offset: 3px; }
+.cx-door-forgot a:hover, .cx-door-alt a:hover { text-decoration-color: currentColor; }
+.cx-door-alt { margin: 22px 0 0; color: var(--cx-ink-2); font-size: 14.5px; }
+.cx-door-or { display: flex; align-items: center; gap: 14px; margin: 26px 0; color: var(--cx-ink-3); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.cx-door-or::before, .cx-door-or::after { content: ""; flex: 1; height: 1px; background: var(--cx-line); }
+.cx-door-social { display: grid; gap: 10px; }
+.cx-door-rule { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--cx-ink-3); font-size: 14px; transition: color .2s; }
+.cx-door-rule svg { opacity: .4; transition: opacity .2s, color .2s; }
+.cx-door-rule.met { color: var(--cx-ink); }
+.cx-door-rule.met svg { opacity: 1; color: var(--sahel-deep); }
+.cx-door-hint { margin: -4px 2px 0; color: var(--cx-ink-3); font-size: 13.5px; line-height: 1.45; }
+.cx-door-err { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: #b42318; font-size: 14.5px; line-height: 1.4; }
+.cx-door-err svg { flex: none; margin-top: 1.5px; }
+.cx-door-note { margin: 16px 0 0; color: var(--cx-ink-2); font-size: 14.5px; }
+.cx-door-fine { max-width: 30em; margin: 32px auto 0; color: var(--cx-ink-3); font-size: 13px; line-height: 1.5; text-wrap: pretty; }
+@keyframes cx-door-in { from { opacity: 0; transform: translateY(6px); } }
+@media (max-width: 480px) { .cx-door h1 { font-size: 26px; } }
+@media (prefers-reduced-motion: reduce) { .cx-door { animation: none; } .cx-float label > span { transition: none; } }
