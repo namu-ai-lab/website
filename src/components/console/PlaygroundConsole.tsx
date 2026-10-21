@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CodeTabs } from "../CodeTabs";
 import { Icon } from "../Icon";
-import { MODEL_COLOUR } from "./colours";
+import { MODEL_ORB } from "./colours";
 import { consoleCopy } from "@/content/console";
 import type { Lang } from "@/i18n/config";
 import { b64ToBlob, peaksOfBlob, Recorder, toClip, type Clip } from "@/lib/audio";
@@ -309,7 +309,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
         <div className="cx-pg-modes" role="tablist" aria-label={consoleCopy[lang].nav.playground}>
           {MODES.map(m => (
             <button key={m} type="button" role="tab" aria-selected={m === mode} onClick={() => setMode(m)}>
-              <i style={{ background: MODEL_COLOUR[m] }} aria-hidden="true" />{t.modes[m]}<em>{NAME[m]}</em>
+              <i style={{ background: MODEL_ORB[m] }} aria-hidden="true" />{t.modes[m]}<em>{NAME[m]}</em>
             </button>
           ))}
         </div>
@@ -354,7 +354,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
           {side === "settings" ? (
             <div className="cx-pg-settings">
               <div className="cx-pg-set"><p className="cx-label">{t.model}</p>
-                <p className="cx-pg-model"><i style={{ background: MODEL_COLOUR[mode] }} />{NAME[mode]}<code>POST {PATH[mode]}</code></p>
+                <p className="cx-pg-model"><i style={{ background: MODEL_ORB[mode] }} />{NAME[mode]}<code>POST {PATH[mode]}</code></p>
                 <p className="cx-muted cx-small">{models[mode].task}</p></div>
               {mode === "speech" && <div className="cx-pg-set"><p className="cx-label">{t.voice}</p>
                 <Choice value={voice} onPick={setVoice} label={t.voice} options={(["nadia", "salim", "fr"] as Voice[]).map(v => ({ v, title: t.voices[v][0], sub: t.voices[v][1] }))} /></div>}
@@ -377,7 +377,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
             <ol className="cx-history">{runs.map(r => (
               <li key={r.id}>
                 <button type="button" onClick={() => { setMode(r.mode); setOuts(o => ({ ...o, [r.mode]: r.out })); }}>
-                  <i style={{ background: MODEL_COLOUR[r.mode] }} aria-hidden="true" />
+                  <i style={{ background: MODEL_ORB[r.mode] }} aria-hidden="true" />
                   <span><strong>{t.modes[r.mode]}</strong><em lang="ha">{r.label}</em></span>
                 </button>
               </li>

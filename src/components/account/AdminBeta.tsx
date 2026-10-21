@@ -26,26 +26,26 @@ export function AdminBeta({ lang, initial, me }: { lang: Lang; initial: Profile[
     setRows(rs => rs.map(r => (r.user_id === p.user_id ? { ...r, ...json.data } : r)));
   }
 
-  if (rows.length === 0) return <p className="muted">{t.empty}</p>;
+  if (rows.length === 0) return <p className="cx-muted">{t.empty}</p>;
   return (
-    <div className="acct-table-wrap">
-      <table className="acct-table">
+    <div className="cx-table-wrap">
+      <table className="cx-table">
         <thead><tr><th>{t.th.email}</th><th>{t.th.useCase}</th><th>{t.th.status}</th><th>{t.th.joined}</th><th>{t.th.allowance}</th><th><span className="sr-only">{t.pause}</span></th></tr></thead>
         <tbody>
           {rows.map(p => (
             <tr key={p.user_id}>
               <td>{p.email}</td>
-              <td className="wrap-cell">{p.use_case ?? <span className="muted">—</span>}</td>
-              <td><span className={`badge ${p.beta_status}`}>{t.status[p.beta_status]}</span></td>
+              <td className="wrap">{p.use_case ?? <span className="cx-muted">–</span>}</td>
+              <td><span className={`cx-pill${p.beta_status === "approved" ? " good" : ""}`}>{t.status[p.beta_status]}</span></td>
               <td>{fmt(lang, p.created_at)}</td>
-              <td><input className="num" type="number" min={0} max={100000} value={minutes[p.user_id] ?? 0} aria-label={t.th.allowance}
+              <td><input className="cx-input cx-min" type="number" min={0} max={100000} value={minutes[p.user_id] ?? 0} aria-label={t.th.allowance}
                 onChange={e => setMinutes(m => ({ ...m, [p.user_id]: Number(e.target.value) }))} /> {t.minutes}</td>
-              <td><div className="row-acts">
-                <button type="button" className="pill" disabled={busy === p.user_id || minutes[p.user_id] === Math.round(p.monthly_audio_seconds / 60)}
+              <td className="cx-acts"><div className="cx-row-acts">
+                <button type="button" className="cx-btn sm" disabled={busy === p.user_id || minutes[p.user_id] === Math.round(p.monthly_audio_seconds / 60)}
                   onClick={() => decide(p, p.beta_status === "denied" ? "denied" : "approved")}>{t.save}</button>
                 {p.beta_status === "denied"
-                  ? <button type="button" className="pill dark" disabled={busy === p.user_id} onClick={() => decide(p, "approved")}>{t.resume}</button>
-                  : p.user_id !== me && <button type="button" className="pill" disabled={busy === p.user_id} onClick={() => decide(p, "denied")}>{t.pause}</button>}
+                  ? <button type="button" className="cx-btn sm primary" disabled={busy === p.user_id} onClick={() => decide(p, "approved")}>{t.resume}</button>
+                  : p.user_id !== me && <button type="button" className="cx-btn sm" disabled={busy === p.user_id} onClick={() => decide(p, "denied")}>{t.pause}</button>}
               </div></td>
             </tr>
           ))}

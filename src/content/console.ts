@@ -18,6 +18,10 @@ export type ConsoleCopy = {
     welcome: (name: string) => string; startLede: string; keyName: string; keyNamePh: string; creating: string; created: string; shownOnce: string;
     tryFirst: string; playground: string; newKey: string; requests30: string; success: string; latency: string; last30: string;
     recentH: string; recentAll: string; recentEmpty: string; tryH: string; tryLede: string; tryIt: string; playgroundKey: string;
+    getStarted: string; dismiss: string; steps: [string, string][]; quick: [string, string]; pg: [string, string];
+    period: string; ranges: Record<"24h" | "7d" | "14d" | "30d", string>;
+    m: { requests: string; audio: string; success: string; latency: string; chars: string; allowance: string };
+    left: (min: string) => string; ofMonth: (limit: string, date: string) => string; more: string;
   };
   keys: {
     lede: string; createNew: string; count: (n: number, max: number) => string; base: string; copyBase: string;
@@ -117,6 +121,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       requests30: "Requests", success: "Success rate", latency: "Average latency", last30: "Last 30 days",
       recentH: "Recent requests", recentAll: "All logs", recentEmpty: "Nothing yet in the last 30 days.",
       tryH: "Try a model", tryLede: "Each one opens in the Playground, on your account.", tryIt: "Try", playgroundKey: "Playground",
+      getStarted: "Get started", dismiss: "Dismiss",
+      steps: [["Create an API key", "Keep it on your server"], ["Try the models", "In the Playground, no code"], ["Make your first request", "Hausa speech back in one call"]],
+      quick: ["Developer quickstart", "Your first request in minutes"], pg: ["Open the Playground", "Every model, on your account"],
+      period: "Period", ranges: { "24h": "24h", "7d": "7d", "14d": "14d", "30d": "30d" },
+      m: { requests: "Requests", audio: "Audio", success: "Success rate", latency: "Average latency", chars: "Characters spoken", allowance: "Free allowance" },
+      left: m => `${m} min left`, ofMonth: (l, d) => `of ${l} min this month · resets ${d}`, more: "Need more?",
     },
     keys: {
       lede: "Your secret keys are listed below. Do not share them, and never put one in a browser, an app or a repository: anyone holding a key can spend your allowance.",
@@ -242,6 +252,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       requests30: "Requêtes", success: "Taux de réussite", latency: "Latence moyenne", last30: "30 derniers jours",
       recentH: "Requêtes récentes", recentAll: "Tous les journaux", recentEmpty: "Rien ces 30 derniers jours.",
       tryH: "Essayer un modèle", tryLede: "Chacun s’ouvre dans le bac à sable, sur votre compte.", tryIt: "Essayer", playgroundKey: "Bac à sable",
+      getStarted: "Pour commencer", dismiss: "Masquer",
+      steps: [["Créer une clé d’API", "À garder sur votre serveur"], ["Essayer les modèles", "Dans le bac à sable, sans code"], ["Faire votre première requête", "De la parole en haoussa en un appel"]],
+      quick: ["Démarrage rapide", "Votre première requête en quelques minutes"], pg: ["Ouvrir le bac à sable", "Tous les modèles, sur votre compte"],
+      period: "Période", ranges: { "24h": "24 h", "7d": "7 j", "14d": "14 j", "30d": "30 j" },
+      m: { requests: "Requêtes", audio: "Audio", success: "Taux de réussite", latency: "Latence moyenne", chars: "Caractères prononcés", allowance: "Allocation gratuite" },
+      left: m => `${m} min restantes`, ofMonth: (l, d) => `sur ${l} min ce mois-ci · remise à zéro le ${d}`, more: `Besoin de plus${n}?`,
     },
     keys: {
       lede: `Vos clés secrètes sont listées ci-dessous. Ne les partagez pas, et ne mettez jamais une clé dans un navigateur, une application ou un dépôt${n}: quiconque la détient peut dépenser votre forfait.`,
