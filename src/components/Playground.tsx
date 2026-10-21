@@ -1,10 +1,11 @@
 "use client";
 
-/* The home page console: try every one of the Lab's models, after elevenlabs.io's hero panel. Five tabs across the
-   top; each puts one object in the middle (the voice reel, a listening orb, Aïr on a call, a code window) over the
-   same bar: the choices in the middle, the way in on the right.
-     Text to speech   Tafiya reads what you type, live (/api/demo/speech); the examples play recordings at once
-     Speech to text   Tatsuniya writes down what you record, upload or pick (/api/demo/transcribe)
+/* The home page console: try every one of the Lab's models, after elevenlabs.io's hero panel. Four tabs across the
+   top; each puts one object in the middle (the voice reel over a card, a listening orb, Aïr on a call, a code window)
+   over the same bar: the choices in the middle, the way in on the right.
+     Speak & listen   one card, both ways: Tafiya reads what you write, live (/api/demo/speech), the words lighting up
+                      as they are said; Tatsuniya writes down what you say, upload or pick (/api/demo/transcribe); and
+                      Tafiya can say back what Tatsuniya heard. The examples play recordings at once.
      Translate        Kora answers Hausa in French or French in Hausa, in writing and aloud (/api/demo/translate)
      Converse         a live call with Aïr, a research preview (lib/call, /api/demo/converse)
      API              the code, run on the demo
@@ -13,7 +14,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
-import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
+import { koraPalette, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
 import { apiBase } from "@/lib/env";
 import { AirCall, TAP, wav16k, type CallState, type Persona } from "@/lib/call";
@@ -118,7 +119,8 @@ function usePlayer(amp: { current: number }) {
   };
   const stop = () => { audio.current?.pause(); amp.current = 0; };
   useEffect(() => () => { audio.current?.pause(); if (url.current) URL.revokeObjectURL(url.current); }, []);
-  return { play, stop, playing };
+  const at = () => audio.current?.currentTime ?? 0;      // where playback is, for the read-along
+  return { play, stop, playing, at };
 }
 
 /* An object URL for the last clip, freed when it changes or the tab closes: what the download link points at. */
@@ -222,84 +224,244 @@ function CopyButton({ text, labels }: { text: string; labels: { copy: string; co
   );
 }
 
-/* ---------------------------------------------------------------- Text to speech (Tafiya) */
-function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
-  const c = playground[lang], t = c.tts, ss = scripts[lang], vs = voices[lang];
+/* ---------------------------------------------------------------- Speak & listen (Tafiya and Tatsuniya) */
+/* One card, both ways. Write Hausa and Tafiya reads it, the words lighting up as the voice reaches them; press the
+   microphone (or send a sample or a clip) and Tatsuniya writes down what it heard, word by word; then "Hear it back":
+   Tafiya says what Tatsuniya wrote, the two models handing the sentence to each other. The chosen voice's orb moves
+   with whoever is speaking: Tafiya, or the visitor while the microphone is open. */
+type Origin = "example" | "typed" | "heard" | "echoed";
+type Timed = { start: number; end: number };
+
+/* When each word is said, approximately: the clip's 20 ms frames that carry voice (louder than an eighth of its
+   peak), shared out among the words in proportion to their length. Good enough to follow by eye, and the page says
+   so; the model gives no word timings of its own. */
+async function timeWords(blob: Blob, words: string[]): Promise<Timed[] | null> {
+  if (!words.length) return null;
+  const ctx = new AudioContext();
+  try {
+    const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+    const d = buf.getChannelData(0), hop = Math.max(1, Math.round(buf.sampleRate * 0.02)), n = Math.floor(d.length / hop);
+    const rms = new Float32Array(n);
+    let top = 0;
+    for (let i = 0; i < n; i++) {
+      let s = 0;
+      for (let j = i * hop; j < (i + 1) * hop; j++) s += d[j] * d[j];
+      rms[i] = Math.sqrt(s / hop); top = Math.max(top, rms[i]);
+    }
+    const voiced: number[] = [];
+    for (let i = 0; i < n; i++) if (rms[i] > top * 0.125) voiced.push(i);
+    if (!voiced.length) return null;
+    const weight = words.map(w => w.length + 1), total = weight.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    return words.map((_, k) => {
+      const a = Math.min(voiced.length - 1, Math.floor((acc / total) * voiced.length));
+      acc += weight[k];
+      const b = Math.min(voiced.length - 1, Math.max(a, Math.ceil((acc / total) * voiced.length) - 1));
+      return { start: voiced[a] * 0.02, end: (voiced[b] + 1) * 0.02 };
+    });
+  } catch { return null; } finally { void ctx.close(); }
+}
+
+/* the text as words and the spaces between them, so a read-along keeps the visitor's own line breaks */
+const split = (text: string) => text.split(/(\s+)/);
+const wordsOf = (text: string) => text.split(/\s+/).filter(Boolean);
+
+function SpeakListen({ lang, cta }: { lang: Lang; cta: Cta }) {
+  const c = playground[lang], t = c.tts, l = c.listen, v = c.speak, ss = scripts[lang], vs = voices[lang], list = samples[lang].stt;
   const [text, setText] = useState(ss[0].text);
+  const [origin, setOrigin] = useState<Origin>("example");
+  const [heardS, setHeardS] = useState(0);
   const [vi, setVi] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<null | "speak" | "listen">(null);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [timing, setTiming] = useState<Timed[] | null>(null);   // the clip now playing, word by word
+  const [now, setNow] = useState(-1);                            // the word being said
+  const [typing, setTyping] = useState(false);                   // a transcript arriving, word by word
   const [clip, keepClip] = useClipUrl();
   const amp = useRef(0);
   const player = usePlayer(amp);
-  const cache = useRef(new Map<string, Blob>());     // each voice and text is generated once per visit
+  const cache = useRef(new Map<string, Blob>());                 // each voice and text is generated once per visit
   const box = useRef<HTMLTextAreaElement>(null);
-  const waking = useWaking(busy);
-  useEffect(() => {                                   // the box is as tall as its text, no taller
+  const abort = useRef<AbortController | null>(null);
+  const file = useRef<HTMLInputElement>(null);
+  const waking = useWaking(busy !== null);
+  const rec = useRecorder(amp, wav => { void transcribe(wav); });
+  useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => {                                              // the box is as tall as its text, no taller
     const el = box.current;
     if (!el) return;
     el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`;
-  }, [text]);
-  const example = ss.find(s => s.text === text.trim()) ?? null;   // an example, as written
+  }, [text, typing, player.playing]);
 
-  const stop = () => player.stop();
-  async function play() {
-    if (player.playing) { stop(); return; }
-    if (busy) return;
+  const reading = player.playing && timing !== null;
+  useTicker(reading, () => {
+    if (!timing) return false;
+    const at = player.at();
+    let k = -1;
+    for (let i = 0; i < timing.length; i++) if (timing[i].start <= at) k = i;
+    setNow(x => (x === k ? x : k));
+  });
+  useEffect(() => { if (!player.playing) setNow(-1); }, [player.playing]);
+
+  const example = origin === "example" ? ss.find(s => s.text === text.trim()) ?? null : null;
+  const fromTatsuniya = origin === "heard" || origin === "echoed";
+
+  async function speak() {
+    if (player.playing) { player.stop(); return; }
+    if (busy || rec.recording) return;
     const body = text.trim();
     if (!body) { setError(t.empty); return; }
     const voice = vs[vi].id, k = `${voice}\n${body}`;
-    setError(null);
+    setError(null); setNote(null); setTyping(false);
     let blob = cache.current.get(k);
     if (!blob) {
-      setBusy(true);
+      setBusy("speak");
       try { blob = (example && await recorded(example.id, voice)) || (await speech(body, voice)).blob; cache.current.set(k, blob); }
       catch (e) { setError(demoMessage(e, c, "text")); return; }
-      finally { setBusy(false); }
+      finally { setBusy(null); }
     }
+    setTiming(await timeWords(blob, wordsOf(body)));
     keepClip(blob, blob.type.includes("mp4") || blob.type.includes("m4a") ? `tafiya-${voice}-${example?.id ?? "clip"}.m4a` : `tafiya-${voice}.wav`);
+    if (origin === "heard") setOrigin("echoed");
     player.play(blob);
   }
 
+  async function transcribe(audio: Blob | ArrayBuffer) {
+    abort.current?.abort();
+    const ac = (abort.current = new AbortController());
+    setBusy("listen"); setError(null);
+    try {
+      const res = await demo("transcribe", { headers: { "Content-Type": "application/octet-stream" }, body: audio }, ac.signal);
+      const j = await res.json() as { text?: string; audio_seconds?: number };
+      const said = (j.text ?? "").trim();
+      if (!said) { setError(l.unheard); return; }
+      setText(said); setOrigin("heard"); setHeardS(j.audio_seconds ?? 0); setTiming(null);
+      if (!reduced()) {                                          // the words arrive one after another, then the box is editable again
+        setTyping(true);
+        window.setTimeout(() => setTyping(false), wordsOf(said).length * 70 + 600);
+      }
+    } catch (e) {
+      if (!ac.signal.aborted) setError(demoMessage(e, c, "audio"));
+    } finally {
+      if (abort.current === ac) setBusy(null);
+    }
+  }
+
+  async function record() {
+    if (rec.recording) { rec.stop(); return; }
+    if (busy) return;
+    player.stop(); setError(null); setNote(null); setPicked(null); setTyping(false);
+    try { await rec.start(); } catch { setError(l.mic); }
+  }
+  async function sample(s: Sample) {
+    rec.cancel(); setError(null); setNote(null); setPicked(s.id); setTiming(null);
+    try {
+      const blob = await (await fetch(s.src)).blob();
+      player.play(blob);                                         // heard as it is sent: the visitor hears what Tatsuniya hears
+      await transcribe(blob);
+    } catch { setError(c.live.failed); }
+  }
+  async function upload(f: File) {
+    rec.cancel(); player.stop(); setError(null); setNote(null); setPicked(null);
+    try {
+      const { wav, cut } = await asClip(f);
+      if (cut) setNote(l.trimmed);
+      await transcribe(wav);
+    } catch { setError(l.badFile); }
+  }
+  const pickExample = (id: string) => {
+    player.stop(); rec.cancel(); setError(null); setNote(null); setPicked(null); setTyping(false); setTiming(null);
+    setText(ss.find(s => s.id === id)?.text ?? ""); setOrigin("example");
+  };
+
+  const tag = example ? t.example : origin === "heard" ? v.heardBy(heardS.toFixed(1)) : origin === "echoed" ? v.echoed : t.live;
+  const status = error ?? (rec.recording ? " "                  // the countdown is on the card; read out each second, it would chatter
+    : busy === "listen" ? (waking ? c.live.waking : l.transcribing)
+    : busy === "speak" ? (waking ? c.live.waking : c.live.working)
+    : reading ? v.approx : note ?? v.idle);
+  const parts = split(text);
+  let w = -1;
+
   return (
     <>
-      <div className="pg-stage pg-tts">
-        <VoiceReel voices={vs} index={vi} onIndex={i => { stop(); setVi(i); }} playing={player.playing} onPlay={play} amp={amp}
-          labels={{ play: t.play, stop: t.stop, previous: t.previous, next: t.next, voices: t.voices }} />
-        <div className="pg-card pg-text">
-          <label className="sr-only" htmlFor="pg-tts-text">{t.label}</label>
-          <textarea id="pg-tts-text" ref={box} lang="ha" rows={1} maxLength={MAX_TEXT} value={text} placeholder={t.placeholder} spellCheck={false}
-            onChange={e => { setText(e.target.value); setError(null); stop(); }} />
-          {example && <p className="pg-gloss">{example.gloss}</p>}
+      <div className="pg-stage pg-sl">
+        <VoiceReel voices={vs} index={vi} onIndex={i => { player.stop(); setVi(i); }} playing={player.playing || rec.recording}
+          onPlay={rec.recording ? () => rec.stop() : speak} amp={amp}
+          labels={{ play: t.play, stop: rec.recording ? v.micStop : t.stop, previous: t.previous, next: t.next, voices: t.voices }} />
+        <div className={`pg-card pg-text${rec.recording ? " hearing" : ""}`}>
+          {rec.recording || reading || typing ? (
+            <p className={`pg-read${reading ? " reading" : ""}${typing ? " typing" : ""}${rec.recording ? " waiting" : ""}`} lang="ha" aria-hidden={!typing || undefined}>
+              {rec.recording ? v.speakNow : parts.map((p, i) => {
+                if (i % 2) return p;                                  // the spaces stay as they were
+                if (!p) return null;
+                w += 1;
+                const k = w, at = timing?.[k];
+                const cls = reading ? (k === now ? "w now" : k < now ? "w said" : "w") : "w";
+                return <span key={i} className={cls} style={{ ["--i" as string]: k, ["--d" as string]: at ? `${Math.max(0.12, at.end - at.start)}s` : "0.3s" } as CSSProperties}>{p}</span>;
+              })}
+            </p>
+          ) : (
+            <>
+              <label className="sr-only" htmlFor="pg-sl-text">{t.label}</label>
+              <textarea id="pg-sl-text" ref={box} lang="ha" rows={1} maxLength={MAX_TEXT} value={text} placeholder={t.placeholder} spellCheck={false}
+                onChange={e => { const x = e.target.value; setText(x); setError(null); player.stop(); setTiming(null);
+                  setOrigin(ss.some(s => s.text === x.trim()) ? "example" : "typed"); }} />
+            </>
+          )}
+          {example && !rec.recording && <p className="pg-gloss">{example.gloss}</p>}
           <div className="pg-card-foot">
-            <span className={`pg-tag${example ? "" : " live"}`}>{example ? t.example : t.live}</span>
-            <span className={`pg-count${text.length >= MAX_TEXT ? " full" : ""}`} aria-label={t.limit}>{t.count(text.length, MAX_TEXT)}</span>
-            {clip && <a className="pg-mini" href={clip.url} download={clip.name}><Icon name="download" size={15} stroke={1.6} />{t.download}</a>}
-            <button type="button" className="pg-go" onClick={play} disabled={busy} aria-busy={busy || undefined}>
-              <Icon name={player.playing ? "stop" : "play"} size={15} stroke={1.8} />{player.playing ? t.stop : busy ? c.live.working : t.generate}
+            <button type="button" className={`pg-mic${rec.recording ? " on" : ""}`} onClick={record} disabled={busy !== null}
+              aria-label={rec.recording ? v.micStop : v.mic} title={rec.recording ? v.micStop : v.mic}>
+              <Icon name={rec.recording ? "stop" : "microphone"} size={17} stroke={1.6} />
             </button>
+            <span className={`pg-tag${example ? "" : fromTatsuniya ? " heard" : " live"}`}>{rec.recording ? l.listening(rec.left) : tag}</span>
+            {!rec.recording && <>
+              {(!fromTatsuniya || text.length > MAX_TEXT) && <span className={`pg-count${text.length >= MAX_TEXT ? " full" : ""}`} aria-label={t.limit}>{t.count(text.length, MAX_TEXT)}</span>}
+              {fromTatsuniya && <CopyButton text={text} labels={l} />}
+              {clip && <a className="pg-mini pg-dl" href={clip.url} download={clip.name}><Icon name="download" size={15} stroke={1.6} /><span>{t.download}</span></a>}
+              <button type="button" className="pg-go" onClick={speak} disabled={busy !== null} aria-busy={busy === "speak" || undefined}>
+                <Icon name={player.playing && timing ? "stop" : "play"} size={15} stroke={1.8} />
+                {player.playing && timing ? t.stop : busy === "speak" ? c.live.working : fromTatsuniya ? v.hearBack : example ? t.play : t.generate}
+              </button>
+            </>}
           </div>
         </div>
-        <p className={error ? "pg-error" : "pg-call-state"} aria-live="polite">{error ?? (busy ? (waking ? c.live.waking : c.live.working) : " ")}</p>
+        <p className={error ? "pg-error" : "pg-call-state"} aria-live="polite">{status}</p>
+        <p className="sr-only" aria-live="polite">{fromTatsuniya && !busy ? `${v.heardAnnounce} ${text}` : ""}</p>
       </div>
       <Bar cta={cta}>
-        <Pills items={ss.map(s => ({ id: s.id, label: s.label }))} value={example?.id ?? null} label={t.scripts}
-          onPick={id => { stop(); setError(null); setText(ss.find(s => s.id === id)?.text ?? ""); }} />
+        <div className="pg-groups">
+          <div className="pg-group">
+            <span className="pg-glabel" aria-hidden="true">{v.say}</span>
+            <Pills items={ss.map(s => ({ id: s.id, label: s.label }))} value={example?.id ?? null} label={`${v.say}: ${t.scripts}`} onPick={pickExample} />
+          </div>
+          <div className="pg-group">
+            <span className="pg-glabel" aria-hidden="true">{v.transcribe}</span>
+            <Pills items={list.map(s => ({ id: s.id, label: s.label }))} value={picked} label={`${v.transcribe}: ${l.samples}`} disabled={busy !== null || rec.recording}
+              onPick={id => { const s = list.find(x => x.id === id); if (s) void sample(s); }}
+              extra={<>
+                <button type="button" className="pg-upload" disabled={busy !== null || rec.recording} onClick={() => file.current?.click()}>{l.upload}</button>
+                <input ref={file} type="file" accept="audio/*" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+              </>} />
+          </div>
+        </div>
       </Bar>
     </>
   );
 }
 
-/* ---------------------------------------------------------------- Speech to text (Tatsuniya) and Translate (Kora) */
+/* ---------------------------------------------------------------- Translate (Kora) */
 /* One listening orb with a record button; a clip goes in by recording (up to 15 s, counted down), by upload, or as a
-   sample, which plays as it is sent so the visitor hears what the model hears. Speech to text shows the transcript;
-   Translate shows what Kora heard and its translation, and speaks the translation. */
+   sample, which plays as it is sent so the visitor hears what the model hears. Kora's answer comes back in writing
+   and aloud: what it heard, and the translation. */
 type Heard = { text: string; heard?: string; seconds: number; audio?: Blob };
 
-function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "translate" }) {
+function Translate({ lang, cta }: { lang: Lang; cta: Cta }) {
   const c = playground[lang], t = c.listen;
-  const [target, setTarget] = useState<"fr" | "ha">("fr");      // Translate: the language Kora answers in
-  const list = mode === "stt" ? samples[lang].stt : samples[lang].translate[target];
+  const [target, setTarget] = useState<"fr" | "ha">("fr");      // the language Kora answers in
+  const list = samples[lang].translate[target];
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [out, setOut] = useState<Heard | null>(null);
@@ -318,8 +480,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
     const ac = (abort.current = new AbortController());
     setBusy(true); setError(null); setOut(null);
     try {
-      const res = await demo(mode === "stt" ? "transcribe" : `translate?target=${target}`,
-        { headers: { "Content-Type": "application/octet-stream" }, body: audio }, ac.signal);
+      const res = await demo(`translate?target=${target}`, { headers: { "Content-Type": "application/octet-stream" }, body: audio }, ac.signal);
       const j = await res.json() as { text?: string; source_text?: string; audio_seconds?: number; audio?: string };
       if (!(j.text ?? "").trim()) { setError(t.unheard); return; }
       const spoken = j.audio ? b64Blob(j.audio) : undefined;
@@ -357,13 +518,11 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
   }
   const turn = (to: "fr" | "ha") => { if (to === target || busy) return; rec.cancel(); player.stop(); abort.current?.abort(); setTarget(to); setOut(null); setPicked(null); reset(); };
 
-  const status = error ?? (rec.recording ? t.listening(rec.left)
-    : busy ? (waking ? c.live.waking : mode === "stt" ? t.transcribing : t.translating)
-    : note ?? (mode === "stt" ? t.idle : t.idleTranslate[target]));
+  const status = error ?? (rec.recording ? t.listening(rec.left) : busy ? (waking ? c.live.waking : t.translating) : note ?? t.idleTranslate[target]);
   const from = target === "fr" ? "ha" : "fr";
   const seconds = out ? t.seconds(out.seconds.toFixed(1)) : "";
-  /* Translate's direction: in the bar's free left slot on a wide panel, above the orb on a narrow one (CSS shows one) */
-  const dir = (where: string) => mode === "translate" && (
+  /* the direction: in the bar's free left slot on a wide panel, above the orb on a narrow one (CSS shows one) */
+  const dir = (where: string) => (
     <div className={`pg-seg pg-dir ${where}`} role="group" aria-label={t.direction}>
       {(["fr", "ha"] as const).map(x => <button key={x} type="button" aria-pressed={target === x} disabled={busy} onClick={() => turn(x)}>{t.dirs[x]}</button>)}
     </div>
@@ -371,26 +530,24 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
 
   return (
     <>
-      <div className={`pg-stage pg-listen pg-${mode}`}>
+      <div className="pg-stage pg-listen pg-translate">
         {dir("pg-dir-top")}
         <div className={`pg-agent${rec.recording ? " live hearing" : ""}`}>
           <i aria-hidden="true" /><i aria-hidden="true" />
-          <AgentOrb palette={listenPalettes[mode]} amp={amp} live={rec.recording || player.playing || busy} />
+          <AgentOrb palette={koraPalette} amp={amp} live={rec.recording || player.playing || busy} />
           <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy}>
             <Icon name={rec.recording ? "stop" : "microphone"} size={22} stroke={1.6} />
           </button>
         </div>
         <p className={error ? "pg-error" : "pg-call-state"} aria-live="polite">{status}</p>
         <div className={`pg-card pg-heard${out ? " has" : ""}`} aria-live="polite">
-          {mode === "translate" && (
-            <div className="pg-row pg-row-from">
-              <span className="pg-label">{t.heard} · {t.langs[from]}</span>
-              <p lang={from} className={out?.heard ? "" : "muted"}>{out?.heard || "—"}</p>
-            </div>
-          )}
+          <div className="pg-row pg-row-from">
+            <span className="pg-label">{t.heard} · {t.langs[from]}</span>
+            <p lang={from} className={out?.heard ? "" : "muted"}>{out?.heard || "—"}</p>
+          </div>
           <div className="pg-row">
             <div className="pg-row-head">
-              <span className="pg-label">{mode === "stt" ? t.result : `${t.translation} · ${t.langs[target]}`}{out && <span className="muted"> · {seconds}</span>}</span>
+              <span className="pg-label">{`${t.translation} · ${t.langs[target]}`}{out && <span className="muted"> · {seconds}</span>}</span>
               {out && (
                 <span className="pg-row-acts">
                   {out.audio && <button type="button" className="pg-mini" onClick={() => out.audio && (player.playing ? player.stop() : player.play(out.audio))}>
@@ -399,7 +556,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
                 </span>
               )}
             </div>
-            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
+            <p lang={target} className={out ? "said" : "said muted"}>{out?.text || t.emptyTranslate}</p>
           </div>
         </div>
       </div>
@@ -525,7 +682,7 @@ function Api({ lang }: { lang: Lang }) {
 /* ---------------------------------------------------------------- the console */
 export function Playground({ lang }: { lang: Lang }) {
   const c = playground[lang];
-  const [tab, setTab] = useState<Tab>("tts");
+  const [tab, setTab] = useState<Tab>("speak");
   const ids = c.tabs.map(x => x.id);
   const build: Cta = { label: c.build, href: lp(lang, "/api#get-started") };
   const pick = (next: Tab, focus = false) => {
@@ -554,9 +711,8 @@ export function Playground({ lang }: { lang: Lang }) {
         ))}
       </div>
       <div id={`pg-panel-${tab}`} className="pg-panel" role="tabpanel" aria-labelledby={`pg-tab-${tab}`} key={tab}>
-        {tab === "tts" && <TextToSpeech lang={lang} cta={build} />}
-        {tab === "stt" && <Listen lang={lang} cta={build} mode="stt" />}
-        {tab === "translate" && <Listen lang={lang} cta={build} mode="translate" />}
+        {tab === "speak" && <SpeakListen lang={lang} cta={build} />}
+        {tab === "translate" && <Translate lang={lang} cta={build} />}
         {tab === "converse" && <Converse lang={lang} cta={build} />}
         {tab === "api" && <Api lang={lang} />}
       </div>

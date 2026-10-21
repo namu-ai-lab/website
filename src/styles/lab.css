@@ -902,7 +902,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 
 /* the panel: one warm grey surface, tabs across the top */
 .pg { --pg-bg: #f5f2ee; position: relative; border-radius: 24px; background: var(--pg-bg); overflow: hidden; }
-.pg-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px; }
+.pg-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px; }
 .pg-tabs button { height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 16px; border: 0; border-radius: 14px; background: none;
   color: var(--ink-2); font: inherit; font-size: 18px; font-weight: 400; letter-spacing: 0; cursor: pointer; white-space: nowrap; transition: background-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
 .pg-tabs button:hover { color: var(--ink); }
@@ -997,7 +997,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-file .bars i:nth-child(3n) { animation-delay: -.3s; } .pg-file .bars i:nth-child(3n+1) { animation-delay: -.6s; }
 @keyframes bar { to { transform: scaleY(calc(1 - .55 * var(--motion))); } }
 
-/* the white card the live tabs share: Text to speech's text, the listening tabs' transcript and translation */
+/* the white card the live tabs share: Speak & listen's text, Translate's translation */
 .pg-card { width: min(720px, 100%); border-radius: 20px; background: #fff; text-align: left;
   box-shadow: 0 0 0 1px rgba(21, 18, 15, .04), 0 18px 40px -28px rgba(21, 18, 15, .4); transition: box-shadow .25s var(--ease); }
 .pg-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -1018,19 +1018,48 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-mini:focus-visible, .pg-go:focus-visible, .pg-call:focus-visible, .pg-pills button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .pg-call:disabled { opacity: .55; cursor: progress; transform: none; }
 
-/* Text to speech: the voice reel over the text it reads, typed or picked */
-.pg-tts { --disc: 172px; }
-.pg-tts .vr-names { height: 70px; margin-top: 8px; }
+/* Speak & listen: the voice reel over one card that goes both ways. Read aloud, the words still to come are soft,
+   the words said are ink, and the word being said takes a warm stroke that sweeps across it for as long as it lasts;
+   heard, the words arrive one after another, coming into focus out of the same warm colour. */
+.pg-sl { --disc: 164px; }
+.pg-sl .vr-names { height: 72px; margin-top: 4px; }
+.pg-sl .vr.duo .vr-name { width: 140px; margin-left: -70px; }   /* the two orbs sit close: each note wraps under its own orb */
+.pg-sl .pg-text { margin-top: 2px; }
+.pg-stage.pg-sl { min-height: 480px; padding: 20px 0 16px; }   /* its bar has two rows: the stage gives the second one back, so every tab is one height */
 .pg-text { margin-top: 6px; padding: 18px 20px 12px; }
+.pg-text.hearing { box-shadow: 0 0 0 1.5px rgba(180, 85, 42, .35), 0 18px 40px -28px rgba(21, 18, 15, .4); }
+.pg-read { margin: 0; min-height: 1.4em; max-height: 8.4em; overflow-y: auto; color: var(--ink); font-size: clamp(18px, 1.5vw, 21px); line-height: 1.4;
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.pg-read.waiting { color: var(--ink-3); }
+.pg-read .w { border-radius: 3px; transition: color .35s var(--ease); }
+.pg-read.reading .w { color: rgba(21, 18, 15, .32); }
+.pg-read.reading .w.said { color: var(--ink); }
+.pg-read.reading .w.now { color: var(--ink); background: linear-gradient(rgba(232, 147, 90, .34), rgba(232, 147, 90, .34)) 0 92% / 0% 34% no-repeat;
+  animation: pg-sweep var(--d) linear forwards; }
+@keyframes pg-sweep { to { background-size: 100% 34%; } }
+.pg-read.typing .w { opacity: 0; animation: pg-word .55s var(--ease-out) forwards; animation-delay: calc(var(--i) * 70ms); }
+@keyframes pg-word { from { opacity: 0; filter: blur(4px); color: var(--sahel-deep); } 55% { color: var(--sahel-deep); } to { opacity: 1; filter: blur(0); color: var(--ink); } }
+.pg-mic { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(21, 18, 15, .06); color: var(--ink); cursor: pointer; transition: background-color .25s var(--ease), color .25s var(--ease); }
+.pg-mic:hover { background: rgba(21, 18, 15, .11); }
+.pg-mic.on { background: var(--sahel-deep); color: #fff; }
+.pg-mic.on::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px solid rgba(180, 85, 42, .55); animation: ring 1.8s var(--ease-out) infinite; }
+.pg-mic:disabled { opacity: .45; cursor: default; }
+.pg-mic:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pg-tag.heard::before { background: var(--kola); opacity: .85; }
+/* the bar: two labelled rows, what Tafiya can say and what Tatsuniya can hear */
+.pg-groups { display: grid; gap: 2px; min-width: 0; }
+.pg-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pg-glabel { width: 96px; flex: none; color: var(--ink-3); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-align: right; text-transform: uppercase; }
 .pg-text:focus-within { box-shadow: 0 0 0 1.5px rgba(21, 18, 15, .2), 0 18px 40px -28px rgba(21, 18, 15, .4); }
 .pg-text textarea { display: block; width: 100%; min-height: 1.4em; max-height: 8.4em; padding: 0; border: 0; background: none; color: var(--ink);
   font: inherit; font-size: clamp(18px, 1.5vw, 21px); line-height: 1.4; resize: none; overflow-y: auto; }
 .pg-text textarea:focus { outline: 0; }
 .pg-text textarea::placeholder { color: var(--ink-3); }
 .pg-gloss { margin: 6px 0 0; color: var(--ink-3); font-size: 14.5px; line-height: 1.45; }
-.pg-tts > .pg-call-state, .pg-tts > .pg-error { margin-top: 14px; }
+.pg-sl > .pg-call-state, .pg-sl > .pg-error { margin-top: 12px; }
 
-/* Speech to text and Translate: a listening orb with a record button, and what came back under it */
+/* Translate: a listening orb with a record button, and what came back under it */
 .pg-listen { --disc: 176px; }
 .pg-bar-l { display: flex; align-items: center; justify-self: start; min-width: 0; }
 .pg-dir button { height: 32px; padding: 0 14px; font-size: 14px; }
@@ -1051,7 +1080,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .pg-pills .pg-upload { margin-left: 6px; box-shadow: inset 0 0 0 1px rgba(21, 18, 15, .14); }
 
 @media (max-width: 1000px) {
-  /* five tabs no longer fit in equal columns: they become a row that scrolls sideways to the chosen one */
+  /* the tabs no longer fit in equal columns: they become a row that scrolls sideways to the chosen one */
   .pg-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 36px), transparent); }
   .pg-tabs { scroll-padding-inline: 40px; }   /* the chosen tab scrolls clear of the faded edges */
@@ -1066,6 +1095,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-bar-c:has(.pg-pills) { justify-content: flex-start; }
   .pg-bar-c:empty { display: none; }
   .pg-stage, .pg-stage.pg-converse { min-height: 540px; }   /* these stand in for the rows the bar wraps onto */
+  .pg-stage.pg-sl { min-height: 498px; }
   .pg-api { min-height: 634px; }
   .pg-pills { margin-inline: auto; }
 }
@@ -1074,8 +1104,19 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-tabs { padding: 4px; }
   .pg-tabs button { height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
   .pg-tabs .dot { display: none; }
-  .pg-tts, .pg-listen { --disc: 136px; }
-  .pg-tts .vr-names { height: 80px; margin-top: 4px; }   /* room for a voice's note on two lines (French) */
+  .pg-listen { --disc: 136px; }
+  .pg-sl { --disc: 126px; }
+  .pg-sl .vr-names { height: 86px; margin-top: 2px; }   /* room for a voice's note on two or three lines (French) */
+  .pg-sl .vr.duo .vr-name { width: 30vw; margin-left: -15vw; }
+  .pg-stage.pg-sl { min-height: 520px; padding: 16px 0 12px; }
+  .pg-sl .pg-tag { order: -1; }                         /* where the words came from, on its own line above the controls */
+  .pg-dl span { display: none; }
+  /* each row of the bar scrolls sideways under its label, so every example and sample stays one tap away */
+  .pg-groups { width: 100%; }
+  .pg-group { gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .pg-group::-webkit-scrollbar { display: none; }
+  .pg-group .pg-pills { flex-wrap: nowrap; justify-content: flex-start; margin-inline: 0; }
+  .pg-glabel { width: 74px; font-size: 11px; text-align: left; }
   .pg-text { padding: 14px 16px 10px; }
   .pg-card-foot { flex-wrap: wrap; row-gap: 8px; }
   .pg-tag { flex: 1 0 100%; }
