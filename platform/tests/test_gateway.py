@@ -24,6 +24,7 @@ import namu_gateway as gw  # noqa: E402
 PEPPER = "test-pepper"
 GOOD = "namu_sk_" + "A" * 43
 DEMO = "namu_sk_" + "D" * 43
+SERVICE = "namu_sk_" + "S" * 43
 
 
 def wav(seconds: float = 1.0, rate: int = 16000) -> bytes:
@@ -44,7 +45,9 @@ BASE = gw.KeyRecord(key_id="k1", user_id="u1", scopes=list(gw.SCOPES), revoked=F
 class FakeStore:
     def __init__(self):
         self.keys = {gw.hash_key(GOOD, PEPPER): replace(BASE),
-                     gw.hash_key(DEMO, PEPPER): replace(BASE, key_id="kd", is_demo=True)}
+                     gw.hash_key(DEMO, PEPPER): replace(BASE, key_id="kd", is_demo=True),
+                     gw.hash_key(SERVICE, PEPPER): replace(BASE, key_id="ks", user_id="namu-website", is_service=True)}
+        self.accounts = {"dev-1": ("approved", 1800, 0), "paused-1": ("denied", 1800, 0), "full-1": ("approved", 1800, 1800)}
         self.usage: list[gw.Usage] = []
         self.lookups = 0
         self.down = False
@@ -55,6 +58,9 @@ class FakeStore:
             raise ConnectionError("supabase unreachable")
         r = self.keys.get(h)
         return replace(r) if r else None
+
+    def account(self, user_id):
+        return self.accounts.get(user_id)
 
     def record(self, u):
         self.usage.append(u)
@@ -312,3 +318,55 @@ def test_public_catalogue_needs_no_key(env):
     c, *_ = env
     assert c.get("/v1/models").status_code == 200
     assert {v["id"] for v in c.get("/v1/voices").json()["data"]} >= {"nadia", "salim", "warm"}
+
+
+# ---------------------------------------------------------------- the website's service key (console Playground)
+def as_account(acct):
+    return {**auth(SERVICE), "X-Namu-Account": acct}
+
+
+def test_service_key_needs_an_account(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers=auth(SERVICE), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_required"
+
+
+def test_service_key_refuses_unknown_account(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers=as_account("nobody"), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 403 and r.json()["error"]["type"] == "unknown_account"
+
+
+def test_service_key_runs_as_the_account(env):
+    c, store, *_ = env
+    r = c.post("/v1/speech", headers=as_account("dev-1"), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 200
+    u = store.usage[-1]
+    assert u.user_id == "dev-1" and u.key_id == "ks"           # metered to the developer, labelled as the Playground
+
+
+def test_service_key_respects_a_paused_account(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers=as_account("paused-1"), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
+
+
+def test_service_key_respects_the_account_allowance(env):
+    c, *_ = env
+    r = c.post("/v1/transcribe", headers=as_account("full-1"), files={"file": ("a.wav", wav(), "audio/wav")})
+    assert r.status_code == 429 and r.json()["error"]["type"] == "quota_exceeded"
+
+
+def test_service_key_rate_limit_is_per_account(env):
+    c, _, _, lim, _ = env
+    for _ in range(gw.SERVICE_PER_MIN):
+        assert c.post("/v1/speech", headers=as_account("dev-1"), json={"text": "Sannu", "voice": "nadia"}).status_code == 200
+    r = c.post("/v1/speech", headers=as_account("dev-1"), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 429 and r.json()["error"]["type"] == "rate_limited"
+    assert "acct:dev-1" in lim.counts and not any(b.startswith("key:ks") for b in lim.counts)
+
+
+def test_ordinary_keys_ignore_the_account_header(env):
+    c, store, *_ = env
+    r = c.post("/v1/speech", headers={**auth(), "X-Namu-Account": "dev-1"}, json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 200 and store.usage[-1].user_id == "u1"

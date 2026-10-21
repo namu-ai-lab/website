@@ -48,3 +48,23 @@ export async function DELETE(req: NextRequest) {
   if (!data) return fail(404, "not_found", "Unknown key.");
   return NextResponse.json({ data }, noStore);
 }
+
+/* Edit a key, as on platform.openai.com: its name and the models it may call. The secret never changes; the gateway
+   picks up new permissions within its key cache (30 s). The website's own demo and service keys cannot be edited here. */
+export async function PATCH(req: NextRequest) {
+  const s = await signedIn(req, true);
+  if (s.e) return s.e;
+  const body = await req.json().catch(() => null) as { id?: unknown; name?: unknown; scopes?: unknown } | null;
+  const id = typeof body?.id === "string" ? body.id : "";
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return fail(400, "bad_id", "Unknown key.");
+  const name = body?.name === undefined ? null : typeof body.name === "string" ? body.name.trim().slice(0, 60) : "";
+  if (name === "") return fail(400, "missing_name", "Give the key a name.");
+  if (body?.scopes !== undefined && !isScopeList(body.scopes)) return fail(400, "bad_scopes", "Pick at least one model.");
+  const scopes = body?.scopes === undefined ? null : [...new Set(body.scopes as string[])];
+  const [data] = await sql<KeyRow>(
+    `update public.api_keys set name = coalesce($3, name), scopes = coalesce($4, scopes)
+     where id = $1 and user_id = $2 and revoked_at is null and not is_demo returning ${COLUMNS}`,
+    [id, s.user.id, name, scopes]);
+  if (!data) return fail(404, "not_found", "Unknown key.");
+  return NextResponse.json({ data }, noStore);
+}

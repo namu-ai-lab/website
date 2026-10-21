@@ -38,7 +38,7 @@ import subprocess
 import tempfile
 import time
 import wave
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import modal
 
@@ -83,6 +83,7 @@ MAX_TEXT_CHARS = 2000
 DEMO_MAX_AUDIO_SECONDS = 15.0
 DEMO_MAX_TEXT_CHARS = 300
 DEMO_IP_PER_HOUR = 30
+SERVICE_PER_MIN = 20          # the console Playground, per account
 KEY_CACHE_TTL = 30.0          # a revoked key stops working within this many seconds
 
 KEY_PREFIX = "namu_sk_"
@@ -105,6 +106,7 @@ class KeyRecord:
     beta_status: str
     monthly_audio_seconds: float
     used_audio_seconds: float
+    is_service: bool = False     # the website's own key: acts only for a signed-in account (X-Namu-Account)
 
 
 @dataclass
@@ -164,7 +166,7 @@ def probe_seconds(data: bytes) -> float | None:
 # ---------------------------------------------------------------- the app
 def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_seconds,
                now=time.time):
-    """store: lookup(hash)->KeyRecord|None, record(Usage)
+    """store: lookup(hash)->KeyRecord|None, account(user_id)->(status, monthly_s, used_s)|None, record(Usage)
     upstream: transcribe/speak/translate/converse(...)->UpstreamReply
     limiter: hit(bucket, limit, window_s)->(allowed, retry_after_s)
     """
@@ -212,6 +214,25 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             cache[h] = (now(), rec)
         if rec.revoked:
             return None, err(401, "key_revoked", "This API key has been revoked.")
+        bucket, limit = f"key:{rec.key_id}", rec.rate_limit_per_min
+        if rec.is_service:
+            # The website's console Playground: the site has already signed the developer in, and names
+            # their account here. The request then runs as that account: its status, its allowance, its
+            # usage; and a service key is refused without one.
+            acct = (request.headers.get("x-namu-account") or "").strip()
+            if not acct or len(acct) > 64:
+                return None, err(403, "account_required", "This key acts only for a signed-in account.")
+            try:
+                a = await off_loop(store.account, acct)
+            except Exception as e:
+                print(f"account lookup failed: {type(e).__name__}", flush=True)
+                return None, err(503, "auth_unavailable",
+                                 "Key verification is temporarily unavailable. Try again shortly.")
+            if a is None:
+                return None, err(403, "unknown_account", "Unknown account.")
+            rec = replace(rec, user_id=acct, beta_status=a[0], monthly_audio_seconds=float(a[1]),
+                          used_audio_seconds=float(a[2]))
+            bucket, limit = f"acct:{acct}", SERVICE_PER_MIN
         if rec.beta_status != "approved":
             return None, err(403, "account_paused",
                              "This account is paused. Write to contact@namuai.org.")
@@ -221,7 +242,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if rec.used_audio_seconds >= rec.monthly_audio_seconds:
             return None, err(429, "quota_exceeded",
                              "This account has used its monthly audio allowance.")
-        ok, retry = await off_loop(limiter.hit, f"key:{rec.key_id}", rec.rate_limit_per_min, 60)
+        ok, retry = await off_loop(limiter.hit, bucket, limit, 60)
         if not ok:
             return None, err(429, "rate_limited", "Too many requests for this key.",
                              {"Retry-After": str(retry)})
@@ -452,12 +473,17 @@ class PostgresStore:
 
     def lookup(self, key_hash: str) -> KeyRecord | None:
         x = self._one("select key_id, user_id, scopes, revoked, is_demo, rate_limit_per_min, "
-                      "beta_status, monthly_audio_seconds, used_audio_seconds "
-                      "from public.namu_key_lookup(%s::text)", (key_hash,))
+                      "beta_status, monthly_audio_seconds, used_audio_seconds, is_service "
+                      "from public.namu_key_lookup_v2(%s::text)", (key_hash,))
         if x is None:
             return None
         return KeyRecord(str(x[0]), x[1], list(x[2] or []), bool(x[3]), bool(x[4]), int(x[5]),
-                         x[6], float(x[7]), float(x[8]))
+                         x[6], float(x[7]), float(x[8]), bool(x[9]))
+
+    def account(self, user_id: str) -> tuple[str, float, float] | None:
+        x = self._one("select beta_status, monthly_audio_seconds, used_audio_seconds "
+                      "from public.namu_account_lookup(%s::text)", (user_id,))
+        return (x[0], float(x[1]), float(x[2])) if x else None
 
     def record(self, u: Usage) -> None:
         try:

@@ -1,70 +1,68 @@
-/* The console's first page, after platform.openai.com's home: the month at a glance, three steps to a first request
-   (with real code against the real base URL), and the four models as endpoints. A paused account sees why first. */
+/* The console's Home, after platform.openai.com: a new developer gets the first-call steps (FirstKey); a returning one
+   gets the month's audio against the allowance, the last thirty days (requests, success rate, latency, as on
+   ElevenLabs' analytics), their latest requests and the models one click from the Playground. A paused account sees
+   why first. */
 import type { ReactNode } from "react";
-import { CodeTabs } from "../CodeTabs";
 import { Icon } from "../Icon";
+import { MODEL_COLOUR } from "./colours";
+import { FirstKey } from "./FirstKey";
+import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
-import { samples } from "@/content/docs";
 import { lp, type Lang } from "@/i18n/config";
-import { MAX_ACTIVE_KEYS, SCOPES } from "@/lib/key-shape";
+import { SCOPES, type Scope } from "@/lib/key-shape";
 
-const ENDPOINT = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" } as const;
+export type Recent = { id: string; created_at: string; endpoint: Scope; status: number; latency_ms: number; key_name: string | null; is_service: boolean | null };
+const PATH: Record<Scope, string> = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" };
 
-export function Overview({ lang, apiBase, usedMin, limitMin, requests, activeKeys, approved, notice }:
-  { lang: Lang; apiBase: string; usedMin: number; limitMin: number; requests: number; activeKeys: number; approved: boolean; notice?: ReactNode }) {
+export function Overview({ lang, apiBase, firstRun, approved, notice, usedMin, limitMin, requests, errors, latencyMs, recent }:
+  { lang: Lang; apiBase: string; firstRun: boolean; approved: boolean; notice?: ReactNode; usedMin: number; limitMin: number;
+    requests: number; errors: number; latencyMs: number | null; recent: Recent[] }) {
   const t = consoleCopy[lang].overview, m = consoleCopy[lang].keys.models, L = (p: string) => lp(lang, p);
   const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
   const pct = limitMin > 0 ? Math.min(100, (usedMin / limitMin) * 100) : 0;
-  const code = samples(apiBase).speech;
+  if (notice) return <>{notice}</>;
+  if (firstRun && approved) return <FirstKey lang={lang} apiBase={apiBase} />;
   return (
     <>
-      {notice}
-      <div className="cx-tiles three">
+      <div className="cx-tiles">
         <div className="cx-tile">
           <p>{t.audio}</p><strong>{t.minutes(nf.format(usedMin), nf.format(limitMin))}</strong>
           <div className="cx-meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={t.audio}><i style={{ width: `${pct}%` }} /></div>
         </div>
-        <div className="cx-tile"><p>{t.requests}</p><strong>{nf.format(requests)}</strong></div>
-        <div className="cx-tile"><p>{t.keys}</p><strong>{t.keysOf(activeKeys, MAX_ACTIVE_KEYS)}</strong></div>
+        <div className="cx-tile"><p>{t.requests30}</p><strong>{nf.format(requests)}</strong><span className="cx-muted">{t.last30}</span></div>
+        <div className="cx-tile"><p>{t.success}</p><strong>{requests ? `${nf.format(((requests - errors) / requests) * 100)}%` : "–"}</strong><span className="cx-muted">{t.last30}</span></div>
+        <div className="cx-tile"><p>{t.latency}</p><strong>{latencyMs !== null ? <>{nf.format(latencyMs / 1000)}<small> s</small></> : "–"}</strong><span className="cx-muted">{t.last30}</span></div>
       </div>
 
-      <div className="cx-card cx-first">
-        <div className="cx-card-head"><div><h2>{t.firstH}</h2><p className="cx-muted">{t.firstLede}</p></div></div>
-        <ol className="cx-steps">
-          <li>
-            <span className="cx-step-n">1</span>
-            <div><h3>{t.step1}</h3>
-              {approved && <a className="cx-btn" href={L("/account/keys")}><Icon name="key" size={16} stroke={1.6} />{t.createKey}</a>}
-            </div>
-          </li>
-          <li>
-            <span className="cx-step-n">2</span>
-            <div><h3>{t.step2}</h3>
-              <pre className="cx-code"><code>export NAMU_API_KEY=&quot;namu_sk_…&quot;</code></pre>
-              <p className="cx-muted">{t.envNote}</p>
-            </div>
-          </li>
-          <li>
-            <span className="cx-step-n">3</span>
-            <div><h3>{t.step3}</h3>
-              <CodeTabs code={code} copyLabel={t.copy} copiedLabel={t.copied} />
-            </div>
-          </li>
-        </ol>
-      </div>
+      <div className="cx-home">
+        <div className="cx-card cx-recent">
+          <div className="cx-card-head"><h2>{t.recentH}</h2><a className="cx-more" href={L("/account/logs")}>{t.recentAll}<Icon name="arrow-long" size={15} stroke={1.6} /></a></div>
+          {recent.length === 0 ? <p className="cx-muted">{t.recentEmpty}</p> : (
+            <ul>{recent.map(r => (
+              <li key={r.id}>
+                <span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span>
+                <span className="cx-recent-what"><i className="cx-dot" style={{ background: MODEL_COLOUR[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}
+                  <em>{r.is_service ? t.playgroundKey : r.key_name ?? "–"}</em></span>
+                <span className="cx-muted cx-small">{nf.format(r.latency_ms / 1000)} s</span>
+                <span className="cx-muted cx-small cx-recent-when"><LocalTime iso={new Date(r.created_at).toISOString()} lang={lang} rel /></span>
+              </li>
+            ))}</ul>
+          )}
+        </div>
 
-      <div className="cx-card">
-        <div className="cx-card-head"><div><h2>{t.modelsH}</h2><p className="cx-muted">{t.modelsLede}</p></div></div>
-        <ul className="cx-models">
-          {SCOPES.map(s => (
+        <div className="cx-card cx-try">
+          <div className="cx-card-head"><div><h2>{t.tryH}</h2><p className="cx-muted">{t.tryLede}</p></div></div>
+          <ul>{SCOPES.map(s => (
             <li key={s}>
-              <span className="cx-model-name">{m[s].name}</span>
-              <span className="cx-muted">{m[s].task}</span>
-              <code>POST {ENDPOINT[s]}</code>
-              <a href={L(`/docs#${s}`)}>{t.read}<Icon name="arrow-long" size={15} stroke={1.6} /></a>
+              <a href={L(`/account/playground?model=${s}`)}>
+                <i style={{ background: MODEL_COLOUR[s] }} aria-hidden="true" />
+                <span><strong>{m[s].name}</strong><em>{m[s].task}</em></span>
+                <code>{PATH[s]}</code>
+                <Icon name="arrow-long" size={15} stroke={1.6} />
+              </a>
             </li>
-          ))}
-        </ul>
+          ))}</ul>
+        </div>
       </div>
     </>
   );
