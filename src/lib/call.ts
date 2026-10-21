@@ -16,7 +16,7 @@
 export type Persona = "nadia" | "salim";
 export type CallState = "connecting" | "listening" | "hearing" | "thinking" | "speaking" | "ended";
 export type CallProblem = "mic" | "limit" | "unavailable" | "failed";
-export type CallEvents = { state(s: CallState): void; heard(text: string): void; reply(text: string): void; problem(p: CallProblem): void };
+export type CallEvents = { state(s: CallState): void; heard?(text: string): void; reply?(text: string): void; problem(p: CallProblem): void };
 
 const LINES = ["hello", "ack1", "ack2", "ack3", "question", "think1", "think2", "think3", "almost", "unheard", "limit", "error"] as const;
 type Line = (typeof LINES)[number];
@@ -184,10 +184,10 @@ export class AirCall {
             if (!line || t !== this.turn) continue;
             const m = JSON.parse(line) as { t: string; text?: string; b64?: string; status?: number };
             if (m.t === "heard") {
-              this.on.heard(m.text ?? "");
+              this.on.heard?.(m.text ?? "");
               kind = GREETING.test(m.text ?? "") ? "greeting" : QUESTION.test(m.text ?? "") ? "question" : "statement";
               if (performance.now() - t0 < 1400) first();
-            } else if (m.t === "reply") this.on.reply(m.text ?? "");
+            } else if (m.t === "reply") this.on.reply?.(m.text ?? "");
             else if (m.t === "audio" && m.b64) await this.reply(t, m.b64);
             else if (m.t === "error") status = m.status ?? 500;
           }

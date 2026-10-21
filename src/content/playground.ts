@@ -18,7 +18,7 @@ export type PlaygroundCopy = {
   tabs: { id: Tab; label: string; dot: [string, string, string] }[];
   build: string;
   speak: { scripts: string; voices: string; previous: string; next: string; play: string; stop: string };
-  converse: { start: string; end: string; connecting: string; idle: string; listening: string; thinking: string; speaking: string; voice: string; you: string; air: string; mic: string };
+  converse: { start: string; end: string; connecting: string; idle: string; listening: string; thinking: string; speaking: string; voice: string; mic: string };
   api: { run: string; running: string; output: string; note: string };
   live: { working: string; unavailable: string; limited: string; failed: string };
 };
@@ -67,7 +67,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     speak: { scripts: "What the voice reads", voices: "Voices", previous: "Previous voice", next: "Next voice", play: "Play", stop: "Stop" },
     converse: {
       start: "Call Aïr", end: "End call", connecting: "Connecting…", idle: "Talk with Aïr, in Hausa", listening: "Listening…", thinking: "Thinking…",
-      speaking: "Aïr is speaking. Tap to interrupt", voice: "Voice", you: "You", air: "Aïr", mic: "Allow the microphone to talk with Aïr.",
+      speaking: "Aïr is speaking. Tap to interrupt", voice: "Voice", mic: "Allow the microphone to talk with Aïr.",
     },
     api: { run: "Run code", running: "Running…", output: "Output", note: "Runs on the live demo. In your app, your own key takes the demo’s place." },
     live: { working: "Generating…", unavailable: "The live demo is not available right now.", limited: "Demo limit reached for now. Get an API key to keep going.", failed: "The model did not answer. Try again in a moment." },
@@ -83,7 +83,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
     speak: { scripts: "Ce que lit la voix", voices: "Voix", previous: "Voix précédente", next: "Voix suivante", play: "Lire", stop: "Arrêter" },
     converse: {
       start: "Appeler Aïr", end: "Raccrocher", connecting: "Connexion…", idle: "Parlez avec Aïr, en haoussa", listening: "À l’écoute…", thinking: "Réflexion…",
-      speaking: "Aïr parle. Touchez pour l’interrompre", voice: "Voix", you: "Vous", air: "Aïr", mic: "Autorisez le micro pour parler avec Aïr.",
+      speaking: "Aïr parle. Touchez pour l’interrompre", voice: "Voix", mic: "Autorisez le micro pour parler avec Aïr.",
     },
     api: { run: "Exécuter", running: "Exécution…", output: "Résultat", note: "S’exécute sur la démo en direct. Dans votre application, votre propre clé remplace celle de la démo." },
     live: { working: "Génération…", unavailable: "La démo en direct n’est pas disponible pour le moment.", limited: "Limite de la démo atteinte. Obtenez une clé d’API pour continuer.", failed: "Le modèle n’a pas répondu. Réessayez dans un instant." },
