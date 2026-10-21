@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NotConfigured } from "@/components/account/AccountShell";
-import { BetaRequest } from "@/components/account/BetaRequest";
+import { AccountPaused } from "@/components/account/AccountPaused";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Overview } from "@/components/console/Overview";
 import { consoleCopy } from "@/content/console";
@@ -34,7 +34,7 @@ export default async function Account({ params }: { params: Promise<{ lang: stri
     <ConsoleShell lang={lang} page="overview" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={t.h1(first)} lede={t.lede}>
       <Overview lang={lang} apiBase={apiBase} approved={approved} usedMin={Number(usage?.audio_seconds ?? 0) / 60} limitMin={profile.monthly_audio_seconds / 60}
         requests={usage?.requests ?? 0} activeKeys={keys?.n ?? 0}
-        beta={approved ? undefined : <BetaRequest lang={lang} status={profile.beta_status as "pending" | "denied"} useCase={profile.use_case} />} />
+        notice={approved ? undefined : <AccountPaused lang={lang} />} />
     </ConsoleShell>
   );
 }

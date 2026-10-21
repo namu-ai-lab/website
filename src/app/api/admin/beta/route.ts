@@ -3,7 +3,7 @@ import { profileOf, type Profile } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { fail, signedIn } from "@/lib/http";
 
-/* Beta review: an admin approves or denies an account, and can change its monthly audio allowance.
+/* Accounts: an admin pauses ('denied') or resumes ('approved') an account, and can change its monthly audio allowance.
    The admin check reads the caller's own profile on the server, so it cannot be spoofed from the browser. */
 export async function POST(req: NextRequest) {
   const s = await signedIn(req, true);
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const target = typeof body?.user_id === "string" && body.user_id.length <= 64 ? body.user_id : null;
   const status = body?.status === "approved" || body?.status === "denied" ? body.status : null;
   if (!target || !status) return fail(400, "bad_request", "user_id and status (approved|denied) are required.");
-  if (target === s.user.id && status === "denied") return fail(400, "self", "You cannot deny your own account.");
+  if (target === s.user.id && status === "denied") return fail(400, "self", "You cannot pause your own account.");
   const minutes = typeof body?.minutes === "number" && Number.isFinite(body.minutes) && body.minutes >= 0 && body.minutes <= 100000
     ? Math.round(body.minutes * 60) : null;
 

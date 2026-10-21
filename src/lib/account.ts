@@ -12,9 +12,10 @@ export type Profile = {
 const PROFILE = `select p.user_id, u.email, u.name, p.beta_status, p.role, p.use_case, p.monthly_audio_seconds, p.created_at
   from public.profiles p join neon_auth."user" u on u.id::text = p.user_id`;
 
-/** A user's profile, created as pending if the sign-up trigger has not run (e.g. users from before the migration). */
+/** A user's profile, created on their first visit as active: anyone who signs up can create keys at once.
+    An existing profile is never changed here, so a paused account stays paused. */
 export async function profileOf(userId: string): Promise<Profile> {
-  await sql("insert into public.profiles (user_id) values ($1) on conflict (user_id) do nothing", [userId]);
+  await sql("insert into public.profiles (user_id, beta_status) values ($1, 'approved') on conflict (user_id) do nothing", [userId]);
   const [p] = await sql<Profile>(`${PROFILE} where p.user_id = $1`, [userId]);
   return p;
 }

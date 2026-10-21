@@ -1,6 +1,5 @@
 /* The console's first page, after platform.openai.com's home: the month at a glance, three steps to a first request
-   (with real code against the real base URL), and the four models as endpoints. While the beta request is open,
-   it comes first. */
+   (with real code against the real base URL), and the four models as endpoints. A paused account sees why first. */
 import type { ReactNode } from "react";
 import { CodeTabs } from "../CodeTabs";
 import { Icon } from "../Icon";
@@ -11,15 +10,15 @@ import { MAX_ACTIVE_KEYS, SCOPES } from "@/lib/key-shape";
 
 const ENDPOINT = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" } as const;
 
-export function Overview({ lang, apiBase, usedMin, limitMin, requests, activeKeys, approved, beta }:
-  { lang: Lang; apiBase: string; usedMin: number; limitMin: number; requests: number; activeKeys: number; approved: boolean; beta?: ReactNode }) {
+export function Overview({ lang, apiBase, usedMin, limitMin, requests, activeKeys, approved, notice }:
+  { lang: Lang; apiBase: string; usedMin: number; limitMin: number; requests: number; activeKeys: number; approved: boolean; notice?: ReactNode }) {
   const t = consoleCopy[lang].overview, m = consoleCopy[lang].keys.models, L = (p: string) => lp(lang, p);
   const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
   const pct = limitMin > 0 ? Math.min(100, (usedMin / limitMin) * 100) : 0;
   const code = samples(apiBase).speech;
   return (
     <>
-      {beta}
+      {notice}
       <div className="cx-tiles three">
         <div className="cx-tile">
           <p>{t.audio}</p><strong>{t.minutes(nf.format(usedMin), nf.format(limitMin))}</strong>

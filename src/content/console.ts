@@ -49,8 +49,8 @@ const MODELS_FR = {
 export const consoleCopy: Record<Lang, ConsoleCopy> = {
   en: {
     api: "API", menu: "Menu", signedIn: "Signed in as",
-    nav: { manage: "Manage", overview: "Overview", keys: "API keys", usage: "Usage", build: "Build", playground: "Playground", docs: "Docs", reference: "API reference", admin: "Beta review" },
-    access: { approved: "Private beta", pending: "Access pending", denied: "No access yet" },
+    nav: { manage: "Manage", overview: "Overview", keys: "API keys", usage: "Usage", build: "Build", playground: "Playground", docs: "Docs", reference: "API reference", admin: "Accounts" },
+    access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
     overview: {
       meta: ["Overview", "Your Namu API account: keys, usage and a first request."],
       h1: name => (name ? `Welcome, ${name}` : "Welcome"), lede: "Speech models for the languages of the Sahel, behind one API.",
@@ -89,8 +89,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
   },
   fr: {
     api: "API", menu: "Menu", signedIn: "Connecté en tant que",
-    nav: { manage: "Gérer", overview: "Vue d’ensemble", keys: "Clés d’API", usage: "Consommation", build: "Construire", playground: "Bac à sable", docs: "Documentation", reference: "Référence de l’API", admin: "Validation bêta" },
-    access: { approved: "Bêta privée", pending: "Accès en attente", denied: "Pas encore d’accès" },
+    nav: { manage: "Gérer", overview: "Vue d’ensemble", keys: "Clés d’API", usage: "Consommation", build: "Construire", playground: "Bac à sable", docs: "Documentation", reference: "Référence de l’API", admin: "Comptes" },
+    access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
     overview: {
       meta: ["Vue d’ensemble", "Votre compte API Namu : clés, consommation et une première requête.".replace(" :", `${n}:`)],
       h1: name => (name ? `Bienvenue, ${name}` : "Bienvenue"), lede: "Des modèles de parole pour les langues du Sahel, derrière une seule API.",

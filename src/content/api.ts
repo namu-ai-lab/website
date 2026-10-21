@@ -1,7 +1,7 @@
 /* The API landing page (/api). The hero is the request/response studio (the founder's pick); the rest follows
    openai.com/api's sequence, adapted to Namu: models as tall image cards, guides, the platform in three
    pictures, an interactive list of use cases, three columns of commitments, and two ways to get started.
-   Claims gate: the API is in private beta (accounts approved by hand); every model is "In development" or
+   Claims gate: the API is in beta, open to anyone who signs up, free within a monthly allowance; every model is "In development" or
    "In research"; no prices, no
    customers, no compliance badges, no performance numbers. Endpoints are provisional and the page says so.
    Platform features are labelled as planned. Use cases are what could be built, not deployments.
@@ -32,8 +32,8 @@ export type ApiCopy = {
 };
 
 const en: ApiCopy = {
-  meta: ["API", "The Namu API, in private beta, brings the Lab’s speech models for the languages of the Sahel to developers and organisations: speech recognition, speech synthesis, speech translation and live conversation."],
-  status: "Private beta",
+  meta: ["API", "The Namu API, in beta, brings the Lab’s speech models for the languages of the Sahel to developers and organisations: speech recognition, speech synthesis, speech translation and live conversation."],
+  status: "Beta",
   h1: "Build voice products for the Sahel",
   lede: "One API for the Lab’s speech models. Hear, speak, translate and hold a conversation in the languages of the Sahel.",
   start: "Start building", talk: "Talk to us",
@@ -42,7 +42,7 @@ const en: ApiCopy = {
   modelsSub: "Four models from the research on this site, each to be released with a model card.",
   labels: { task: "Task", io: "In → out", endpoint: "Endpoint", status: "Status" },
   learnMore: "Learn more",
-  provisional: "Endpoints are provisional during the private beta. Pricing and data terms will be published with each model’s release; current limits are in the docs.",
+  provisional: "Endpoints are provisional during the beta. Pricing and data terms will be published with each model’s release; current limits are in the docs.",
   models: [
     { slug: "tatsuniya", name: "Tatsuniya", verb: "Listen", task: "Speech recognition", endpoint: "/v1/transcribe", io: ["Speech", "Text"], status: "In development", href: "https://www.namu-ai.org/models/tatsuniya" },
     { slug: "tafiya", name: "Tafiya", verb: "Speak", task: "Speech synthesis", endpoint: "/v1/speech", io: ["Text", "Speech"], status: "In development", href: "https://www.namu-ai.org/models/tafiya" },
@@ -85,12 +85,12 @@ const en: ApiCopy = {
   ],
   startH: "Get started",
   partner: { t: "Partner with us", d: "For organisations that want to shape the platform.", items: ["Evaluate the models in your own setting", "Contribute speech through the Rumbu programme", "Help decide what we release first"], cta: "Talk to us" },
-  build: { t: "Build on your own", d: "For developers who want to start now, in the private beta.", items: ["Your own API keys once your account is approved", "Docs with code in cURL, Python and JavaScript", "A model card and evaluation for every release"], cta: "Get an API key" },
+  build: { t: "Build on your own", d: "For developers who want to start now, free during the beta.", items: ["Your own API keys as soon as you sign up", "Docs with code in cURL, Python and JavaScript", "A model card and evaluation for every release"], cta: "Get an API key" },
 };
 
 const frCopy: ApiCopy = {
-  meta: ["API", fr("L’API de Namu, en bêta privée, met les modèles de parole du Lab pour les langues du Sahel à la disposition des développeurs et des organisations : reconnaissance vocale, synthèse vocale, traduction de la parole et conversation en direct.")],
-  status: "Bêta privée",
+  meta: ["API", fr("L’API de Namu, en bêta, met les modèles de parole du Lab pour les langues du Sahel à la disposition des développeurs et des organisations : reconnaissance vocale, synthèse vocale, traduction de la parole et conversation en direct.")],
+  status: "Bêta",
   h1: "Créez des produits vocaux pour le Sahel",
   lede: "Une seule API pour les modèles de parole du Lab. Entendre, parler, traduire et tenir une conversation dans les langues du Sahel.",
   start: "Commencer à construire", talk: "Nous contacter",
@@ -99,7 +99,7 @@ const frCopy: ApiCopy = {
   modelsSub: "Quatre modèles issus des recherches présentées sur ce site, chacun publié avec sa fiche de modèle.",
   labels: { task: "Tâche", io: "Entrée → sortie", endpoint: "Point d’accès", status: "Statut" },
   learnMore: "En savoir plus",
-  provisional: fr("Les points d’accès sont provisoires pendant la bêta privée. Les tarifs et les conditions relatives aux données seront publiés avec chaque modèle ; les limites actuelles figurent dans la documentation."),
+  provisional: fr("Les points d’accès sont provisoires pendant la bêta. Les tarifs et les conditions relatives aux données seront publiés avec chaque modèle ; les limites actuelles figurent dans la documentation."),
   models: [
     { slug: "tatsuniya", name: "Tatsuniya", verb: "Écouter", task: "Reconnaissance vocale", endpoint: "/v1/transcribe", io: ["Parole", "Texte"], status: "En développement", href: "https://www.namu-ai.org/models/tatsuniya" },
     { slug: "tafiya", name: "Tafiya", verb: "Parler", task: "Synthèse vocale", endpoint: "/v1/speech", io: ["Texte", "Parole"], status: "En développement", href: "https://www.namu-ai.org/models/tafiya" },
@@ -142,7 +142,7 @@ const frCopy: ApiCopy = {
   ],
   startH: "Commencer",
   partner: { t: "Devenez partenaire", d: "Pour les organisations qui veulent façonner la plateforme.", items: ["Évaluez les modèles dans votre propre contexte", "Contribuez des enregistrements via le programme Rumbu", "Aidez-nous à décider ce que nous publions en premier"], cta: "Nous contacter" },
-  build: { t: "Construisez par vous-même", d: "Pour les développeurs qui veulent commencer dès maintenant, en bêta privée.", items: ["Vos propres clés d’API une fois votre compte validé", "Une documentation avec du code en cURL, Python et JavaScript", "Une fiche de modèle et une évaluation pour chaque publication"], cta: "Obtenir une clé d’API" },
+  build: { t: "Construisez par vous-même", d: "Pour les développeurs qui veulent commencer dès maintenant, gratuitement pendant la bêta.", items: ["Vos propres clés d’API dès l’inscription", "Une documentation avec du code en cURL, Python et JavaScript", "Une fiche de modèle et une évaluation pour chaque publication"], cta: "Obtenir une clé d’API" },
 };
 
 export const apiCopy: Record<Lang, ApiCopy> = { en, fr: frCopy };

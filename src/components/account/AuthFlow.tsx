@@ -10,7 +10,7 @@ import type { Provider } from "@/lib/env";
 /* The three doors of the developer console (log in, sign up, reset a password), after auth.openai.com: one question
    per screen, the email address first, then whatever that address needs next.
      log in    email → password → (an address never verified: the 6-digit code) → the console
-     sign up   email → name and password → the 6-digit code Neon Auth emails → what are you building → the console
+     sign up   email → name and password → the 6-digit code Neon Auth emails → what are you building (optional) → the console
      reset     email → "check your inbox"; the emailed link comes back here with a token → new password → log in
    Google and GitHub sit under the first screen of log in and sign up. Every call goes to Neon Auth through
    /api/auth/*; when it succeeds the browser loads the next page whole, so the server sees the new session. */
@@ -222,7 +222,7 @@ export function AuthFlow({ lang, door, next, providers, start, token, failed }:
               {providers.includes("github") && <button type="button" className="cx-door-btn quiet" disabled={pending} onClick={() => social("github")}><GitHubMark />{t.github}</button>}
             </div>
           </>}
-          {door === "signup" && <p className="cx-door-fine">{t.beta}</p>}
+          {door === "signup" && <p className="cx-door-fine">{t.free}</p>}
         </>
       );
       break;
@@ -299,7 +299,7 @@ export function AuthFlow({ lang, door, next, providers, start, token, failed }:
           <Field label={t.project} multiline>
             <textarea name="use_case" rows={4} maxLength={1000} autoFocus value={useCase} placeholder=" " onChange={edit(setUseCase)} />
           </Field>
-          <p className="cx-door-hint">{accountCopy[lang].beta.useCasePh}</p>
+          <p className="cx-door-hint">{t.projectPh}</p>
           {errEl}
           {button(t.continue, !useCase.trim())}
         </form>

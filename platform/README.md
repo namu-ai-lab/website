@@ -11,7 +11,7 @@ browser ──► Vercel (this Next.js site)      ──► Neon Postgres
              /api/demo/*  server-held demo key              │ namu_gateway role: two functions only
                     │                                       │
 developer app ──────┴──► namu-gateway (Modal, CPU, the only public API)
-                           auth · scopes · beta status · quota · rate limit · size caps
+                           auth · scopes · account active · quota · rate limit · size caps
                            │  Modal proxy auth (Modal-Key / Modal-Secret)
                            ▼
               namu-transcribe · namu-voice · namu-interpret · namu-agent     (GPU, locked)
@@ -44,10 +44,11 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 - **Sign-in** is Neon Auth (Neon's managed Better Auth): email and password, with a 6-digit code to verify the
   address, or Google and GitHub. Passwords and sessions are held by Neon Auth in its own `neon_auth` schema, not in
   Namu's tables; the browser only ever talks to this site (`/api/auth/*`), and the session is a signed, httpOnly
-  cookie on the site's own domain. A developer's profile (beta status) is created on their first visit.
-- **Private beta**: new accounts are `pending`; an admin approves them at `/account/admin`. Denying an account
-  also stops its existing keys (the gateway checks the owner's status on every lookup).
-- **Gateway checks**, in order: key present → known → not revoked → owner approved → scope → monthly audio
+  cookie on the site's own domain. A developer's profile (status and allowance) is created on their first visit.
+- **Open beta**: anyone who signs up can create keys at once, within a free monthly allowance (30 minutes of
+  audio by default). An admin can raise an account's allowance or pause it at `/account/admin`; pausing stops its
+  keys at the gateway at once (the gateway checks the owner's status on every lookup).
+- **Gateway checks**, in order: key present → known → not revoked → owner active (not paused) → scope → monthly audio
   quota → per-key rate limit (60/min by default) → size and duration caps (25 MB, 5 min, 2,000 characters),
   measured with ffprobe *before* any GPU is called.
 - **Demo**: the website holds one ordinary key marked `is_demo`. Only demo keys may pass the visitor's IP

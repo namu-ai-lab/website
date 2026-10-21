@@ -16,16 +16,14 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title, description, robots: { index: false } };
 }
 
-const order = { pending: 0, approved: 1, denied: 2 } as const;
-
 export default async function Admin({ params }: { params: Promise<{ lang: string }> }) {
   const lang = (await params).lang as Lang;
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
   const { user, profile } = await requireAccount(lang, "/account/admin");
   if (profile.role !== "admin") notFound();
   const t = accountCopy[lang].admin;
-  // Reads every profile only after the admin check above; writes go through /api/admin/beta.
-  const rows = (await allProfiles()).sort((a, b) => order[a.beta_status] - order[b.beta_status]);
+  // Reads every profile only after the admin check above, newest first; writes go through /api/admin/beta.
+  const rows = await allProfiles();
 
   return (
     <ConsoleShell lang={lang} page="admin" admin user={user} access={profile.beta_status} title={t.h1} lede={t.lede}>
