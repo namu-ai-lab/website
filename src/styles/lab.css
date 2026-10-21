@@ -107,7 +107,12 @@ button { font: inherit; letter-spacing: inherit; color: inherit; }
 .nav > a[aria-current="page"] { background: rgba(21, 18, 15, .06); }
 .nav > button svg { width: 14px; height: 14px; transition: transform .3s var(--ease); }
 .nav > button[aria-expanded="true"] svg { transform: rotate(180deg); }
-.hdr-cta { margin-left: auto; display: flex; gap: 8px; }
+.hdr-cta { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+/* Log in reads as a nav link; Start building is the one dark pill (after openai.com's header) */
+.hdr-login { height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: var(--r-pill); font-size: 15px; font-weight: 450;
+  color: var(--ink); text-decoration: none; white-space: nowrap; transition: background-color .2s var(--ease); }
+.hdr-login:hover { background: rgba(21, 18, 15, .05); }
+.hdr-cta .pill { white-space: nowrap; }
 .menu-toggle { display: none; margin-left: auto; width: 40px; height: 40px; border: 0; background: none; border-radius: var(--r-pill); cursor: pointer; place-items: center; }
 .menu-toggle svg { width: 22px; height: 22px; }
 
@@ -633,8 +638,10 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .hdr:not(.solid):not(.open) .lang-switch { background: rgba(255, 255, 255, .4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .hdr-cta { margin-left: 12px; }
 @media (max-width: 1120px) { .menu-toggle { margin-left: 8px; } }
-/* on narrower desktops the parent-site pill gives way to the nav; namu-ai.org stays in the footer */
-@media (max-width: 1280px) { .hdr-cta .parent { display: none; } }
+/* on narrower desktops the parent-site pill gives way to the nav and to Log in / Start building; namu-ai.org stays in
+   the footer and the phone menu. Below 1280 the menu also moves closer to the logo, which French needs. */
+@media (max-width: 1400px) { .hdr-cta .parent { display: none; } }
+@media (max-width: 1280px) { .nav { margin-left: 20px; } }
 
 /* ---- API landing page (/api): the studio hero, then openai.com/api's sequence adapted to Namu ---- */
 .api-status { display: inline-flex; align-items: center; gap: 8px; height: 32px; margin: 0; padding: 0 14px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 14.5px; }

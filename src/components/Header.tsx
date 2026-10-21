@@ -77,7 +77,8 @@ export function Header({ lang, c, programmes }: Props) {
         <LangSwitch lang={lang} label={n.language} />
         <div className="hdr-cta">
           <a className="pill parent" href="https://www.namu-ai.org">namu-ai.org</a>
-          <a className="pill" href={L("/models/air")}><Icon name="play" size={16} stroke={1.6} />{n.hearAir}</a>
+          <a className="hdr-login" href={L("/login")}>{n.logIn}</a>
+          <a className="pill dark" href={L("/signup")}>{n.startBuilding}</a>
         </div>
         <button className="menu-toggle" type="button" aria-expanded={menu === "sheet"} aria-controls="sheet" aria-label={menu === "sheet" ? n.closeMenu : n.openMenu} onClick={() => toggle("sheet")}>
           <Icon name={menu === "sheet" ? "sidebar-open" : "sidebar"} size={22} stroke={1.5} />
@@ -164,7 +165,8 @@ export function Header({ lang, c, programmes }: Props) {
               <a href={L("/organisations")} aria-current={path.startsWith("/organisations") ? "page" : undefined}>{n.organisations}</a>
             </nav>
             <div className="sheet-more">
-              <a className="pill dark" href={L("/models/air")}><Icon name="play" size={16} stroke={1.6} />{n.hearAir}</a>
+              <a className="pill dark" href={L("/signup")}>{n.startBuilding}</a>
+              <a className="pill" href={L("/login")}>{n.logIn}</a>
               <a className="pill" href="https://www.namu-ai.org">namu-ai.org <Icon name="external" size={16} stroke={1.6} /></a>
             </div>
           </div>
