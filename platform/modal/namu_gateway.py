@@ -324,6 +324,12 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return err(503, "auth_unavailable", "Key verification is temporarily unavailable.")
         if rec is None or rec.revoked:
             return err(401, "invalid_api_key", "Unknown or revoked API key.")
+        if rec.is_service:                     # as everywhere: the service key speaks only for a named account
+            acct = (request.headers.get("x-namu-account") or "").strip()
+            a = await off_loop(store.account, acct) if acct and len(acct) <= 64 else None
+            if a is None:
+                return err(403, "account_required", "This key acts only for a signed-in account.")
+            return {"month_audio_seconds_used": round(float(a[2]), 1), "month_audio_seconds_limit": float(a[1])}
         return {"month_audio_seconds_used": round(rec.used_audio_seconds, 1),
                 "month_audio_seconds_limit": rec.monthly_audio_seconds}
 

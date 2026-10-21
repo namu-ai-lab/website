@@ -370,3 +370,10 @@ def test_ordinary_keys_ignore_the_account_header(env):
     c, store, *_ = env
     r = c.post("/v1/speech", headers={**auth(), "X-Namu-Account": "dev-1"}, json={"text": "Sannu", "voice": "nadia"})
     assert r.status_code == 200 and store.usage[-1].user_id == "u1"
+
+
+def test_service_key_usage_is_per_account(env):
+    c, *_ = env
+    assert c.get("/v1/usage", headers=auth(SERVICE)).json()["error"]["type"] == "account_required"
+    r = c.get("/v1/usage", headers=as_account("full-1")).json()
+    assert r == {"month_audio_seconds_used": 1800.0, "month_audio_seconds_limit": 1800.0}
