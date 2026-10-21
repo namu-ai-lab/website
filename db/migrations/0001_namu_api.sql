@@ -1,8 +1,8 @@
 -- Namu developer API on Neon Postgres: profiles, API keys and usage.
 --
--- Run with `npm run db:migrate` (scripts/db-migrate.mjs), which first creates Better Auth's own tables
--- ("user", session, account, verification) and then applies this file. Safe to run again.
---   profiles      one row per signed-up developer; private-beta approval lives here
+-- Run with `npm run db:migrate` (scripts/db-migrate.mjs), which applies every file in this folder in order.
+-- Safe to run again. Users and sessions belong to Neon Auth (the neon_auth schema, see 0002).
+--   profiles      one row per signed-up developer, keyed by Neon Auth's user id; private-beta approval lives here
 --   api_keys      only an HMAC of each key is stored, never the key itself
 --   usage_events  seconds, characters and status codes; never audio or text
 -- The website connects as the database owner and filters every query on the signed-in user's id.
@@ -12,7 +12,7 @@ create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------- profiles
 create table if not exists public.profiles (
-  user_id               text primary key references public."user"(id) on delete cascade,
+  user_id               text primary key,                -- neon_auth."user".id, as text
   beta_status           text not null default 'pending' check (beta_status in ('pending', 'approved', 'denied')),
   role                  text not null default 'user'    check (role in ('user', 'admin')),
   use_case              text check (char_length(use_case) <= 1000),
@@ -21,17 +21,7 @@ create table if not exists public.profiles (
   reviewed_at           timestamptz
 );
 
--- Every new user gets a pending profile.
-create or replace function public.namu_new_user() returns trigger
-language plpgsql as $$
-begin
-  insert into public.profiles (user_id) values (new.id) on conflict (user_id) do nothing;
-  return new;
-end $$;
-
-drop trigger if exists namu_on_user_created on public."user";
-create trigger namu_on_user_created after insert on public."user"
-  for each row execute function public.namu_new_user();
+-- A new user's pending profile is created on their first visit to the console (src/lib/account.ts, profileOf).
 
 -- ---------------------------------------------------------------- api_keys
 create table if not exists public.api_keys (

@@ -4,7 +4,8 @@ How the public API, the API keys and the website's live demos fit together, and 
 
 ```
 browser ──► Vercel (this Next.js site)      ──► Neon Postgres
-             /login (GitHub, Google)                "user", session, account   (Better Auth: sign-in)
+             /login /signup /reset-password         neon_auth.*  (Neon Auth: users, sessions;
+               relayed through /api/auth/*                         kept by Neon)
              /account/* dashboard                   profiles, api_keys, usage_events
              /api/keys  create / revoke                     ▲
              /api/demo/*  server-held demo key              │ namu_gateway role: two functions only
@@ -20,10 +21,12 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 
 | Path | What it is |
 | --- | --- |
-| `db/migrations/0001_namu_api.sql` | Namu's tables, the trigger that creates a pending profile on sign-up, the two functions the gateway calls |
-| `scripts/db-migrate.mjs` | Creates Better Auth's tables, the `namu_gateway` role, then applies `db/migrations/` |
+| `db/migrations/0001_namu_api.sql` | Namu's tables and the two functions the gateway calls |
+| `db/migrations/0002_neon_auth.sql` | The move from Better Auth's tables to Neon Auth's (`neon_auth."user"`) |
+| `scripts/db-migrate.mjs` | Checks that Neon Auth is on, creates the `namu_gateway` role, then applies `db/migrations/` |
 | `scripts/env-init.mjs`, `db-admin.mjs`, `modal-secrets.mjs` | Generate local secrets, make an admin / mark the demo key, copy secrets to Modal |
-| `src/lib/auth.ts`, `src/app/api/auth/[...all]` | Sign-in (Better Auth, sessions in Neon) |
+| `src/lib/auth.ts`, `src/app/api/auth/[...path]`, `src/proxy.ts` | Sign-in: Neon Auth, relayed through the site; the proxy finishes the Google and GitHub return trip |
+| `src/components/account/AuthFlow.tsx`, `src/app/[lang]/{login,signup,reset-password}` | The doors: log in, sign up (with a 6-digit code), reset a password |
 | `src/app/api/keys`, `src/app/api/demo/[model]`, `src/app/[lang]/account/*`, `src/app/[lang]/docs` | Dashboard, key minting, live demos, docs |
 | `platform/modal/namu_gateway.py` | The public API (`/v1/transcribe`, `/v1/speech`, `/v1/translate`, `/v1/converse`, `/v1/models`, `/v1/voices`, `/v1/usage`) |
 | `platform/modal/namu_{transcribe,voice,interpret,agent}.py` | The model services, with the proxy-auth switch |
@@ -38,7 +41,10 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   every query that touches a developer's data filters on the signed-in user's id. The gateway connects as
   `namu_gateway`, a role that can only call `namu_key_lookup` and `namu_record_usage`: it cannot read or change
   a table directly, so a leak of the gateway's secret exposes no account data.
-- **Sign-in** is GitHub or Google through Better Auth: no passwords stored, sessions in an httpOnly cookie.
+- **Sign-in** is Neon Auth (Neon's managed Better Auth): email and password, with a 6-digit code to verify the
+  address, or Google and GitHub. Passwords and sessions are held by Neon Auth in its own `neon_auth` schema, not in
+  Namu's tables; the browser only ever talks to this site (`/api/auth/*`), and the session is a signed, httpOnly
+  cookie on the site's own domain. A developer's profile (beta status) is created on their first visit.
 - **Private beta**: new accounts are `pending`; an admin approves them at `/account/admin`. Denying an account
   also stops its existing keys (the gateway checks the owner's status on every lookup).
 - **Gateway checks**, in order: key present → known → not revoked → owner approved → scope → monthly audio
@@ -56,7 +62,7 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 All commands run from the repository root in PowerShell. Secrets go into `.env.local` (git-ignored) and are
 never printed by the scripts.
 
-1. **Local secrets**: `npm run env:init` (session secret, key pepper).
+1. **Local secrets**: `npm run env:init` (cookie secret, key pepper).
 2. **Neon**: create a project at console.neon.tech, copy the *pooled* connection string, and save it without
    echoing it:
    ```powershell
@@ -64,17 +70,20 @@ never printed by the scripts.
    Add-Content .env.local ("DATABASE_URL=" + [Net.NetworkCredential]::new("", $s).Password)
    ```
    Then `npm run db:migrate`.
-3. **Sign-in provider**: GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
-   (or the organisation's own settings). Homepage URL = the site; callback URL =
-   `https://<site>/api/auth/callback/github` (add a second app with `http://localhost:3000/...` for development).
-   Save `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` into `.env.local` the same way. Google works the same with
-   `/api/auth/callback/google`.
+3. **Neon Auth**: Neon Console → the project → Auth → enable it on the branch the site uses. Then, under
+   Configuration:
+   - copy the **Auth URL** into `.env.local` as `NEON_AUTH_BASE_URL`;
+   - **Email and password**: on, with **email verification by code** (the sign-up screens expect a 6-digit code);
+   - **Google** and **GitHub**: Neon's shared credentials are fine for development; for production, create your
+     own OAuth apps with the callback URL Neon shows there. Switch one off and set `NEON_AUTH_PROVIDERS`
+     (for example `google`) so the site stops offering it;
+   - **Domains**: add every address people sign in on: `https://www.namuai-lab.com`, `https://namuai-lab.com`,
+     and the preview hosts you use (`http://localhost:3000` for development). Neon refuses redirects anywhere else.
 4. **Modal**: `npm run modal:secrets` (creates `namu-db` and `namu-key-pepper`), then
    `modal deploy platform/modal/namu_gateway.py` → `https://<workspace>--namu-gateway-api.modal.run/v1/health`.
-5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` except `GATEWAY_DATABASE_URL`
-   and `BETTER_AUTH_URL` (on Vercel the site uses its preview or production address automatically). Redeploy.
-   The GitHub OAuth app's callback must match the address you sign in on (preview or production).
-6. **First admin**: sign in on the site, then `npm run db:admin -- you@example.org`.
+5. **Vercel**: Project → Settings → Environment Variables → import `.env.local` except `GATEWAY_DATABASE_URL`;
+   give Production its own `NEON_AUTH_COOKIE_SECRET` (any random 32+ characters). Redeploy.
+6. **First admin**: sign up on the site, then `npm run db:admin -- you@example.org`.
 7. **Demo key**: in `/account/keys`, create a key named `website demo`, save it as `NAMU_DEMO_KEY` (in Vercel),
    then `npm run db:admin -- --demo`. Raise the admin account's monthly minutes if the demo is busy.
 8. **Lock the model services** (last, after step 4 works end to end):

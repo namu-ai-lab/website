@@ -13,9 +13,11 @@ try {
       where name = 'website demo' and revoked_at is null`);
     console.log(r.rowCount ? "demo key marked" : "no active key named 'website demo' yet: create it in /account/keys first");
   } else {
+    await pool.query(`insert into public.profiles (user_id) select id::text from neon_auth."user" where lower(email) = lower($1)
+      on conflict (user_id) do nothing`, [arg]);
     const r = await pool.query(`update public.profiles p set role = 'admin', beta_status = 'approved', reviewed_at = now()
-      from public."user" u where u.id = p.user_id and lower(u.email) = lower($1)`, [arg]);
-    console.log(r.rowCount ? `${arg} is now an approved admin` : `no account with that email yet: sign in on the site first`);
+      from neon_auth."user" u where u.id::text = p.user_id and lower(u.email) = lower($1)`, [arg]);
+    console.log(r.rowCount ? `${arg} is now an approved admin` : `no account with that email yet: sign up on the site first`);
   }
 } finally {
   await pool.end();

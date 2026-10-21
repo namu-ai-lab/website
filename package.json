@@ -15,7 +15,7 @@
     "modal:secrets": "node scripts/modal-secrets.mjs"
   },
   "dependencies": {
-    "better-auth": "1.7.7",
+    "@neondatabase/auth": "0.6.0-beta",
     "matter-js": "0.20.0",
     "next": "16.4.0",
     "pg": "8.23.1",
