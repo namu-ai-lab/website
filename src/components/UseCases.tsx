@@ -7,6 +7,7 @@
    that scrolls sideways. */
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { TallyLink } from "./Tally";
 import { useCases, type UseCase } from "@/content/usecases";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -36,7 +37,7 @@ export function UseCases({ lang }: { lang: Lang }) {
           <h2 id="h-cs" className="h2">{t.title}</h2>
           <p>{t.sub}</p>
           <div className="cs-ctas">
-            <a className="cs-btn light" href={`mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`}>{t.partner}</a>
+            <TallyLink className="cs-btn light" form="partner" lang={lang} source="lab-home-use-cases">{t.partner}</TallyLink>
             <a className="cs-btn" href={lp(lang, "/api")}>{t.build}<Icon name="external" size={15} stroke={1.8} /></a>
           </div>
         </div>

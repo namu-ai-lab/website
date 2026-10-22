@@ -1,12 +1,10 @@
 import { FooterShapes } from "./FooterShapes";
 import { LangSwitch } from "./Header";
 import { Logo } from "./Logo";
+import { TallyLink } from "./Tally";
 import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 
-const PARTNER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Partner with Namu")}`;
-/* the newsletter: until it has a sign-up list of its own, signing up is an email to the Lab */
-const NEWSLETTER = `mailto:contact@namuai.org?subject=${encodeURIComponent("Sign me up for the Namu AI Lab newsletter")}`;
 
 /* the Lab's code and Namu's accounts (as namu-ai.org lists them), and the address to write to */
 const SOCIALS = [
@@ -30,7 +28,7 @@ export function Footer({ lang }: { lang: Lang }) {
       <div className="wrap ftr-stay">
         <h2>{f.stay}</h2>
         <div className="ftr-stay-acts">
-          <a href={NEWSLETTER}>{f.join}</a>
+          <TallyLink form="newsletter" lang={lang} source="lab-footer">{f.join}</TallyLink>
           <a href={L("/signup")}>{f.build}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
         </div>
         <nav className="ftr-social" aria-label={f.follow}>
@@ -44,7 +42,7 @@ export function Footer({ lang }: { lang: Lang }) {
           <h2>{f.start}</h2>
           <ul>
             <li><a className="ftr-api" href={L("/api")}>{n.apiPlatform}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a></li>
-            <li><a href={PARTNER}>{f.partner}</a></li>
+            <li><TallyLink form="partner" lang={lang} source="lab-footer">{f.partner}</TallyLink></li>
             <li><a href={L("/research")}>{f.research}</a></li>
             <li><a href={L("/#models")}>{f.models}</a></li>
           </ul>
