@@ -1,0 +1,95 @@
+/* The Organisations page (/organisations), in the API page's frame so the two doors match: the haze hero with a glass
+   panel of who we work with, "Find your way in" (choices left, the answer right), the four steps, three reasons,
+   and the API page's questions and closing band (api.css). */
+
+/* ---- 1. hero */
+.org-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -64px; padding: calc(64px + clamp(44px, 6vw, 88px)) 0 clamp(48px, 5vw, 80px); background: #fff6ec; }
+.org-hero-head { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 28px 64px; align-items: end; }
+.org-display { margin: 18px 0 0; font-size: clamp(44px, 5.6vw, 84px); line-height: 1; letter-spacing: -.034em; font-weight: 500; text-wrap: balance; max-width: 9.5em; }
+.org-hero-side .lede { max-width: 30em; }
+.org-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.org-acts .pill svg { width: 18px; height: 18px; }
+.org-who { margin-top: clamp(40px, 5vw, 72px); padding: 8px; border-radius: 30px; background: rgba(255, 255, 255, .62); -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2); box-shadow: 0 0 0 1px rgba(21, 18, 15, .06), 0 50px 100px -50px rgba(140, 70, 20, .45); }
+.org-who-h { margin: 16px 20px 16px; font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
+.org-who-h span { display: block; margin-top: 4px; color: var(--ink-2); font-size: 15.5px; font-weight: 400; letter-spacing: 0; }
+.org-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.org-types li { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+.org-types strong { margin-top: 10px; font-size: 16.5px; font-weight: 500; line-height: 1.25; }
+.org-types li > span:last-child { color: var(--ink-2); font-size: 14.5px; line-height: 1.45; }
+.org-ic { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--surface); color: var(--sahel-deep); }
+.org-solo { margin: 14px 20px 10px; color: var(--ink-2); font-size: 15px; }
+.org-solo strong { color: var(--ink); font-weight: 500; }
+.org-solo a { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-weight: 500; text-decoration: none; white-space: nowrap; }
+.org-solo a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- section heads */
+.org-sec .org-head { display: grid; gap: 14px; max-width: 46em; margin-bottom: clamp(32px, 4vw, 56px); }
+.org-head .lede { max-width: 36em; }
+
+/* ---- 2. find your way in */
+.ow { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 32px 56px; align-items: start; }
+.ow-label { margin: 0 0 12px; color: var(--ink-3); font-size: 14px; }
+.ow-group + .ow-group { margin-top: 30px; }
+.ow-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ow-chips button { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: var(--r-pill); background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-2); font-size: 15px; cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
+.ow-chips button svg { color: var(--ink-3); }
+.ow-chips button:hover { color: var(--ink); }
+.ow-chips button[aria-checked="true"] { background: var(--ink); box-shadow: none; color: #fff; }
+.ow-chips button[aria-checked="true"] svg { color: #ffd8b8; }
+.ow-list button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink-2);
+  font-size: 17px; text-align: left; cursor: pointer; transition: color .2s var(--ease); }
+.ow-list button:last-child { border-bottom: 1px solid var(--line); }
+.ow-list button:hover { color: var(--ink); }
+.ow-list button[aria-checked="true"] { color: var(--ink); font-weight: 500; }
+.ow-ic { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 11px; background: var(--surface); color: var(--ink-3); transition: background-color .2s, color .2s; }
+.ow-list button[aria-checked="true"] .ow-ic { background: var(--ink); color: #ffd8b8; }
+.ow-card { position: sticky; top: 96px; overflow: hidden; border-radius: 28px; background: var(--surface); }
+.ow-art { aspect-ratio: 16 / 7; overflow: hidden; animation: ow-in calc(.6s * var(--motion)) var(--ease-out) both; }
+.ow-art svg { width: 100%; height: 100%; }
+.ow-body { padding: clamp(22px, 3vw, 36px); animation: ow-in calc(.5s * var(--motion)) var(--ease-out) both; }
+@keyframes ow-in { from { opacity: 0; transform: translateY(6px); } }
+.ow-for { margin: 0; color: var(--sahel-deep); font-size: 14px; }
+.ow-card h3 { margin: 8px 0 10px; font-size: clamp(24px, 2.2vw, 30px); font-weight: 500; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
+.ow-d { margin: 0; color: var(--ink-2); font-size: 17px; line-height: 1.5; }
+.ow-card ul { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
+.ow-card li { display: flex; align-items: flex-start; gap: 10px; font-size: 15.5px; line-height: 1.45; }
+.ow-card li svg { flex: none; margin-top: 4px; color: var(--sahel-deep); }
+.ow-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+.ow-acts .pill svg { width: 18px; height: 18px; }
+.ow-note { margin: 12px 0 0; color: var(--ink-3); font-size: 13.5px; }
+
+/* ---- 3. how a partnership runs */
+.org-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.org-steps li { display: flex; flex-direction: column; }
+.org-step-art { aspect-ratio: 1; overflow: hidden; border-radius: var(--r-card); background: var(--surface); }
+.org-step-art svg { width: 100%; height: 100%; }
+.org-step-n { display: grid; place-items: center; width: 28px; height: 28px; margin-top: 18px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 500; }
+.org-steps h3 { margin: 12px 0 6px; font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
+.org-steps p { margin: 0; max-width: 22em; color: var(--ink-2); }
+
+/* ---- 4. why the Lab */
+.org-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.org-why-card { display: flex; flex-direction: column; padding: 28px; border-radius: var(--r-card); background: var(--surface); color: inherit; text-decoration: none; transition: background-color .3s var(--ease); }
+.org-why-card:hover { background: #f2eee8; }
+.org-why-card .org-ic { background: #fff; }
+.org-why-card h3 { margin: 18px 0 6px; font-size: 20px; font-weight: 500; }
+.org-why-card p { margin: 0 0 18px; color: var(--ink-2); }
+.org-why-card .apx-link { margin-top: auto; }
+
+/* ---- smaller screens */
+@media (max-width: 960px) {
+  .org-hero-head, .ow { grid-template-columns: minmax(0, 1fr); }
+  .ow-card { position: static; }
+  .org-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .org-why { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .org-who { padding: 6px; border-radius: 24px; }
+  .org-who-h { margin: 14px 14px 12px; }
+  .org-solo { margin: 12px 14px 8px; }
+  .org-steps { grid-template-columns: minmax(0, 1fr); }
+  .org-step-art { aspect-ratio: 16 / 9; }
+  .ow-list button { font-size: 16px; }
+}
