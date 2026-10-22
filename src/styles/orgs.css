@@ -1,12 +1,39 @@
 /* The Organisations page (/organisations), measured against openaifoundation.org at 1440px: a 90px mark, a 64px
    title and a 17px mission, centred; a 30px statement beside a square picture, the page split in two halves; a
    centred 48px heading over three cards with 16:9 pictures; resources in two columns of 184px squares; small dark
-   rectangular buttons. White ground, one type family, nothing else. */
+   rectangular buttons, one type family. Where the reference is white, this page is set on a dark ground (below). */
 
-/* The ground is a sky that turns as you read: indigo at the top, the indigo of Kano's dye pits and of the headscarf
-   in the first photograph, through a pale lilac into the warm haze of a Sahel evening at the foot. Pale enough that
-   the type stays ink on near-white throughout. */
-.ofd { --ofd-r: 6px; background: linear-gradient(180deg, #e6e9f5 0, #eeeef7 18%, #f5f2f6 45%, #f9eeec 75%, #f9e5da 100%); }
+/* The ground. The page is set dark so the photographs carry it, the way a gallery wall does; the site's tokens are
+   re-pointed inside .ofd so every rule below reads them as light-on-dark. --ofd-ground is set on the body (with :has)
+   because the fixed header, which sits outside the page, takes its colour from it too.
+     t-night     the Lab's warm night, an ember glow rising behind the mark
+     t-laterite  the red earth of Sahel roads and banco walls
+     t-indigo    the indigo of Kano's dye pits, with the same ember glow */
+body:has(.ofd.t-night) { --ofd-ground: #15100c; --ofd-glow: rgba(232, 147, 90, .26); --ofd-raise: #211913; }
+body:has(.ofd.t-laterite) { --ofd-ground: #7a3620; --ofd-glow: rgba(255, 196, 150, .22); --ofd-raise: #8b4129; }
+body:has(.ofd.t-indigo) { --ofd-ground: #161b38; --ofd-glow: rgba(232, 147, 90, .22); --ofd-raise: #20264a; }
+.ofd { --ofd-r: 6px; --ink: #f7efe7; --ink-2: #d9cbbe; --ink-3: #ab9b8d; --line: rgba(255, 240, 225, .12); --line-2: rgba(255, 240, 225, .24);
+  --surface: var(--ofd-raise); --focus: #f0a777;
+  position: relative; color: var(--ink);
+  background: radial-gradient(ellipse 60% 520px at 50% 0, var(--ofd-glow), transparent 100%), var(--ofd-ground); }
+.ofd.t-laterite { --ink-2: #f6d9c8; --ink-3: #edc3ab; }
+.ofd.t-indigo { --ink-2: #d6d3e0; --ink-3: #a7a6c0; }
+.ofd::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.35'/></svg>"); }
+.ofd > * { position: relative; z-index: 1; }
+
+/* the header over the dark ground: light type while it floats, the ground's own colour once it turns solid
+   (the open mobile menu keeps the site's white sheet) */
+body:has(.ofd) .hdr:not(.open) :is(.brand, .nav > a, .nav > button, .hdr-login, .menu-toggle, .pill.parent) { color: #f7efe7; }
+body:has(.ofd) .hdr:not(.open) :is(.nav > a, .nav > button, .hdr-login):hover,
+body:has(.ofd) .hdr:not(.open) .nav > button[aria-expanded="true"] { background: rgba(255, 240, 225, .08); }
+body:has(.ofd) .hdr:not(.open) .nav > a[aria-current="page"] { background: rgba(255, 240, 225, .12); }
+body:has(.ofd) .hdr:not(.open) .pill.parent { border-color: rgba(255, 240, 225, .24); }
+body:has(.ofd) .hdr:not(.open) .hdr-cta .pill.dark { background: #f7efe7; border-color: #f7efe7; color: #15120f; }
+body:has(.ofd) .hdr:not(.open) .lang-switch { background: rgba(255, 240, 225, .1); }
+body:has(.ofd) .hdr:not(.open) .lang-switch a { color: rgba(247, 239, 231, .7); }
+body:has(.ofd) .hdr:not(.open) .lang-switch a[aria-current="true"] { color: #15120f; }
+body:has(.ofd) .hdr.solid:not(.open) { background: color-mix(in srgb, var(--ofd-ground) 86%, transparent); box-shadow: 0 1px 0 rgba(255, 240, 225, .08); }
 
 /* ---- the mark, the name, the mission */
 .ofd-hero { display: flex; flex-direction: column; align-items: center; padding-top: clamp(48px, 6vw, 88px); padding-bottom: clamp(64px, 8vw, 120px); text-align: center; }
@@ -25,12 +52,12 @@
 .ofd-wide { aspect-ratio: 16 / 9; }
 
 /* ---- the small dark button */
-.ofd-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 3px; background: var(--ink); color: #fff;
+.ofd-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 3px; background: var(--ink); color: var(--ofd-ground);
   font: inherit; font-size: 14px; line-height: 20px; letter-spacing: 0; text-decoration: none; cursor: pointer; transition: background-color .2s var(--ease); }
-.ofd-btn:hover { background: #3b342e; }
+.ofd-btn:hover { background: #fff; }
 .ofd-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.ofd-btn.light { background: #fff; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); }
-.ofd-btn.light:hover { background: var(--surface); }
+.ofd-btn.light { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); }
+.ofd-btn.light:hover { background: rgba(255, 240, 225, .08); }
 
 /* ---- three areas */
 .ofd-areas { padding-top: clamp(96px, 11vw, 160px); }
@@ -48,6 +75,7 @@
 .ofd-btn.on .ofd-bars i:nth-child(2) { animation-delay: -.2s; } .ofd-btn.on .ofd-bars i:nth-child(3) { animation-delay: -.45s; } .ofd-btn.on .ofd-bars i:nth-child(4) { animation-delay: -.65s; }
 @keyframes ofd-bar { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
 .ofd-said { margin-top: 16px; padding-left: 14px; border-left: 2px solid var(--sahel); }
+.ofd.t-laterite .ofd-said { border-left-color: #f7c9a3; }
 .ofd-said p { margin: 0; font-size: 15px; line-height: 1.5; letter-spacing: 0; }
 .ofd-said .ofd-gloss { margin-top: 4px; color: var(--ink-2); }
 .ofd-said .ofd-by { margin-top: 8px; color: var(--ink-3); font-size: 13px; }

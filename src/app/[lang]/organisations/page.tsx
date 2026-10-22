@@ -39,7 +39,7 @@ export default async function Organisations({ params }: { params: Promise<{ lang
   ];
 
   return (
-    <div className="page-top ofd">
+    <div className="page-top ofd t-indigo">
       <Reveal />
 
       <header className="ofd-hero wrap">
