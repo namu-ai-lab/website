@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@neondatabase/auth": "0.6.0-beta",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "matter-js": "0.20.0",
     "next": "16.4.0",
     "pg": "8.23.1",

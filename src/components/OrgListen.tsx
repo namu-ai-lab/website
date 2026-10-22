@@ -6,6 +6,7 @@
    time across the page. */
 import { useEffect, useRef, useState } from "react";
 import type { Clip } from "@/content/usecases";
+import { track } from "@/lib/analytics";
 
 const EVT = "org-listen";
 
@@ -25,7 +26,10 @@ export function OrgListen({ id, clips, gloss, note, transcript, heard, hear, sto
     a.onerror = () => { if (audio.current === a) halt(); };
     void a.play().catch(() => halt());
   };
-  const start = () => { window.dispatchEvent(new CustomEvent(EVT, { detail: id })); setOn(true); setShown(true); play(); };
+  const start = () => {
+    window.dispatchEvent(new CustomEvent(EVT, { detail: id })); setOn(true); setShown(true); play();
+    track("example_play", { page: "organisations", case: id });
+  };
 
   useEffect(() => {
     const other = (e: Event) => { if ((e as CustomEvent<string>).detail !== id) halt(); };

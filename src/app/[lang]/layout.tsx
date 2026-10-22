@@ -8,6 +8,7 @@ import "@/styles/console.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SiteChrome } from "@/components/SiteChrome";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { site } from "@/content/site";
 import { getProgrammes } from "@/content";
 import { isLang, locales, type Lang } from "@/i18n/config";
@@ -43,10 +44,17 @@ export default async function RootLayout({ children, params }: { children: React
       <head>
         <script dangerouslySetInnerHTML={{ __html: boot }} />
         <link rel="preload" href="/fonts/dmsans-lab.woff2" as="font" type="font/woff2" crossOrigin="" />
+        {/* For search engines: the Lab as an organisation with its logo (the Blossom, public/logo.png), and the site's
+            name, so results read "Namu AI Lab" rather than the bare domain */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          "@context": "https://schema.org", "@type": "Organization", "@id": `${site.url}/#org`, name: "Namu AI Lab", url: site.url,
-          description: c.meta.site, parentOrganization: { "@type": "Organization", name: "Namu", url: site.parent.url },
-          sameAs: ["https://github.com/namu-ai-lab"],
+          "@context": "https://schema.org",
+          "@graph": [
+            { "@type": "Organization", "@id": `${site.url}/#org`, name: "Namu AI Lab", url: `${site.url}/`, logo: `${site.url}/logo.png`,
+              description: c.meta.site, parentOrganization: { "@type": "Organization", name: "Namu", url: site.parent.url },
+              sameAs: ["https://github.com/namu-ai-lab"] },
+            { "@type": "WebSite", "@id": `${site.url}/#website`, name: "Namu AI Lab", alternateName: "Namu Lab", url: `${site.url}/`,
+              publisher: { "@id": `${site.url}/#org` }, inLanguage: ["en", "fr"] },
+          ],
         }) }} />
       </head>
       <body>
@@ -55,6 +63,7 @@ export default async function RootLayout({ children, params }: { children: React
           footer={<Footer lang={lang} />}>
           {children}
         </SiteChrome>
+        <SiteAnalytics />
       </body>
     </html>
   );
