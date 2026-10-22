@@ -57,7 +57,7 @@ export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data:
           <ul className="cx-legend">{groups.map(g => <li key={g.id}><i style={{ background: g.colour }} />{g.name}</li>)}</ul>
         </div>
         {requests === 0 ? <p className="cx-muted cx-chart-empty">{t.emptyRange}</p> : (
-          <svg className="cx-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${t.perDay}: ${nf.format(requests)}`}>
+          <div className="cx-chart-scroll"><svg className="cx-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${t.perDay}: ${nf.format(requests)}`}>
             {[0, 0.5, 1].map(f => (
               <g key={f}><line x1={padL} x2={W} y1={yOf(top * f)} y2={yOf(top * f)} className="grid" /><text x={padL - 8} y={yOf(top * f) + 4} textAnchor="end">{nf.format(top * f)}</text></g>
             ))}
@@ -74,14 +74,14 @@ export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data:
                 </g>
               );
             })}
-          </svg>
+          </svg></div>
         )}
       </div>
 
       <div className="cx-card">
         <div className="cx-card-head"><h2>{by === "model" ? t.byModel : t.byKey}</h2></div>
         <div className="cx-table-wrap flat">
-          <table className="cx-table">
+          <table className="cx-table stack">
             <thead><tr>
               <th>{by === "model" ? t.th.model : t.key}</th>{by === "model" && <th>{t.th.endpoint}</th>}
               <th className="num">{t.th.requests}</th><th className="num">{t.success}</th><th className="num">{t.th.audio}</th><th className="num">{t.th.chars}</th><th className="num">{t.latency}</th>
@@ -90,13 +90,13 @@ export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data:
               const r = row(g.id);
               return (
                 <tr key={g.id} className={r?.requests ? undefined : "off"}>
-                  <td><i className="cx-dot" style={{ background: g.colour }} />{g.name}</td>
-                  {by === "model" && <td><code>/v1/{g.id}</code></td>}
-                  <td className="num">{nf.format(r?.requests ?? 0)}</td>
-                  <td className="num">{r?.requests ? `${nf.format(((r.requests - r.errors) / r.requests) * 100)}%` : "–"}</td>
-                  <td className="num">{nf.format(r?.audioMin ?? 0)}</td>
-                  <td className="num">{nf.format(r?.chars ?? 0)}</td>
-                  <td className="num">{r?.latencyMs != null ? `${nf.format(r.latencyMs / 1000)} s` : "–"}</td>
+                  <td className="c-main"><i className="cx-dot" style={{ background: g.colour }} />{g.name}</td>
+                  {by === "model" && <td className="c-corner"><code>/v1/{g.id}</code></td>}
+                  <td className="num" data-label={t.th.requests}>{nf.format(r?.requests ?? 0)}</td>
+                  <td className="num" data-label={t.success}>{r?.requests ? `${nf.format(((r.requests - r.errors) / r.requests) * 100)}%` : "–"}</td>
+                  <td className="num" data-label={t.th.audio}>{nf.format(r?.audioMin ?? 0)}</td>
+                  <td className="num" data-label={t.th.chars}>{nf.format(r?.chars ?? 0)}</td>
+                  <td className="num" data-label={t.latency}>{r?.latencyMs != null ? `${nf.format(r.latencyMs / 1000)} s` : "–"}</td>
                 </tr>
               );
             })}</tbody>

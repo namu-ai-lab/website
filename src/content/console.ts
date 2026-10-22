@@ -7,7 +7,7 @@ import type { Lang } from "@/i18n/config";
 const n = " ";   // narrow no-break space before French high punctuation
 
 export type ConsoleCopy = {
-  api: string; menu: string; signedIn: string;
+  api: string; menu: string; openMenu: string; closeMenu: string; signedIn: string;
   nav: { manage: string; monitor: string; overview: string; keys: string; usage: string; logs: string; limits: string; settings: string; build: string; playground: string; docs: string; reference: string; admin: string };
   access: { approved: string; pending: string; denied: string };
   overview: {
@@ -102,7 +102,7 @@ const MODELS_FR = {
 
 export const consoleCopy: Record<Lang, ConsoleCopy> = {
   en: {
-    api: "API", menu: "Menu", signedIn: "Signed in as",
+    api: "API", menu: "Menu", openMenu: "Open menu", closeMenu: "Close menu", signedIn: "Signed in as",
     nav: { manage: "Manage", monitor: "Monitor", overview: "Home", keys: "API keys", usage: "Usage", logs: "Logs", limits: "Limits", settings: "Settings", build: "Build", playground: "Playground", docs: "Docs", reference: "API reference", admin: "Accounts" },
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
     overview: {
@@ -233,7 +233,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
     },
   },
   fr: {
-    api: "API", menu: "Menu", signedIn: "Connecté en tant que",
+    api: "API", menu: "Menu", openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", signedIn: "Connecté en tant que",
     nav: { manage: "Gérer", monitor: "Suivre", overview: "Accueil", keys: "Clés d’API", usage: "Consommation", logs: "Journaux", limits: "Limites", settings: "Paramètres", build: "Construire", playground: "Bac à sable", docs: "Documentation", reference: "Référence de l’API", admin: "Comptes" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
     overview: {

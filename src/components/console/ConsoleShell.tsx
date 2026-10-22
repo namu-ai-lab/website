@@ -3,6 +3,7 @@ import { Icon } from "../Icon";
 import { Logo } from "../Logo";
 import { LangSwitch } from "../Header";
 import { AccountMenu } from "./AccountMenu";
+import { ConsoleDrawer } from "./ConsoleDrawer";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -13,8 +14,8 @@ export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limi
 /* The developer console's frame, after platform.openai.com: no top bar; a sidebar with the Namu mark and the Beta pill
    at the top, one flat list of pages (Home, Playground, API keys, Usage, Logs, Limits, Settings, and Accounts for an
    admin), the docs and the signed-in account at the foot; then the page under its title. In the Lab's own type
-   (Lab Sans, sentence case, no monospace outside code) and colours. On a phone the sidebar becomes a bar with the
-   pages as a row of tabs. */
+   (Lab Sans, sentence case, no monospace outside code) and colours. On a phone the same sidebar opens as a drawer
+   from a slim bar (ConsoleDrawer). */
 export function ConsoleShell({ lang, page, admin, user, access, title, lede, actions, children }:
   { lang: Lang; page: Page; admin: boolean; user: ConsoleUser; access: Access; title: string; lede?: string; actions?: ReactNode; children: ReactNode }) {
   const t = consoleCopy[lang], L = (p: string) => lp(lang, p);
@@ -31,7 +32,10 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
   ];
   return (
     <div className="cx">
-      <aside className="cx-side">
+      <ConsoleDrawer labels={{ open: t.openMenu, close: t.closeMenu, menu: t.menu }} bar={<>
+        <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx-bar" /><span className="cx-api">{t.api}</span></a>
+        <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
+      </>}>
         <div className="cx-side-top">
           <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx" /><span className="cx-api">{t.api}</span></a>
           <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
@@ -47,7 +51,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
           <AccountMenu lang={lang} user={user} label={t.signedIn} settings={{ label: t.nav.settings, href: L("/account/settings") }} />
           <LangSwitch lang={lang} label="Language" />
         </div>
-      </aside>
+      </ConsoleDrawer>
       <section className="cx-page">
         <header className="cx-head">
           <div>

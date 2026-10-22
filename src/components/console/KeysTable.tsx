@@ -119,12 +119,12 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     : <span className="cx-perm restricted" title={s.map(x => `${t.models[x].name} (${ENDPOINT[x]})`).join(", ")}>{t.restricted}<em>{s.map(x => t.models[x].name).join(", ")}</em></span>;
   const row = (k: KeyRow) => (
     <tr key={k.id} className={k.revoked_at ? "off" : undefined}>
-      <td className="cx-name">{k.name}{k.is_demo && <span className="cx-tag">{t.demo}</span>}</td>
-      <td><code className="cx-secret">{k.prefix}…</code></td>
-      <td>{perms(k.scopes)}</td>
-      <td>{day(lang, k.created_at)}</td>
-      <td>{day(lang, k.last_used_at) ?? <span className="cx-muted">{t.never}</span>}</td>
-      <td className="cx-acts">
+      <td className="cx-name c-main">{k.name}{k.is_demo && <span className="cx-tag">{t.demo}</span>}</td>
+      <td data-label={t.th.secret}><code className="cx-secret">{k.prefix}…</code></td>
+      <td data-label={t.th.perms}>{perms(k.scopes)}</td>
+      <td data-label={t.th.created}>{day(lang, k.created_at)}</td>
+      <td data-label={t.th.lastUsed}>{day(lang, k.last_used_at) ?? <span className="cx-muted">{t.never}</span>}</td>
+      <td className="cx-acts c-corner">
         {!k.revoked_at && !k.is_demo && <button type="button" className="cx-icon-btn" onClick={() => openEdit(k)} aria-label={t.editLabel(k.name)} title={t.editLabel(k.name)}><Icon name="pencil" size={17} stroke={1.5} /></button>}
         {!k.revoked_at && <button type="button" className="cx-icon-btn" onClick={() => { setError(null); setRevoking(k); }} aria-label={t.revokeLabel(k.name)} title={t.revokeLabel(k.name)}><Icon name="trash" size={17} stroke={1.5} /></button>}
       </td>
@@ -153,7 +153,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
         </div>
       ) : (
         <div className="cx-table-wrap">
-          <table className="cx-table">
+          <table className="cx-table stack">
             <thead><tr><th>{t.th.name}</th><th>{t.th.secret}</th><th>{t.th.perms}</th><th>{t.th.created}</th><th>{t.th.lastUsed}</th><th><span className="sr-only">{t.th.actions}</span></th></tr></thead>
             <tbody>{live.map(row)}</tbody>
           </table>
@@ -167,7 +167,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
           </button>
           {showRevoked && (
             <div className="cx-table-wrap">
-              <table className="cx-table">
+              <table className="cx-table stack">
                 <thead><tr><th>{t.th.name}</th><th>{t.th.secret}</th><th>{t.th.perms}</th><th>{t.th.created}</th><th>{t.th.lastUsed}</th><th /></tr></thead>
                 <tbody>{gone.map(row)}</tbody>
               </table>
