@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import "@/styles/lab.css";
 import "@/styles/figures.css";
 import "@/styles/api.css";
+import "@/styles/orgs.css";
 import "@/styles/console.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
