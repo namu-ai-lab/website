@@ -6,14 +6,13 @@
    scrolled or the window moved, and the fade in. Like labs.google's, the shapes are flat and still until someone
    touches them, and in Namu's own colours. They are the Lab's own: a greeting in each of the four languages it works
    in (Hausa sannu, Zarma fofo, Fulfulde jam, and Tamasheq alxer written in Tifinagh), the granary and the measuring
-   bowl that two of its research programmes are named after (Rumbu, Maʼauni), the Aïr massif its voice agent is
-   named after, and the Blossom of the logo. The shapes drop in from above; once they are in, the ceiling comes down
+   bowl that two of its research programmes are named after (Rumbu, Maʼauni), and the Blossom of the logo. The shapes drop in from above; once they are in, the ceiling comes down
    to the footer's top edge, so a shape can be lifted above the line, as on labs.google, but never out of the
    footer. */
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type * as MatterNS from "matter-js";
 
-type Kind = "greet" | "granary" | "bowl" | "massif" | "blossom";
+type Kind = "greet" | "granary" | "bowl" | "blossom";
 /* w and h in units of S, the size of one shape (labs.google's 280 px, scaled for the screen's width); a greeting has its
    word, its language and the side its tail points to */
 type Def = { kind: Kind; w: number; h: number; fill: string; ink?: string; word?: string; lang?: string; tail?: "left" | "right"; phone?: boolean };
@@ -24,16 +23,15 @@ const greet = (word: string, lang: string, fill: string, ink: string, tail: "lef
 const TIFINAGH = { d: "M242 10C354 10 434 -60 434 -181C434 -302 354 -373 242 -373C130 -373 50 -302 50 -181C50 -60 130 10 242 10ZM242 -68C176 -68 139 -112 139 -181C139 -250 173 -295 242 -295C309 -295 345 -250 345 -181C345 -112 309 -68 242 -68ZM581 0H670V-131L804 -344C832 -389 851 -422 866 -463L871 -461C865 -425 864 -377 864 -310V0H953V-714H864V-584L728 -369C702 -328 685 -298 668 -252L663 -254C669 -290 670 -338 670 -405V-714H581ZM1084 0H1174L1278 -155C1313 -207 1354 -263 1364 -299H1369C1380 -264 1423 -199 1452 -155L1555 0H1657V-8L1420 -365L1650 -706V-714H1560L1490 -610C1457 -562 1430 -525 1404 -458L1399 -460C1412 -541 1411 -575 1411 -639V-714H1326V-639C1326 -575 1327 -539 1345 -460L1340 -458C1313 -523 1292 -559 1259 -608L1188 -714H1086V-706L1319 -357L1084 -8ZM1969 -460C2069 -460 2125 -512 2125 -592C2125 -673 2069 -725 1969 -725C1869 -725 1813 -673 1813 -592C1813 -512 1869 -460 1969 -460ZM1969 -534C1922 -534 1900 -557 1900 -592C1900 -627 1922 -650 1969 -650C2016 -650 2038 -627 2038 -592C2038 -557 2016 -534 1969 -534ZM1739 -318H2199V-397H1739ZM1969 10C2069 10 2125 -42 2125 -122C2125 -203 2069 -255 1969 -255C1869 -255 1813 -203 1813 -122C1813 -42 1869 10 1969 10ZM1969 -64C1923 -64 1900 -87 1900 -122C1900 -157 1922 -180 1969 -180C2016 -180 2038 -157 2038 -122C2038 -87 2016 -64 1969 -64ZM2638 10C2844 10 2968 -137 2968 -357C2968 -577 2842 -725 2638 -725C2434 -725 2309 -577 2309 -357C2309 -137 2432 10 2638 10ZM2638 -72C2485 -72 2404 -177 2404 -357C2404 -537 2484 -643 2638 -643C2792 -643 2873 -537 2873 -357C2873 -177 2791 -72 2638 -72Z", x: 15.663, y: 46.556, s: 0.026731 };
 
 /* Namu's palette: ink, kola, dry clay, muted, paper, and the Sahel orange for heat */
-const INK = "#1c1410", KOLA = "#6b3e1e", CLAY = "#edd9b0", CLAY_DEEP = "#4a2a12", MUTED = "#7a6352", PAPER = "#fffaf1", SAHEL = "#e8935a";
+const INK = "#1c1410", KOLA = "#6b3e1e", CLAY = "#edd9b0", MUTED = "#7a6352", PAPER = "#fffaf1", SAHEL = "#e8935a";
 
-/* Wider screens get all eight; up to 1024 px, as on labs.google, five (`phone`). */
+/* Wider screens get all seven; up to 1024 px, as on labs.google, five (`phone`). */
 /* greetings in the four languages (to be checked by native speakers): Hausa and Zarma "hello", Fulfulde and
    Tamasheq "peace", which is how a greeting opens and answers in both */
 const SHAPES: Def[] = [
   greet("sannu", "ha", SAHEL, INK, "left"),
   { kind: "granary", w: 1, h: 0.86, fill: MUTED },
   greet("fofo", "dje", CLAY, KOLA, "right"),
-  { kind: "massif", w: 1.2, h: 0.8, fill: CLAY_DEEP },
   { kind: "blossom", w: 0.94, h: 0.94, fill: INK, phone: true },
   greet("jam", "ff", KOLA, PAPER, "left"),
   { kind: "bowl", w: 1, h: 0.6, fill: SAHEL },
@@ -49,7 +47,6 @@ const OUTLINE = {
   /* a grain-measuring bowl, its rim on top */
   bowl: "M0 4Q0 0 4 0H96Q100 0 100 4V8Q98 8 96 10Q86 60 50 60Q14 60 4 10Q2 8 0 8Z",
   /* the Aïr: two worn granite domes */
-  massif: "M0 80L34 12Q40 2 46 12L60 36L74 20Q80 12 86 20L120 80Z",
 } as const;
 
 function art(s: Def): ReactNode {
@@ -69,8 +66,6 @@ function art(s: Def): ReactNode {
       return <svg viewBox={vb}><path className="hit" d={OUTLINE.bowl} fill={s.fill} />
         <path d="M0 4Q0 0 4 0H96Q100 0 100 4V8H0Z" fill={KOLA} />
         <path d="M70 22H80M72 32H80M75 42H80" stroke={INK} strokeWidth={2.6} strokeLinecap="round" opacity={0.6} /></svg>;
-    case "massif":                /* Aïr */
-      return <svg viewBox={vb}><path className="hit" d={OUTLINE.massif} fill={s.fill} /></svg>;
     case "blossom":               /* the logo's open three-quarter ring, ending in the Sahel dot */
       return <svg viewBox="0 0 100 100"><circle className="hit" cx={50} cy={50} r={50} fill="none" /><path d="M87 50A37 37 0 1 0 50 87" fill="none" stroke={s.fill} strokeWidth={20} strokeLinecap="round" /><circle cx={50} cy={87} r={13} fill={SAHEL} /></svg>;
   }
