@@ -65,7 +65,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const [chosen, setChosen] = useState<Scope[]>(["speech", "transcribe"]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [secret, setSecret] = useState<{ key: string; scopes: Scope[] } | null>(null);
+  const [secret, setSecret] = useState<{ key: string; name: string; scopes: Scope[] } | null>(null);
   const [copied, setCopied] = useState<"secret" | "base" | "env" | null>(null);
   const [revoking, setRevoking] = useState<KeyRow | null>(null);
   const [editing, setEditing] = useState<KeyRow | null>(null);
@@ -88,7 +88,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     e.preventDefault(); setBusy(true); setError(null);
     try {
       const { key, data } = await call("POST", "/api/keys", { name: name.trim(), scopes });
-      setKeys(ks => [data as KeyRow, ...ks]); setSecret({ key: key as string, scopes }); setName("");
+      setKeys(ks => [data as KeyRow, ...ks]); setSecret({ key: key as string, name: name.trim(), scopes }); setName("");
     } catch (err) { setError(err instanceof Error && err.message !== "error" ? err.message : t.error); }
     finally { setBusy(false); }
   }
@@ -177,20 +177,25 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
       )}
 
       {/* create, then the secret, once */}
-      <dialog ref={createRef} className="cx-dialog" onClose={closeCreate} aria-labelledby="cx-create-h">
+      <dialog ref={createRef} className={`cx-dialog${secret ? " cx-dialog-key" : ""}`} onClose={closeCreate} aria-labelledby="cx-create-h">
         {secret ? (
           <div className="cx-dialog-body">
             <h2 id="cx-create-h">{t.saveH}</h2>
             <p>{t.saveBody}</p>
-            <div className="cx-secret-box">
-              <input readOnly value={secret.key} aria-label={t.saveH} onFocus={e => e.currentTarget.select()} />
-              <button type="button" className="cx-btn" onClick={() => copy(secret.key, "secret")}><Icon name={copied === "secret" ? "check" : "copy"} size={16} stroke={1.6} />{copied === "secret" ? t.copied : t.copy}</button>
+            {/* the whole key, always in view: it wraps rather than scrolls, and one click selects all of it; the dialog
+                opens with Copy focused */}
+            <div className="cx-key">
+              <code className="cx-key-value">{secret.key}</code>
+              <button type="button" className="cx-btn" autoFocus onClick={() => copy(secret.key, "secret")}><Icon name={copied === "secret" ? "check" : "copy"} size={16} stroke={1.6} />{copied === "secret" ? t.copied : t.copy}</button>
             </div>
-            <p className="cx-dialog-meta"><span>{t.permsOf}</span>{isAll(secret.scopes) ? t.all : secret.scopes.map(x => t.models[x].name).join(", ")}</p>
+            <dl className="cx-key-meta">
+              <div><dt>{t.th.name}</dt><dd>{secret.name}</dd></div>
+              <div><dt>{t.permsOf}</dt><dd>{isAll(secret.scopes) ? t.all : secret.scopes.map(x => t.models[x].name).join(", ")}</dd></div>
+            </dl>
             <div className="cx-env-hint">
               <p>{t.envHint}</p>
               <div className="cx-env">
-                <pre className="cx-code"><code>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
+                <pre className="cx-code wrap"><code>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
                 <button type="button" className="cx-icon-btn" onClick={() => copy(`export NAMU_API_KEY="${secret.key}"`, "env")} aria-label={t.copy}><Icon name={copied === "env" ? "check" : "copy"} size={16} stroke={1.6} /></button>
               </div>
             </div>
