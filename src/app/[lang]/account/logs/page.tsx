@@ -82,20 +82,20 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
         </div>
       ) : (
         <div className="cx-table-wrap">
-          <table className="cx-table cx-logs">
+          <table className="cx-table cx-logs stack">
             <thead><tr>
               <th>{t.th.time}</th><th>{t.th.model}</th><th>{t.th.key}</th><th>{t.th.status}</th>
               <th className="num">{t.th.audio}</th><th className="num">{t.th.chars}</th><th className="num">{t.th.latency}</th>
             </tr></thead>
             <tbody>{page.map(r => (
               <tr key={r.id}>
-                <td className="cx-when"><LocalTime iso={new Date(r.created_at).toISOString()} lang={lang} /></td>
-                <td><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></td>
-                <td>{keyLabel(r)}{r.prefix && !r.is_service && <code className="cx-ep">{r.prefix}…</code>}</td>
-                <td><span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span></td>
-                <td className="num">{Number(r.audio_seconds) ? `${nf.format(Number(r.audio_seconds))} s` : "–"}</td>
-                <td className="num">{r.characters ? nf.format(r.characters) : "–"}</td>
-                <td className="num">{nf.format(r.latency_ms / 1000)} s</td>
+                <td className="cx-when" data-label={t.th.time}><LocalTime iso={new Date(r.created_at).toISOString()} lang={lang} /></td>
+                <td className="c-main c-first"><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></td>
+                <td data-label={t.th.key}>{keyLabel(r)}{r.prefix && !r.is_service && <code className="cx-ep">{r.prefix}…</code>}</td>
+                <td className="c-corner"><span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span></td>
+                <td className="num" data-label={t.th.audio}>{Number(r.audio_seconds) ? `${nf.format(Number(r.audio_seconds))} s` : "–"}</td>
+                <td className="num" data-label={t.th.chars}>{r.characters ? nf.format(r.characters) : "–"}</td>
+                <td className="num" data-label={t.th.latency}>{nf.format(r.latency_ms / 1000)} s</td>
               </tr>
             ))}</tbody>
           </table>

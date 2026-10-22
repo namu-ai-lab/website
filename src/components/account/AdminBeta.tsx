@@ -29,18 +29,18 @@ export function AdminBeta({ lang, initial, me }: { lang: Lang; initial: Profile[
   if (rows.length === 0) return <p className="cx-muted">{t.empty}</p>;
   return (
     <div className="cx-table-wrap">
-      <table className="cx-table">
+      <table className="cx-table stack wide">
         <thead><tr><th>{t.th.email}</th><th>{t.th.useCase}</th><th>{t.th.status}</th><th>{t.th.joined}</th><th>{t.th.allowance}</th><th><span className="sr-only">{t.pause}</span></th></tr></thead>
         <tbody>
           {rows.map(p => (
             <tr key={p.user_id}>
-              <td>{p.email}</td>
-              <td className="wrap">{p.use_case ?? <span className="cx-muted">–</span>}</td>
-              <td><span className={`cx-pill${p.beta_status === "approved" ? " good" : ""}`}>{t.status[p.beta_status]}</span></td>
-              <td>{fmt(lang, p.created_at)}</td>
-              <td><input className="cx-input cx-min" type="number" min={0} max={100000} value={minutes[p.user_id] ?? 0} aria-label={t.th.allowance}
+              <td className="c-main">{p.email}</td>
+              <td className="wrap c-wide" data-label={t.th.useCase}>{p.use_case ?? <span className="cx-muted">–</span>}</td>
+              <td className="c-corner"><span className={`cx-pill${p.beta_status === "approved" ? " good" : ""}`}>{t.status[p.beta_status]}</span></td>
+              <td data-label={t.th.joined}>{fmt(lang, p.created_at)}</td>
+              <td data-label={t.th.allowance}><input className="cx-input cx-min" type="number" min={0} max={100000} value={minutes[p.user_id] ?? 0} aria-label={t.th.allowance}
                 onChange={e => setMinutes(m => ({ ...m, [p.user_id]: Number(e.target.value) }))} /> {t.minutes}</td>
-              <td className="cx-acts"><div className="cx-row-acts">
+              <td className="cx-acts c-wide"><div className="cx-row-acts">
                 <button type="button" className="cx-btn sm" disabled={busy === p.user_id || minutes[p.user_id] === Math.round(p.monthly_audio_seconds / 60)}
                   onClick={() => decide(p, p.beta_status === "denied" ? "denied" : "approved")}>{t.save}</button>
                 {p.beta_status === "denied"

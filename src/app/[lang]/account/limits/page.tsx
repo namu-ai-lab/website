@@ -48,7 +48,7 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
       <div className="cx-card">
         <div className="cx-card-head"><div><h2>{t.rateH}</h2><p className="cx-muted">{t.rateLede}</p></div></div>
         <div className="cx-table-wrap flat">
-          <table className="cx-table">
+          <table className="cx-table fit">
             <thead><tr><th>{t.th.what}</th><th className="num">{t.th.limit}</th></tr></thead>
             <tbody>
               {keys.map(k => (
@@ -64,7 +64,7 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
       <div className="cx-card">
         <div className="cx-card-head"><div><h2>{t.requestH}</h2><p className="cx-muted">{t.requestLede}</p></div></div>
         <div className="cx-table-wrap flat">
-          <table className="cx-table">
+          <table className="cx-table fit">
             <tbody>
               <tr><td>{t.upload}</td><td className="num">{t.mb(LIMITS.uploadMb)}</td></tr>
               <tr><td>{t.audio}</td><td className="num">{t.minutes(LIMITS.audioMinutes)}</td></tr>
@@ -78,10 +78,10 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
       <div className="cx-card">
         <div className="cx-card-head"><div><h2>{t.errorsH}</h2><p className="cx-muted">{t.errorsLede}</p></div></div>
         <div className="cx-table-wrap flat">
-          <table className="cx-table cx-errors">
+          <table className="cx-table cx-errors stack">
             <thead><tr><th>{t.eth.status}</th><th>{t.eth.code}</th><th>{t.eth.meaning}</th></tr></thead>
             <tbody>{t.errors.map(([st, code, what]) => (
-              <tr key={code}><td><span className={`cx-status s${st[0]}`}>{st}</span></td><td><code>{code}</code></td><td className="wrap">{what}</td></tr>
+              <tr key={code}><td className="c-corner"><span className={`cx-status s${st[0]}`}>{st}</span></td><td className="c-main"><code>{code}</code></td><td className="wrap c-wide">{what}</td></tr>
             ))}</tbody>
           </table>
         </div>
