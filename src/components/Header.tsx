@@ -71,7 +71,6 @@ export function Header({ lang, c, programmes }: Props) {
           <button type="button" aria-expanded={menu === "research"} aria-controls="mega-research" onClick={() => toggle("research")}>{n.research} <Icon name="chevron" size={14} stroke={1.6} /></button>
           <button type="button" aria-expanded={menu === "models"} aria-controls="mega-models" onClick={() => toggle("models")}>{n.models} <Icon name="chevron" size={14} stroke={1.6} /></button>
           <button type="button" aria-expanded={menu === "developers"} aria-controls="mega-developers" onClick={() => toggle("developers")}>{n.developers} <Icon name="chevron" size={14} stroke={1.6} /></button>
-          <a href={L("/data")} aria-current={path.startsWith("/data") ? "page" : undefined}>{n.data}</a>
           <a href={L("/organisations")} aria-current={path.startsWith("/organisations") ? "page" : undefined}>{n.organisations}</a>
         </nav>
         <LangSwitch lang={lang} label={n.language} />
@@ -137,14 +136,6 @@ export function Header({ lang, c, programmes }: Props) {
               <span className="ic"><Icon name="code" size={22} stroke={1.4} /></span>
               <span><b>{n.apiPlatform}</b><span>{n.apiPlatformSub}</span></span>
             </a>
-            <a className="mega-item" href={L("/docs")} aria-current={path.startsWith("/docs") ? "page" : undefined}>
-              <span className="ic"><Icon name="paper" size={22} stroke={1.4} /></span>
-              <span><b>{n.docs}</b><span>{n.docsSub}</span></span>
-            </a>
-            <a className="mega-item" href={L("/account/keys")} aria-current={path.startsWith("/account") ? "page" : undefined}>
-              <span className="ic"><Icon name="licence" size={22} stroke={1.4} /></span>
-              <span><b>{n.apiKeys}</b><span>{n.apiKeysSub}</span></span>
-            </a>
             {/* The SDK page is not built yet: shown, not linked. */}
             <div className="mega-item soon" aria-disabled="true">
               <span className="ic"><Icon name="download" size={22} stroke={1.4} /></span>
@@ -161,7 +152,6 @@ export function Header({ lang, c, programmes }: Props) {
               <button type="button" onClick={() => open("research")}>{n.research}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
               <button type="button" onClick={() => open("models")}>{n.models}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
               <button type="button" onClick={() => open("developers")}>{n.developers}<Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
-              <a href={L("/data")} aria-current={path.startsWith("/data") ? "page" : undefined}>{n.data}</a>
               <a href={L("/organisations")} aria-current={path.startsWith("/organisations") ? "page" : undefined}>{n.organisations}</a>
             </nav>
             <div className="sheet-more">
@@ -191,8 +181,6 @@ export function Header({ lang, c, programmes }: Props) {
             ) : (
               <nav className="sheet-main" aria-label={n.developers}>
                 <a href={L("/api")}>{n.apiPlatform}</a>
-                <a href={L("/docs")}>{n.docs}</a>
-                <a href={L("/account/keys")}>{n.apiKeys}</a>
                 <span className="soon" aria-disabled="true">{n.sdks}<em>{n.soon}</em></span>
               </nav>
             )}
