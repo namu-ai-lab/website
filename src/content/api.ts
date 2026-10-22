@@ -30,7 +30,7 @@ export type ApiCopy = {
     sample: string; listen: string; direction: string; dirs: { fr: string; ha: string }; play: string; stop: string; download: string;
     converse: string; converseCta: string; limited: string; unavailable: string; failed: string; tooLong: string;
   };
-  modelsH: string; modelsSub: string; labels: { endpoint: string; io: string; langs: string; limit: string }; tryIt: string; page: string;
+  modelsH: string; modelsSub: string; allModels: string; allModelsNote: string; labels: { endpoint: string; io: string; langs: string; limit: string }; tryIt: string; page: string;
   models: ApiModel[];
   stepsH: string; stepsSub: string; steps: { t: string; d: string }[];
   mock: { google: string; github: string; email: string; save: string; saveNote: string; done: string; ok: string };
@@ -63,8 +63,9 @@ const en: ApiCopy = {
     limited: "The demo’s hourly limit is reached. Your own key has its own, larger limits.", unavailable: "The live demo is not available right now.",
     failed: "That did not work. Try again in a moment.", tooLong: "Up to 300 characters in the demo.",
   },
-  modelsH: "Four models, one key",
-  modelsSub: "Each comes from the Lab’s research and answers on its own endpoint. One key calls them all, or only the ones you allow it.",
+  modelsH: "The Lab’s speech models",
+  modelsSub: "Three models in the API today, each from the Lab’s research and each on its own endpoint. One key calls them all.",
+  allModels: "Explore all models", allModelsNote: "Including Aïr, our conversation model, in research.",
   labels: { endpoint: "Endpoint", io: "In → out", langs: "Languages", limit: "Per request" },
   tryIt: "Try it", page: "Model page",
   models: [
@@ -191,8 +192,9 @@ const frCopy: ApiCopy = {
     limited: "La limite horaire de la démonstration est atteinte. Votre propre clé a ses propres limites, plus larges.", unavailable: "La démonstration en direct n’est pas disponible pour le moment.",
     failed: fr("Cela n’a pas fonctionné. Réessayez dans un instant."), tooLong: "300 caractères au maximum dans la démonstration.",
   },
-  modelsH: "Quatre modèles, une clé",
-  modelsSub: "Chacun est issu des recherches du Lab et répond sur son propre point d’accès. Une clé les appelle tous, ou seulement ceux que vous autorisez.",
+  modelsH: "Les modèles de parole du Lab",
+  modelsSub: "Trois modèles dans l’API aujourd’hui, chacun issu des recherches du Lab et chacun sur son propre point d’accès. Une clé les appelle tous.",
+  allModels: "Explorer tous les modèles", allModelsNote: "Dont Aïr, notre modèle de conversation, en recherche.",
   labels: { endpoint: "Point d’accès", io: "Entrée → sortie", langs: "Langues", limit: "Par requête" },
   tryIt: "Essayer", page: "Page du modèle",
   models: [

@@ -5,8 +5,9 @@ import { ApiCompose } from "@/components/ApiCompose";
 import { ApiConsoleTour } from "@/components/ApiConsoleTour";
 import { ApiRunner, Highlight } from "@/components/ApiRunner";
 import { Icon } from "@/components/Icon";
+import { ModelArt } from "@/components/ModelArt";
 import { Reveal } from "@/components/Interactive";
-import { API_DEMO, apiCopy, type ApiTask } from "@/content/api";
+import { API_DEMO, apiCopy } from "@/content/api";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { alternates } from "@/i18n/seo";
 import { apiBase } from "@/lib/env";
@@ -18,12 +19,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 const MAIL = `mailto:contact@namuai.org?subject=${encodeURIComponent("Namu API")}`;
-const ORB: Record<ApiTask, string> = {
-  speech: "radial-gradient(circle at 34% 30%, #ffe3cc 0, #f0884f 48%, #b23e1f 100%)",
-  transcribe: "radial-gradient(circle at 34% 30%, #f6e6d6 0, #c4865a 48%, #5e3418 100%)",
-  translate: "radial-gradient(circle at 34% 30%, #f4ece2 0, #8fa6d6 48%, #7a4325 100%)",
-  converse: "radial-gradient(circle at 34% 30%, #ffd8b8 0, #e8935a 48%, #7a4325 100%)",
-};
 
 /* The anatomy of a request: a real call and Tatsuniya's real answer, then the error every client should handle.
    `n` ties a line to the note of the same number. */
@@ -86,34 +81,34 @@ export default async function Api({ params }: { params: Promise<{ lang: string }
         </div>
       </section>
 
-      {/* 2. The models, as a spec sheet */}
-      <section className="section apx-sec" id="models" aria-labelledby="h-models">
+      {/* 2. The models in the API, each a night piece of its own (after openai.com/api's starfields), then all models */}
+      <section className="section apx-night" id="models" aria-labelledby="h-models">
         <div className="wrap">
-          <header className="apx-head reveal">
+          <header className="apx-head apx-night-head reveal">
             <h2 id="h-models" className="h1">{a.modelsH}</h2>
             <p className="lede">{a.modelsSub}</p>
           </header>
-          <div className="apx-models">
-            {a.models.map(m => (
-              <article key={m.task} className="apx-model reveal">
-                <div className="apx-model-top">
-                  <span className="apx-orb" style={{ background: ORB[m.task] }} aria-hidden="true" />
-                  <span className={`apx-badge${m.research ? " research" : ""}`}>{m.status}</span>
+          <div className="apx-mcards">
+            {a.models.filter(m => !m.research).map(m => (
+              <a key={m.task} className="apx-mcard reveal" href={`#run-${m.task}`} aria-label={`${m.name}, ${m.job}. ${a.tryIt}`}>
+                <div className="apx-mcard-art"><ModelArt model={m.task as "speech" | "transcribe" | "translate"} /></div>
+                <span className="apx-mcard-status">{m.status}</span>
+                <div className="apx-mcard-body">
+                  <h3>{m.name}</h3>
+                  <p className="apx-mcard-job">{m.job}</p>
+                  <dl>
+                    <div><dt>{a.labels.endpoint}</dt><dd><code>{m.endpoint}</code></dd></div>
+                    <div><dt>{a.labels.langs}</dt><dd>{m.langs}</dd></div>
+                    <div><dt>{a.labels.limit}</dt><dd>{m.limit}</dd></div>
+                  </dl>
+                  <span className="apx-mcard-try">{a.tryIt}<Icon name="arrow-long" size={16} stroke={1.6} /></span>
                 </div>
-                <h3>{m.name}</h3>
-                <p className="apx-job">{m.job}</p>
-                <dl>
-                  <div><dt>{a.labels.endpoint}</dt><dd><code>{m.endpoint}</code></dd></div>
-                  <div><dt>{a.labels.io}</dt><dd>{m.io[0]} <Icon name="arrow-long" size={13} stroke={1.6} /> {m.io[1]}</dd></div>
-                  <div><dt>{a.labels.langs}</dt><dd>{m.langs}</dd></div>
-                  <div><dt>{a.labels.limit}</dt><dd>{m.limit}</dd></div>
-                </dl>
-                <div className="apx-model-acts">
-                  <a className="pill" href={`#run-${m.task}`}>{a.tryIt}</a>
-                  <a className="apx-link" href={L(m.href)}>{a.page}<Icon name={m.href.startsWith("http") ? "external" : "arrow-long"} size={14} stroke={1.6} /></a>
-                </div>
-              </article>
+              </a>
             ))}
+          </div>
+          <div className="apx-mcards-more reveal">
+            <a className="pill lg on-dark" href={L("/#models")}>{a.allModels}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
+            <p>{a.allModelsNote}</p>
           </div>
         </div>
       </section>

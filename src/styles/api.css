@@ -98,24 +98,50 @@
   color: var(--ink); font-size: 14px; text-decoration: none; cursor: pointer; }
 .ar-dl:hover, .ar-mini:hover { background: #efebe5; }
 
-/* ---- 2. models */
-.apx-models { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.apx-model { display: flex; flex-direction: column; padding: 24px; border-radius: var(--r-card); background: var(--surface); }
-.apx-model-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.apx-orb { width: 60px; height: 60px; border-radius: 50%; box-shadow: inset 0 -8px 16px rgba(40, 16, 4, .14), 0 14px 28px -14px rgba(140, 70, 20, .55); }
-.apx-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: var(--r-pill); background: #fff; box-shadow: 0 0 0 1px var(--line); color: var(--ink-2); font-size: 12.5px; }
-.apx-badge.research { color: var(--sahel-deep); }
-.apx-model h3 { margin: 30px 0 2px; font-size: 27px; font-weight: 500; letter-spacing: -.022em; line-height: 1.1; }
-.apx-job { margin: 0; color: var(--ink-2); }
-.apx-model dl { display: grid; margin: 22px 0 0; }
-.apx-model dl > div { display: grid; gap: 2px; padding: 11px 0; border-top: 1px solid rgba(21, 18, 15, .08); }
-.apx-model dt { color: var(--ink-3); font-size: 12.5px; }
-.apx-model dd { margin: 0; font-size: 15px; line-height: 1.4; }
-.apx-model dd code { font-size: 13.5px; }
-.apx-model dd svg { display: inline-block; vertical-align: -1px; color: var(--ink-3); }
-.apx-model-acts { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 22px; }
-.apx-model-acts .pill { background: #fff; border-color: #fff; }
-.apx-model-acts .pill:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+/* ---- 2. models: a night band, three tall cards each with its own sky (ModelArt), and the way to all models */
+.apx-night { position: relative; background: #0d0907; color: #f4ece2; border-top: 0 !important; }
+.apx-night + .section { border-top: 0; }
+.apx-night-head { margin-inline: auto; text-align: center; justify-items: center; }
+.apx-night-head .h1 { color: #fff; }
+.apx-night-head .lede { color: rgba(244, 236, 226, .7); text-wrap: balance; }
+.apx-mcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.apx-mcard { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: flex-end; aspect-ratio: 400 / 540; overflow: hidden;
+  border-radius: var(--r-card); background: #0b0806; box-shadow: inset 0 0 0 1px rgba(255, 240, 225, .07); color: #fff; text-decoration: none; }
+.apx-mcard-art { position: absolute; inset: 0; z-index: -2; transition: transform calc(1.2s * var(--motion)) var(--ease-out); }
+.apx-mcard-art svg { width: 100%; height: 100%; }
+.apx-mcard::after { content: ""; position: absolute; inset: 40% 0 0; z-index: -1; background: linear-gradient(to bottom, rgba(10, 7, 5, 0), rgba(10, 7, 5, .55) 45%, rgba(10, 7, 5, .82)); }
+.apx-mcard:hover .apx-mcard-art { transform: scale(1.04); }
+.apx-mcard:focus-visible { outline: 2px solid #ffd2ad; outline-offset: 4px; }
+.apx-mcard-status { position: absolute; top: 18px; left: 18px; display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border-radius: var(--r-pill);
+  background: rgba(20, 14, 10, .45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgba(255, 240, 225, .14);
+  color: rgba(255, 246, 236, .9); font-size: 12.5px; }
+.apx-mcard-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.4px solid #f6b48a; }
+.apx-mcard-body { padding: 24px 24px 22px; }
+.apx-mcard h3 { margin: 0; font-size: clamp(28px, 2.5vw, 36px); font-weight: 500; letter-spacing: -.025em; line-height: 1.05; }
+.apx-mcard-job { margin: 6px 0 0; color: rgba(255, 240, 225, .78); font-size: 16px; }
+.apx-mcard dl { display: grid; gap: 7px; margin: 18px 0 0; }
+.apx-mcard dl > div { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13.5px; line-height: 1.4; }
+.apx-mcard dt { color: rgba(255, 240, 225, .55); }
+.apx-mcard dd { margin: 0; color: rgba(255, 248, 240, .92); }
+.apx-mcard dd code { font-size: 12.5px; }
+.apx-mcard-try { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; color: #ffd2ad; font-size: 15px; font-weight: 500; }
+.apx-mcard-try svg { transition: transform .3s var(--ease); }
+.apx-mcard:hover .apx-mcard-try svg { transform: translateX(4px); }
+.apx-mcards-more { display: grid; justify-items: center; gap: 12px; margin-top: clamp(32px, 4vw, 48px); text-align: center; }
+.apx-mcards-more .pill svg { width: 18px; height: 18px; }
+.apx-mcards-more p { margin: 0; color: rgba(244, 236, 226, .6); font-size: 14.5px; }
+/* the skies move a little: a few stars twinkle, the sparks rise, the strings shimmer, the voice on the dunes breathes */
+.mart-tw { animation: mart-tw 5s ease-in-out infinite; }
+@keyframes mart-tw { 50% { opacity: .2; } }
+.mart-spark { animation: mart-rise 6s ease-in-out infinite alternate; }
+@keyframes mart-rise { to { transform: translateY(-14px); opacity: .55; } }
+.mart-str { animation: mart-str 3.6s ease-in-out infinite; }
+@keyframes mart-str { 50% { opacity: .45; } }
+.mart-bar { transform-box: fill-box; transform-origin: 50% 100%; animation: mart-bar 2.8s ease-in-out infinite; }
+@keyframes mart-bar { 50% { transform: scaleY(.55); } }
+.mart-fire { transform-box: fill-box; transform-origin: 50% 80%; animation: mart-fire 1.8s ease-in-out infinite alternate; }
+@keyframes mart-fire { to { transform: scale(1.08, 1.14); opacity: .85; } }
+@media (prefers-reduced-motion: reduce) { .mart-tw, .mart-spark, .mart-str, .mart-bar, .mart-fire { animation: none; } .apx-mcard-art { transition: none; } }
 
 /* ---- 3. steps */
 .apx-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
@@ -254,7 +280,8 @@
 
 /* ---- smaller screens */
 @media (max-width: 1180px) {
-  .apx-models { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .apx-mcards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .apx-mcard-body { padding: 20px; }
   .ar-grid, .apx-anat { grid-template-columns: minmax(0, 1fr); }
   .ar-right { min-height: 0; }
 }
@@ -262,9 +289,16 @@
   .apx-hero-head, .apx-head.split, .ac, .apx-free, .apx-faq { grid-template-columns: minmax(0, 1fr); }
   .apx-steps { grid-template-columns: minmax(0, 1fr); }
   .apx-step-pic { aspect-ratio: 16 / 10; }
+  /* the model cards become a row to swipe, each nearly a screen wide */
+  .apx-mcards { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(80%, 380px); overflow-x: auto; scroll-snap-type: x mandatory;
+    margin-inline: calc(-1 * var(--gutter)); padding: 0 var(--gutter) 4px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+  .apx-mcards::-webkit-scrollbar { display: none; }
+  .apx-mcard { scroll-snap-align: start; }
 }
 @media (max-width: 640px) {
-  .apx-models { grid-template-columns: minmax(0, 1fr); }
+  .apx-mcards { grid-auto-columns: 84%; }
+  .apx-mcard { aspect-ratio: 400 / 620; }
+  .apx-mcard-art { inset: 0 0 auto; height: 70%; -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }   /* the scene above, its dark ground under the words */
   .ar { padding: 6px; border-radius: 24px; }
   .ar-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ar-tabs button { height: 44px; font-size: 15px; }
