@@ -1,6 +1,7 @@
 /* The Organisations page (/organisations), in the API page's frame so the two doors match: the haze hero with a glass
-   panel of who we work with, "Find your way in" (choices left, the answer right), the four steps, three reasons,
-   and the API page's questions and closing band (api.css). */
+   panel of who we work with, sourced figures, sectors you can hear, "Find your way in", the four steps and what each
+   leaves you, commitments beside what we do not claim yet, the research behind it, and the API page's questions and
+   closing band (api.css). */
 
 /* ---- 1. hero */
 .org-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -64px; padding: calc(64px + clamp(44px, 6vw, 88px)) 0 clamp(48px, 5vw, 80px); background: #fff6ec; }
@@ -69,21 +70,107 @@
 .org-steps h3 { margin: 12px 0 6px; font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
 .org-steps p { margin: 0; max-width: 22em; color: var(--ink-2); }
 
-/* ---- 4. why the Lab */
-.org-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.org-why-card { display: flex; flex-direction: column; padding: 28px; border-radius: var(--r-card); background: var(--surface); color: inherit; text-decoration: none; transition: background-color .3s var(--ease); }
-.org-why-card:hover { background: #f2eee8; }
-.org-why-card .org-ic { background: #fff; }
-.org-why-card h3 { margin: 18px 0 6px; font-size: 20px; font-weight: 500; }
-.org-why-card p { margin: 0 0 18px; color: var(--ink-2); }
-.org-why-card .apx-link { margin-top: auto; }
+/* ---- why voice: public figures, each with its source beside it (Microsoft AI for Good's "Challenges we face") */
+.org-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.org-facts li { display: flex; flex-direction: column; gap: 10px; padding: 28px 28px 30px 0; border-bottom: 1px solid var(--line); }
+.org-facts li:not(:nth-child(3n + 1)) { padding-left: 28px; border-left: 1px solid var(--line); }
+.org-facts strong { font-size: clamp(44px, 4.6vw, 68px); font-weight: 500; letter-spacing: -.04em; line-height: 1; color: var(--ink); }
+.org-facts p { margin: 0; color: var(--ink-2); font-size: 16px; line-height: 1.45; }
+.org-facts a { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; color: var(--ink-3); font-size: 13px; text-decoration: none; }
+.org-facts a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.org-facts-note { margin: 16px 0 0; color: var(--ink-3); font-size: 13.5px; }
+
+/* ---- where voice can help: sectors, each a message you can play and a programme sketch */
+.org-warm { background: var(--surface); }
+.org-warm + .section { border-top: 0; }
+.os-tabs { display: flex; gap: 6px; margin-bottom: 18px; overflow-x: auto; scrollbar-width: none; }
+.os-tabs::-webkit-scrollbar { display: none; }
+.os-tabs button { display: inline-flex; flex: none; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border: 0; border-radius: var(--r-pill); background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-2); font-size: 15px; cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
+.os-tabs button svg { color: var(--ink-3); }
+.os-tabs button:hover { color: var(--ink); }
+.os-tabs button[aria-selected="true"] { background: var(--ink); box-shadow: none; color: #fff; }
+.os-tabs button[aria-selected="true"] svg { color: #ffd8b8; }
+.os-panel { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); overflow: hidden; border-radius: 28px; background: #fff; box-shadow: 0 0 0 1px var(--line);
+  animation: ow-in calc(.5s * var(--motion)) var(--ease-out) both; }
+.os-stage { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: flex-end; min-height: 460px; margin: 0; padding: clamp(22px, 3vw, 36px);
+  overflow: hidden; background: #0d0907; color: #fff; }
+.os-art { position: absolute; inset: 0; z-index: -1; opacity: .95; }
+.os-art svg { width: 100%; height: 100%; }
+.os-stage::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to bottom, rgba(13, 9, 7, 0) 30%, rgba(13, 9, 7, .45) 70%, rgba(13, 9, 7, .8)); }
+.os-msg { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 6px 18px; align-items: start; padding: 20px 22px; border-radius: 22px; background: rgba(28, 20, 16, .5);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(255, 240, 225, .12); }
+.os-play { display: grid; place-items: center; width: 56px; height: 56px; border: 0; border-radius: 50%; background: #fff; color: var(--ink); cursor: pointer; transition: transform .2s var(--ease); }
+.os-play:hover { transform: scale(1.05); }
+.os-lines { display: grid; gap: 10px; min-width: 0; }
+.os-line { display: grid; gap: 3px; margin: 0; font-size: clamp(19px, 1.7vw, 23px); line-height: 1.3; letter-spacing: -.01em; color: rgba(255, 248, 240, .78); transition: color .3s; }
+.os-line.on { color: #fff; }
+.os-line small { color: rgba(255, 220, 190, .7); font-size: 12.5px; letter-spacing: .01em; }
+.os-gloss { margin: 0; color: rgba(255, 240, 225, .66); font-size: 15px; line-height: 1.45; }
+.os-heard { display: grid; gap: 2px; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 240, 225, .14); }
+.os-heard small { color: rgba(255, 220, 190, .7); font-size: 12.5px; }
+.os-heard span { font-size: 15.5px; color: rgba(255, 248, 240, .9); }
+.os-bar { grid-column: 1 / -1; height: 3px; margin-top: 8px; overflow: hidden; border-radius: 3px; background: rgba(255, 240, 225, .14); }
+.os-bar i { display: block; height: 100%; background: #f6b48a; transition: width .2s linear; }
+.os-stage figcaption { margin-top: 14px; color: rgba(255, 240, 225, .6); font-size: 13.5px; }
+.os-body { display: flex; flex-direction: column; padding: clamp(24px, 3vw, 40px); }
+.os-body h3 { margin: 0; font-size: clamp(24px, 2.2vw, 30px); font-weight: 500; letter-spacing: -.02em; line-height: 1.15; }
+.os-d { margin: 10px 0 0; color: var(--ink-2); font-size: 16.5px; line-height: 1.5; }
+.os-body dl { display: grid; margin: 22px 0 0; }
+.os-body dl > div { display: grid; gap: 3px; padding: 13px 0; border-top: 1px solid var(--line); }
+.os-body dt { color: var(--ink-3); font-size: 13px; }
+.os-body dd { margin: 0; font-size: 15.5px; line-height: 1.45; }
+.os-models { display: flex; gap: 8px; margin: 6px 0 0; padding-top: 13px; border-top: 1px solid var(--line); font-size: 15px; }
+.os-models span { color: var(--ink-3); }
+.os-note { margin: auto 0 0; padding-top: 18px; color: var(--ink-3); font-size: 13px; }
+
+/* ---- how a partnership runs: what each step leaves you */
+.org-get { display: grid; gap: 3px; margin: 14px 0 0 !important; padding-top: 12px; border-top: 1px solid var(--line); color: var(--ink) !important; font-size: 15px; }
+.org-get span { color: var(--sahel-deep); font-size: 13px; }
+
+/* ---- what we commit to, and what we do not claim yet (claude.com's rows; the Lab's "What we do not claim yet") */
+.org-commit { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 32px 64px; align-items: start; }
+.org-rows { display: grid; margin: 0; padding: 0; list-style: none; }
+.org-rows li { display: grid; grid-template-columns: 40px minmax(0, 200px) minmax(0, 1fr); gap: 4px 20px; align-items: start; padding: 20px 0; border-top: 1px solid var(--line); }
+.org-rows li:last-child { border-bottom: 1px solid var(--line); }
+.org-rows h3 { margin: 8px 0 0; font-size: 17.5px; font-weight: 500; }
+.org-rows p { margin: 8px 0 0; color: var(--ink-2); line-height: 1.5; }
+.org-notyet { position: sticky; top: 96px; padding: 28px; border-radius: var(--r-card); background: var(--surface); box-shadow: inset 3px 0 0 var(--sahel); }
+.org-notyet h3 { margin: 0 0 12px; font-size: 18px; font-weight: 500; }
+.org-notyet ul { display: grid; gap: 12px; margin: 0; padding: 0 0 0 18px; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+
+/* ---- the research behind it: programmes and the latest work (openaifoundation.org's resources) */
+.org-head.split { max-width: none; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 20px 48px; }
+.org-head.split .pill svg { width: 18px; height: 18px; }
+.org-research { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 56px; }
+.org-label { margin: 0 0 12px; color: var(--ink-3); font-size: 14px; }
+.org-progs, .org-latest { display: grid; margin: 0; padding: 0; list-style: none; }
+.org-progs a { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; padding: 16px 2px; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+.org-progs li:last-child a { border-bottom: 1px solid var(--line); }
+.org-progs a:hover .org-prog-title { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.org-prog-name { font-size: 17.5px; font-weight: 500; }
+.org-prog-title { color: var(--ink-2); font-size: 15.5px; line-height: 1.4; }
+.org-prog-status { padding: 2px 10px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
+.org-prog-status.s-active { background: rgba(232, 147, 90, .14); color: #8a4a22; }
+.org-latest a { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 18px; align-items: center; padding: 12px 0; color: inherit; text-decoration: none; }
+.org-latest-art { display: block; aspect-ratio: 1; overflow: hidden; border-radius: 14px; background: var(--surface); }
+.org-latest-art svg { width: 100%; height: 100%; }
+.org-latest strong { display: block; font-size: 16.5px; font-weight: 500; line-height: 1.35; }
+.org-latest em { display: block; margin-top: 4px; color: var(--ink-3); font-size: 13.5px; font-style: normal; }
+.org-latest a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---- smaller screens */
 @media (max-width: 960px) {
   .org-hero-head, .ow { grid-template-columns: minmax(0, 1fr); }
   .ow-card { position: static; }
   .org-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .org-why { grid-template-columns: minmax(0, 1fr); }
+  .os-panel, .org-commit, .org-research { grid-template-columns: minmax(0, 1fr); }
+  .org-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .org-facts li:not(:nth-child(3n + 1)) { padding-left: 0; border-left: 0; }
+  .org-facts li:nth-child(2n) { padding-left: 24px; border-left: 1px solid var(--line); }
+  .os-stage { min-height: 380px; }
+  .org-notyet { position: static; }
+  .org-head.split { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   .org-who { padding: 6px; border-radius: 24px; }
@@ -92,4 +179,12 @@
   .org-steps { grid-template-columns: minmax(0, 1fr); }
   .org-step-art { aspect-ratio: 16 / 9; }
   .ow-list button { font-size: 16px; }
+  .org-facts { grid-template-columns: minmax(0, 1fr); }
+  .org-facts li, .org-facts li:nth-child(2n) { padding: 22px 0; border-left: 0; }
+  .org-rows li { grid-template-columns: 40px minmax(0, 1fr); }
+  .org-rows li p { grid-column: 2; margin-top: 0; }
+  .org-progs a { grid-template-columns: minmax(0, 1fr) auto; }
+  .org-prog-title { grid-column: 1 / -1; grid-row: 2; }
+  .os-msg { grid-template-columns: 48px minmax(0, 1fr); padding: 16px; }
+  .os-play { width: 48px; height: 48px; }
 }

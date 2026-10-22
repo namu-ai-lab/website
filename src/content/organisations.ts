@@ -5,7 +5,9 @@
    Claims gate: no partners, pilots, customers or deployments are named or implied; everything is how the Lab would
    work, in the present tense only where it is already true (open sign-up, the free beta allowance, the Lab's
    scoring). Positioning: the languages of the Sahel; Hausa is where the models are today, the Zarma programme is
-   starting. FR-REVIEW: drafted French, to be reviewed by a native speaker. */
+   starting. FR-REVIEW: drafted French, to be reviewed by a native speaker.
+   FOUNDER-REVIEW: the commitments ("What we commit to", the data FAQ) are written as Lab policy for partnerships;
+   the founders confirm them before this page is merged. Figures in `facts` come with their source and link. */
 import type { Lang } from "@/i18n/config";
 
 const n = " ";   // narrow no-break space before French high punctuation
@@ -13,6 +15,10 @@ const fr = (s: string) => s.replace(/ ([:;!?»])/g, `${n}$1`).replace(/« /g, `�
 
 export type OrgType = { id: string; icon: string; t: string; who: string; d: string };
 export type OrgPath = { id: string; icon: string; t: string; want: string; d: string; points: string[]; link: { label: string; href: string } };
+/* a public figure with its source, printed with the source beside it */
+export type OrgFact = { figure: string; label: string; source: string; href: string };
+/* what a programme in a sector could look like: who it reaches, how, and what would be measured with the partner */
+export type OrgSector = { who: string; channel: string; measure: string };
 
 export type OrgCopy = {
   meta: [string, string];
@@ -20,8 +26,13 @@ export type OrgCopy = {
   whoH: string; whoSub: string; types: OrgType[]; solo: { t: string; d: string; cta: string };
   wayH: string; waySub: string; iAm: string; iWant: string; forYou: (who: string, want: string) => string; start: string; startNote: string;
   paths: OrgPath[];
-  howH: string; howSub: string; steps: { t: string; d: string }[];
-  whyH: string; why: { t: string; d: string; href: string; cta: string }[];
+  contextH: string; contextSub: string; facts: OrgFact[]; factsNote: string;
+  sectorsH: string; sectorsSub: string; sectorUi: { who: string; channel: string; measure: string; heard: string; play: string; stop: string; models: string; note: string };
+  sectors: Record<string, OrgSector>;
+  howH: string; howSub: string; receive: string; steps: { t: string; d: string; get: string }[];
+  commitH: string; commitSub: string; commits: { icon: string; t: string; d: string }[];
+  notYetH: string; notYet: string[];
+  researchH: string; researchSub: string; progLabel: string; latestLabel: string; allResearch: string;
   faqH: string; faq: [string, string][];
   endH: string; endSub: string; write: string;
 };
@@ -73,26 +84,64 @@ const en: OrgCopy = {
       points: ["Five research programmes to choose from, from conversation to measurement", "Work published in the open, with its conditions", "Speech data gathered with consent and fair pay"],
       link: { label: "See the programmes", href: "/research" } },
   ],
+  contextH: "Why voice, and why now",
+  contextSub: "Most people in the Sahel speak languages that technology serves poorly, if at all. Many have a phone; fewer can read the language it uses.",
+  facts: [
+    { figure: "94.5 million", label: "people use Hausa, 58 million of them as their first language.", source: "Ethnologue, 2021–2023 data", href: "https://www.ethnologue.com/language/hau/" },
+    { figure: "35.6%", label: "of adults in Niger can read and write; among women, 25.7%.", source: "UNESCO Institute for Statistics, 2022, via the World Bank", href: "https://data.worldbank.org/indicator/SE.ADT.LITR.ZS?locations=NE" },
+    { figure: "58.9%", label: "of people in Niger own a mobile phone.", source: "ITU DataHub, 2025", href: "https://datahub.itu.int/data/?e=NER&i=28027" },
+    { figure: "23%", label: "of 951 displaced people in Maiduguri understood written messages in Hausa or Kanuri. Spoken messages were understood almost universally.", source: "Translators without Borders, 2017", href: "https://translatorswithoutborders.org/wp-content/uploads/2017/04/Language-profile-of-five-IDP-sites-in-Maiduguri.pdf" },
+    { figure: "~100", label: "of the world’s 7,000+ languages were covered by speech technology, a 2023 study found.", source: "Pratap et al., Meta AI, 2023", href: "https://arxiv.org/abs/2305.13516" },
+    { figure: "4.35 h", label: "of validated Hausa speech in Mozilla’s open Common Voice dataset, against 2,826.8 hours of English.", source: "Common Voice 27.0, 2026", href: "https://github.com/common-voice/cv-dataset/blob/main/datasets/scripted-speech/cv-corpus-27.0-2026-09-11.json" },
+  ],
+  factsNote: "Figures are the latest each source publishes; follow the links for their methods.",
+  sectorsH: "Where voice can help",
+  sectorsSub: "What a programme could sound like in your sector. Each line is spoken by the Lab’s own models through the API; the programmes are illustrations, not deployments.",
+  sectorUi: { who: "Who it reaches", channel: "How it reaches them", measure: "What we would measure with you", heard: "What Tatsuniya wrote down", play: "Play", stop: "Stop", models: "Built on", note: "An illustration of a programme, not a deployment." },
+  sectors: {
+    health: { who: "Mothers and caregivers, patients between visits, community health workers.", channel: "Phone calls and voice notes, health lines, community radio.", measure: "Whether the message was understood, appointments kept, and which questions were handed to a person." },
+    farming: { who: "Smallholder farmers and pastoralists, and the extension workers who advise them.", channel: "A phone line, voice notes, local radio.", measure: "Whether advice is understood and used, checked against what agronomists would say." },
+    education: { who: "Learners and their teachers, adult literacy classes, children reading at home.", channel: "Shared phones and tablets, classroom speakers, recorded lessons.", measure: "Comprehension, time spent listening, and what teachers see in class." },
+    public: { who: "Citizens at service desks and on hotlines, especially those who do not read French.", channel: "A hotline, a kiosk, a service desk’s phone.", measure: "Requests resolved, errors in forms, and how often a person had to step in." },
+    translation: { who: "Communities and the staff who serve them, when they do not share a language.", channel: "Field interviews, helplines, meetings.", measure: "Translation quality reviewed by native speakers, and the time it saves." },
+    heritage: { who: "Archives, broadcasters, researchers and the communities whose stories they hold.", channel: "Radio archives, recorded interviews, oral histories.", measure: "Transcript accuracy, scored strict and folded, and the hours made searchable." },
+  },
   howH: "How a partnership runs",
-  howSub: "Nothing reaches many people before it has been tested with you.",
+  howSub: "Nothing reaches many people before it has been tested with you. Each step ends with something you can keep.",
+  receive: "You receive",
   steps: [
-    { t: "Talk", d: "Your programme, the people it serves, their languages and the channel they use." },
-    { t: "Test", d: "The models on recordings from your setting, measured with you." },
-    { t: "Pilot", d: "A small deployment with your team and people who have agreed to take part." },
-    { t: "Decide", d: "Look at the results together, then grow it, change it or stop." },
+    { t: "Talk", d: "Your programme, the people it serves, their languages and the channel they use.", get: "A short note on what we heard, including whether speech technology is the right tool for it." },
+    { t: "Test", d: "The models on recordings from your setting, measured with you.", get: "An evaluation on your own recordings, scored strict and folded, with what the models get wrong." },
+    { t: "Pilot", d: "A small deployment with your team and people who have agreed to take part.", get: "A working pilot your team runs, with a record of every request it handled." },
+    { t: "Decide", d: "Look at the results together, then grow it, change it or stop.", get: "A pilot report: what worked, what did not, for whom, and what growing it would take." },
   ],
-  whyH: "Why work with the Lab",
-  why: [
-    { t: "Languages first", d: "We start from the languages and dialects people speak, Hausa today, with our Zarma programme starting.", href: "/research", cta: "Our programmes" },
-    { t: "Measured honestly", d: "Every result comes with the conditions it was measured under, and every score is reported strict and folded.", href: "/research/why-we-report-every-hausa-score-twice", cta: "How we score speech" },
-    { t: "Consent and care", d: "The Lab’s own recordings come from speakers who know how their voice will be used, are paid, and can withdraw.", href: "/data", cta: "Our approach to data" },
+  commitH: "What we commit to",
+  commitSub: "The same rules for every partnership, written down before any work starts.",
+  commits: [
+    { icon: "consent", t: "Consent first", d: "Everyone recorded agrees, in their own language, to how their voice will be used, and can withdraw." },
+    { icon: "dataset", t: "Your data stays yours", d: "Recordings you share are used only for what we agree in writing, then returned or deleted." },
+    { icon: "person", t: "People stay in the loop", d: "For health, legal or money matters, the system hands over to a person. It informs; it does not diagnose or decide." },
+    { icon: "check", t: "Measured with you", d: "Results are reported with their conditions, strict and folded, and split by dialect and gender where the data allows." },
+    { icon: "language", t: "Languages first", d: "We build from the languages and dialects people speak, not from the ones technology already supports." },
   ],
+  notYetH: "What we do not claim yet",
+  notYet: [
+    "Our models are in development. We have not yet published benchmark results for them; when we do, each will come with the conditions it was measured under.",
+    "Hausa is the language our models serve today, with French for translation. Our Zarma programme is starting.",
+    "Aïr, our conversation model, is a research preview.",
+    "We are choosing our first pilot partners now. This page describes how we will work with them, not past deployments.",
+  ],
+  researchH: "The research behind it",
+  researchSub: "Five research programmes, from how people take turns in conversation to how speech is measured, and the work they publish.",
+  progLabel: "Programmes", latestLabel: "Latest from the Lab", allResearch: "All research",
   faqH: "Questions",
   faq: [
     ["Which languages do you work in?", "Hausa today, with French for translation. The Lab’s Zarma programme is starting, and we work on the languages of the Sahel one at a time. Tell us which languages your programme needs."],
     ["Which countries do you work in?", "We start in Niger and work across the region where Hausa and Zarma are spoken. Tell us where your programme runs."],
     ["What does it cost?", "The API is free during its beta, up to 30 minutes of audio a month per account. Pilots, research and data partnerships are agreed with each organisation."],
     ["Do we need technical staff?", "No. We can help you design the pilot and build the first version with you. If you have developers, they can start on the API straight away."],
+    ["What happens to our data?", "Recordings and transcripts you share are used only for the purposes we agree in writing for your project, then returned or deleted. Nothing you share trains a model without your explicit agreement."],
+    ["Who can partner with the Lab?", "NGOs, international organisations, public institutions, companies and universities working with communities that speak the languages of the Sahel. Developers can start on the API without a partnership."],
     ["How do we start?", "Fill in the partnership form. We read every message and answer from contact@namuai.org."],
   ],
   endH: "Tell us about your programme",
@@ -147,26 +196,64 @@ const frCopy: OrgCopy = {
       points: ["Cinq programmes de recherche, de la conversation à la mesure", "Un travail publié ouvertement, avec ses conditions", "Des données de parole recueillies avec consentement et une juste rémunération"],
       link: { label: "Voir les programmes", href: "/research" } },
   ],
+  contextH: "Pourquoi la voix, et pourquoi maintenant",
+  contextSub: fr("La plupart des habitants du Sahel parlent des langues que la technologie sert mal, voire pas du tout. Beaucoup ont un téléphone ; moins nombreux sont ceux qui lisent la langue qu’il utilise."),
+  facts: [
+    { figure: "94,5 millions", label: "de personnes utilisent le hausa, dont 58 millions comme première langue.", source: "Ethnologue, données 2021–2023", href: "https://www.ethnologue.com/language/hau/" },
+    { figure: `35,6${n}%`, label: `des adultes au Niger savent lire et écrire${n}; parmi les femmes, 25,7${n}%.`, source: "Institut de statistique de l’UNESCO, 2022, via la Banque mondiale", href: "https://data.worldbank.org/indicator/SE.ADT.LITR.ZS?locations=NE" },
+    { figure: `58,9${n}%`, label: "des habitants du Niger possèdent un téléphone portable.", source: "UIT, DataHub, 2025", href: "https://datahub.itu.int/data/?e=NER&i=28027" },
+    { figure: `23${n}%`, label: "des 951 personnes déplacées interrogées à Maiduguri comprenaient des messages écrits en hausa ou en kanouri. Les messages parlés étaient compris presque par tous.", source: "Translators without Borders, 2017", href: "https://translatorswithoutborders.org/wp-content/uploads/2017/04/Language-profile-of-five-IDP-sites-in-Maiduguri.pdf" },
+    { figure: "~100", label: "des plus de 7 000 langues du monde étaient couvertes par les technologies de la parole, selon une étude de 2023.", source: "Pratap et al., Meta AI, 2023", href: "https://arxiv.org/abs/2305.13516" },
+    { figure: "4,35 h", label: "de parole hausa validée dans le jeu de données ouvert Common Voice de Mozilla, contre 2 826,8 heures d’anglais.", source: "Common Voice 27.0, 2026", href: "https://github.com/common-voice/cv-dataset/blob/main/datasets/scripted-speech/cv-corpus-27.0-2026-09-11.json" },
+  ],
+  factsNote: "Les chiffres sont les plus récents publiés par chaque source ; suivez les liens pour leurs méthodes.".replace(" ;", `${n};`),
+  sectorsH: "Là où la voix peut aider",
+  sectorsSub: fr("À quoi pourrait ressembler un programme dans votre secteur. Chaque phrase est prononcée par les modèles du Lab via l’API ; les programmes sont des illustrations, pas des déploiements."),
+  sectorUi: { who: "Qui il touche", channel: "Comment il les touche", measure: "Ce que nous mesurerions avec vous", heard: "Ce que Tatsuniya a écrit", play: "Écouter", stop: "Arrêter", models: "Construit avec", note: "L’illustration d’un programme, pas un déploiement." },
+  sectors: {
+    health: { who: "Les mères et les aidants, les patients entre deux visites, les agents de santé communautaires.", channel: "Appels et messages vocaux, lignes santé, radio communautaire.", measure: "Si le message a été compris, les rendez-vous honorés, et les questions transmises à une personne." },
+    farming: { who: "Les petits agriculteurs et les éleveurs, et les agents de vulgarisation qui les conseillent.", channel: "Une ligne téléphonique, des messages vocaux, la radio locale.", measure: "Si les conseils sont compris et suivis, vérifiés par rapport à ce que diraient des agronomes." },
+    education: { who: "Les élèves et leurs enseignants, les cours d’alphabétisation, les enfants qui lisent à la maison.", channel: "Téléphones et tablettes partagés, haut-parleurs en classe, leçons enregistrées.", measure: "La compréhension, le temps d’écoute, et ce que les enseignants observent en classe." },
+    public: { who: "Les citoyens aux guichets et sur les lignes d’assistance, surtout ceux qui ne lisent pas le français.", channel: "Une ligne d’assistance, une borne, le téléphone d’un guichet.", measure: "Les demandes résolues, les erreurs dans les formulaires, et la fréquence où une personne a dû intervenir." },
+    translation: { who: "Les communautés et le personnel qui les sert, quand ils ne partagent pas une langue.", channel: "Entretiens de terrain, lignes d’assistance, réunions.", measure: "La qualité de traduction relue par des locuteurs natifs, et le temps gagné." },
+    heritage: { who: "Les archives, les radios, les chercheurs et les communautés dont ils gardent les histoires.", channel: "Archives radio, entretiens enregistrés, histoires orales.", measure: "La justesse des transcriptions, notée en strict et en replié, et les heures rendues consultables." },
+  },
   howH: "Comment se déroule un partenariat",
-  howSub: "Rien n’atteint un large public avant d’avoir été testé avec vous.",
+  howSub: "Rien n’atteint un large public avant d’avoir été testé avec vous. Chaque étape se termine par quelque chose que vous gardez.",
+  receive: "Vous recevez",
   steps: [
-    { t: "Échanger", d: "Votre programme, les personnes qu’il sert, leurs langues et le canal qu’elles utilisent." },
-    { t: "Tester", d: "Les modèles sur des enregistrements de votre contexte, mesurés avec vous." },
-    { t: "Piloter", d: "Un petit déploiement avec votre équipe et des personnes qui ont accepté d’y participer." },
-    { t: "Décider", d: "Regarder les résultats ensemble, puis étendre, modifier ou arrêter." },
+    { t: "Échanger", d: "Votre programme, les personnes qu’il sert, leurs langues et le canal qu’elles utilisent.", get: "Une courte note sur ce que nous avons compris, y compris si la technologie vocale est le bon outil." },
+    { t: "Tester", d: "Les modèles sur des enregistrements de votre contexte, mesurés avec vous.", get: "Une évaluation sur vos propres enregistrements, notée en strict et en replié, avec les erreurs des modèles." },
+    { t: "Piloter", d: "Un petit déploiement avec votre équipe et des personnes qui ont accepté d’y participer.", get: "Un pilote qui fonctionne, mené par votre équipe, avec le relevé de chaque requête traitée." },
+    { t: "Décider", d: "Regarder les résultats ensemble, puis étendre, modifier ou arrêter.", get: fr("Un rapport de pilote : ce qui a marché, ce qui n’a pas marché, pour qui, et ce qu’il faudrait pour l’étendre.") },
   ],
-  whyH: "Pourquoi travailler avec le Lab",
-  why: [
-    { t: "Les langues d’abord", d: "Nous partons des langues et des dialectes que les gens parlent : le hausa aujourd’hui, et notre programme zarma qui démarre.".replace(" :", `${n}:`), href: "/research", cta: "Nos programmes" },
-    { t: "Une mesure honnête", d: "Chaque résultat est donné avec ses conditions de mesure, et chaque score en strict et en replié.", href: "/research/why-we-report-every-hausa-score-twice", cta: "Comment nous évaluons la parole" },
-    { t: "Consentement et respect", d: "Les enregistrements du Lab viennent de locuteurs qui savent comment leur voix sera utilisée, sont rémunérés et peuvent se retirer.", href: "/data", cta: "Notre approche des données" },
+  commitH: "Nos engagements",
+  commitSub: "Les mêmes règles pour chaque partenariat, écrites avant le début du travail.",
+  commits: [
+    { icon: "consent", t: "Le consentement d’abord", d: "Chaque personne enregistrée accepte, dans sa langue, l’usage qui sera fait de sa voix, et peut se retirer." },
+    { icon: "dataset", t: "Vos données restent les vôtres", d: "Les enregistrements que vous partagez ne servent qu’à ce que nous convenons par écrit, puis sont rendus ou supprimés." },
+    { icon: "person", t: "Des personnes dans la boucle", d: fr("Pour la santé, le droit ou l’argent, le système passe la main à une personne. Il informe ; il ne diagnostique pas et ne décide pas.") },
+    { icon: "check", t: "Mesuré avec vous", d: "Les résultats sont donnés avec leurs conditions, en strict et en replié, et ventilés par dialecte et par genre quand les données le permettent." },
+    { icon: "language", t: "Les langues d’abord", d: "Nous partons des langues et des dialectes que les gens parlent, pas de celles que la technologie prend déjà en charge." },
   ],
+  notYetH: "Ce que nous ne prétendons pas encore",
+  notYet: [
+    fr("Nos modèles sont en développement. Nous n’avons pas encore publié de résultats de référence ; quand nous le ferons, chacun sera donné avec ses conditions de mesure."),
+    "Le hausa est la langue que nos modèles servent aujourd’hui, avec le français pour la traduction. Notre programme zarma démarre.",
+    "Aïr, notre modèle de conversation, est un aperçu de recherche.",
+    "Nous choisissons nos premiers partenaires pilotes en ce moment. Cette page décrit comment nous travaillerons avec eux, pas des déploiements passés.",
+  ],
+  researchH: "La recherche derrière",
+  researchSub: "Cinq programmes de recherche, de la façon dont les gens se passent la parole à la façon dont on mesure la parole, et les travaux qu’ils publient.",
+  progLabel: "Programmes", latestLabel: "Les dernières publications du Lab", allResearch: "Toute la recherche",
   faqH: "Questions",
   faq: [
     ["Dans quelles langues travaillez-vous ?", "Le hausa aujourd’hui, avec le français pour la traduction. Le programme zarma du Lab démarre, et nous travaillons sur les langues du Sahel une à une. Dites-nous de quelles langues votre programme a besoin."],
     ["Dans quels pays travaillez-vous ?", "Nous commençons au Niger et travaillons dans la région où l’on parle hausa et zarma. Dites-nous où se déroule votre programme."],
     ["Combien cela coûte-t-il ?", "L’API est gratuite pendant sa bêta, jusqu’à 30 minutes d’audio par mois et par compte. Les pilotes, la recherche et les partenariats de données sont convenus avec chaque organisation."],
     ["Faut-il une équipe technique ?", "Non. Nous pouvons vous aider à concevoir le pilote et à en construire la première version avec vous. Si vous avez des développeurs, ils peuvent commencer tout de suite avec l’API."],
+    ["Que deviennent nos données ?", "Les enregistrements et transcriptions que vous partagez ne servent qu’aux usages convenus par écrit pour votre projet, puis sont rendus ou supprimés. Rien de ce que vous partagez n’entraîne un modèle sans votre accord explicite."],
+    ["Qui peut devenir partenaire du Lab ?", "Les ONG, les organisations internationales, les institutions publiques, les entreprises et les universités qui travaillent avec des communautés parlant les langues du Sahel. Les développeurs peuvent commencer avec l’API sans partenariat."],
     ["Comment commencer ?", "Remplissez le formulaire de partenariat. Nous lisons chaque message et répondons depuis contact@namuai.org."],
   ].map(([q, a]) => [fr(q), fr(a)] as [string, string]),
   endH: "Parlez-nous de votre programme",
