@@ -1,95 +1,86 @@
-/* The Organisations page (/organisations), in the API page's frame so the two doors match: the haze hero with a glass
-   panel of who we work with, "Find your way in" (choices left, the answer right), the four steps, three reasons,
-   and the API page's questions and closing band (api.css). */
+/* The Organisations page (/organisations), measured against openaifoundation.org at 1440px: a 90px mark, a 64px
+   title and a 17px mission, centred; a 30px statement beside a square picture, the page split in two halves; a
+   centred 48px heading over three cards with 16:9 pictures; resources in two columns of 184px squares; small dark
+   rectangular buttons. White ground, one type family. */
 
-/* ---- 1. hero */
-.org-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -64px; padding: calc(64px + clamp(44px, 6vw, 88px)) 0 clamp(48px, 5vw, 80px); background: #fff6ec; }
-.org-hero-head { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 28px 64px; align-items: end; }
-.org-display { margin: 18px 0 0; font-size: clamp(44px, 5.6vw, 84px); line-height: 1; letter-spacing: -.034em; font-weight: 500; text-wrap: balance; max-width: 9.5em; }
-.org-hero-side .lede { max-width: 30em; }
-.org-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
-.org-acts .pill svg { width: 18px; height: 18px; }
-.org-who { margin-top: clamp(40px, 5vw, 72px); padding: 8px; border-radius: 30px; background: rgba(255, 255, 255, .62); -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  backdrop-filter: blur(24px) saturate(1.2); box-shadow: 0 0 0 1px rgba(21, 18, 15, .06), 0 50px 100px -50px rgba(140, 70, 20, .45); }
-.org-who-h { margin: 16px 20px 16px; font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
-.org-who-h span { display: block; margin-top: 4px; color: var(--ink-2); font-size: 15.5px; font-weight: 400; letter-spacing: 0; }
-.org-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-.org-types li { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
-.org-types strong { margin-top: 10px; font-size: 16.5px; font-weight: 500; line-height: 1.25; }
-.org-types li > span:last-child { color: var(--ink-2); font-size: 14.5px; line-height: 1.45; }
-.org-ic { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--surface); color: var(--sahel-deep); }
-.org-solo { margin: 14px 20px 10px; color: var(--ink-2); font-size: 15px; }
-.org-solo strong { color: var(--ink); font-weight: 500; }
-.org-solo a { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-weight: 500; text-decoration: none; white-space: nowrap; }
-.org-solo a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ofd { --ofd-r: 6px; }
 
-/* ---- section heads */
-.org-sec .org-head { display: grid; gap: 14px; max-width: 46em; margin-bottom: clamp(32px, 4vw, 56px); }
-.org-head .lede { max-width: 36em; }
+/* ---- the mark, the name, the mission */
+.ofd-hero { display: flex; flex-direction: column; align-items: center; padding-top: clamp(48px, 6vw, 88px); padding-bottom: clamp(64px, 8vw, 120px); text-align: center; }
+.ofd-mark { width: clamp(64px, 6.2vw, 88px); height: auto; color: var(--ink); }
+.ofd-hero h1 { margin: clamp(28px, 3vw, 40px) 0 0; font-size: clamp(40px, 4.45vw, 64px); font-weight: 500; line-height: 1.04; letter-spacing: -.022em; text-wrap: balance; }
+.ofd-hero p { max-width: 36em; margin: clamp(20px, 2.2vw, 32px) 0 0; font-size: 17px; line-height: 28px; letter-spacing: 0; text-wrap: balance; }
 
-/* ---- 2. find your way in */
-.ow { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 32px 56px; align-items: start; }
-.ow-label { margin: 0 0 12px; color: var(--ink-3); font-size: 14px; }
-.ow-group + .ow-group { margin-top: 30px; }
-.ow-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ow-chips button { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: var(--r-pill); background: #fff;
-  box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-2); font-size: 15px; cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
-.ow-chips button svg { color: var(--ink-3); }
-.ow-chips button:hover { color: var(--ink); }
-.ow-chips button[aria-checked="true"] { background: var(--ink); box-shadow: none; color: #fff; }
-.ow-chips button[aria-checked="true"] svg { color: #ffd8b8; }
-.ow-list button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink-2);
-  font-size: 17px; text-align: left; cursor: pointer; transition: color .2s var(--ease); }
-.ow-list button:last-child { border-bottom: 1px solid var(--line); }
-.ow-list button:hover { color: var(--ink); }
-.ow-list button[aria-checked="true"] { color: var(--ink); font-weight: 500; }
-.ow-ic { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 11px; background: var(--surface); color: var(--ink-3); transition: background-color .2s, color .2s; }
-.ow-list button[aria-checked="true"] .ow-ic { background: var(--ink); color: #ffd8b8; }
-.ow-card { position: sticky; top: 96px; overflow: hidden; border-radius: 28px; background: var(--surface); }
-.ow-art { aspect-ratio: 16 / 7; overflow: hidden; animation: ow-in calc(.6s * var(--motion)) var(--ease-out) both; }
-.ow-art svg { width: 100%; height: 100%; }
-.ow-body { padding: clamp(22px, 3vw, 36px); animation: ow-in calc(.5s * var(--motion)) var(--ease-out) both; }
-@keyframes ow-in { from { opacity: 0; transform: translateY(6px); } }
-.ow-for { margin: 0; color: var(--sahel-deep); font-size: 14px; }
-.ow-card h3 { margin: 8px 0 10px; font-size: clamp(24px, 2.2vw, 30px); font-weight: 500; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
-.ow-d { margin: 0; color: var(--ink-2); font-size: 17px; line-height: 1.5; }
-.ow-card ul { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
-.ow-card li { display: flex; align-items: flex-start; gap: 10px; font-size: 15.5px; line-height: 1.45; }
-.ow-card li svg { flex: none; margin-top: 4px; color: var(--sahel-deep); }
-.ow-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
-.ow-acts .pill svg { width: 18px; height: 18px; }
-.ow-note { margin: 12px 0 0; color: var(--ink-3); font-size: 13.5px; }
+/* ---- one statement, one picture */
+.ofd-intro { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.ofd-statement { max-width: 18.6em; margin: 0; font-size: clamp(22px, 2.1vw, 30px); font-weight: 400; line-height: 1.32; letter-spacing: -.008em; text-wrap: pretty; }
+.ofd-intro .ofd-btn { margin-top: 24px; }
+.ofd-pic { position: relative; overflow: hidden; border-radius: var(--ofd-r); background: var(--surface); }
+.ofd-pic img { object-fit: cover; transition: transform 1.2s var(--ease-out); }
+.ofd-cards li:hover .ofd-pic img { transform: scale(1.03); }
+.ofd-square { aspect-ratio: 1; }
+.ofd-wide { aspect-ratio: 16 / 9; }
 
-/* ---- 3. how a partnership runs */
-.org-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.org-steps li { display: flex; flex-direction: column; }
-.org-step-art { aspect-ratio: 1; overflow: hidden; border-radius: var(--r-card); background: var(--surface); }
-.org-step-art svg { width: 100%; height: 100%; }
-.org-step-n { display: grid; place-items: center; width: 28px; height: 28px; margin-top: 18px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 500; }
-.org-steps h3 { margin: 12px 0 6px; font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
-.org-steps p { margin: 0; max-width: 22em; color: var(--ink-2); }
+/* ---- the small dark button */
+.ofd-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 3px; background: var(--ink); color: #fff;
+  font: inherit; font-size: 14px; line-height: 20px; letter-spacing: 0; text-decoration: none; cursor: pointer; transition: background-color .2s var(--ease); }
+.ofd-btn:hover { background: #3b342e; }
+.ofd-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ofd-btn.light { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); }
+.ofd-btn.light:hover { background: rgba(21, 18, 15, .05); }
 
-/* ---- 4. why the Lab */
-.org-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.org-why-card { display: flex; flex-direction: column; padding: 28px; border-radius: var(--r-card); background: var(--surface); color: inherit; text-decoration: none; transition: background-color .3s var(--ease); }
-.org-why-card:hover { background: #f2eee8; }
-.org-why-card .org-ic { background: #fff; }
-.org-why-card h3 { margin: 18px 0 6px; font-size: 20px; font-weight: 500; }
-.org-why-card p { margin: 0 0 18px; color: var(--ink-2); }
-.org-why-card .apx-link { margin-top: auto; }
+/* ---- three areas */
+.ofd-areas { padding-top: clamp(96px, 11vw, 160px); }
+.ofd-areas h2 { max-width: 23em; margin: 0 auto clamp(40px, 4.5vw, 64px); font-size: clamp(30px, 3.35vw, 48px); font-weight: 500; line-height: 1.16; letter-spacing: -.018em; text-align: center; text-wrap: balance; }
+.ofd-cards li { display: flex; flex-direction: column; }
+.ofd-cards li > p { flex: 1; }
+.ofd-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 56px 24px; margin: 0; padding: 0; list-style: none; }
+.ofd-cards h3 { margin: 24px 0 0; font-size: 22px; font-weight: 500; line-height: 1.3; letter-spacing: -.01em; }
+.ofd-cards li > p { max-width: 28em; margin: 10px 0 0; font-size: 16px; line-height: 28px; letter-spacing: 0; color: var(--ink); }
+.ofd-listen { margin-top: 20px; }
+.ofd-bars { display: inline-flex; align-items: center; gap: 2px; height: 12px; }
+.ofd-bars i { width: 2px; height: 100%; border-radius: 1px; background: currentColor; transform: scaleY(.5); transform-origin: center; }
+.ofd-bars i:nth-child(2) { transform: scaleY(1); } .ofd-bars i:nth-child(3) { transform: scaleY(.75); }
+.ofd-btn.on .ofd-bars i { animation: ofd-bar .8s ease-in-out infinite alternate; }
+.ofd-btn.on .ofd-bars i:nth-child(2) { animation-delay: -.2s; } .ofd-btn.on .ofd-bars i:nth-child(3) { animation-delay: -.45s; } .ofd-btn.on .ofd-bars i:nth-child(4) { animation-delay: -.65s; }
+@keyframes ofd-bar { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
+.ofd-said { margin-top: 16px; padding-left: 14px; border-left: 2px solid var(--sahel); }
+.ofd-said p { margin: 0; font-size: 15px; line-height: 1.5; letter-spacing: 0; }
+.ofd-said .ofd-gloss { margin-top: 4px; color: var(--ink-2); }
+.ofd-said .ofd-by { margin-top: 8px; color: var(--ink-3); font-size: 13px; }
 
-/* ---- smaller screens */
+.ofd-more { margin: clamp(40px, 4vw, 56px) 0 0; font-size: 17px; letter-spacing: 0; text-align: center; color: var(--ink-2); }
+.ofd-more a { white-space: nowrap; color: var(--ink); font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+
+/* ---- resources */
+.ofd-res { padding-top: clamp(96px, 10vw, 144px); }
+.ofd-res h2 { margin: 0 0 clamp(24px, 2.5vw, 36px); font-size: 22px; font-weight: 500; letter-spacing: -.01em; }
+.ofd-res ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 0; padding: 0; list-style: none; }
+.ofd-res a { display: grid; grid-template-columns: clamp(104px, 12.8vw, 184px) minmax(0, 1fr); gap: clamp(20px, 2.2vw, 32px); align-items: center; color: inherit; text-decoration: none; }
+.ofd-thumb { position: relative; display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--ofd-r); background: var(--surface); }
+.ofd-thumb > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ofd-thumb svg { width: 100%; height: 100%; display: block; transition: transform .8s var(--ease-out); }
+.ofd-res a:hover .ofd-thumb svg { transform: scale(1.04); }
+.ofd-res-text { display: grid; gap: 12px; padding-right: 24px; }
+.ofd-res strong { font-size: 18px; font-weight: 500; line-height: 1.33; letter-spacing: -.005em; text-wrap: pretty; }
+.ofd-res a:hover strong { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.ofd-res-text span { color: var(--ink-3); font-size: 14px; letter-spacing: 0; }
+
+/* ---- the way to reach us */
+.ofd-end { display: flex; flex-direction: column; align-items: center; padding-top: clamp(112px, 12vw, 176px); padding-bottom: clamp(72px, 8vw, 120px); text-align: center; }
+.ofd-end h2 { margin: 0; font-size: clamp(26px, 2.2vw, 32px); font-weight: 500; letter-spacing: -.02em; }
+.ofd-end p { max-width: 30em; margin: 12px 0 0; color: var(--ink-2); font-size: 17px; line-height: 28px; letter-spacing: 0; text-wrap: balance; }
+.ofd-end-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 28px; }
+
 @media (max-width: 960px) {
-  .org-hero-head, .ow { grid-template-columns: minmax(0, 1fr); }
-  .ow-card { position: static; }
-  .org-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .org-why { grid-template-columns: minmax(0, 1fr); }
+  .ofd-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 20px; }
+  .ofd-cards .ofd-wide { aspect-ratio: 16 / 10; }
+  .ofd-res ul { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
-@media (max-width: 640px) {
-  .org-who { padding: 6px; border-radius: 24px; }
-  .org-who-h { margin: 14px 14px 12px; }
-  .org-solo { margin: 12px 14px 8px; }
-  .org-steps { grid-template-columns: minmax(0, 1fr); }
-  .org-step-art { aspect-ratio: 16 / 9; }
-  .ow-list button { font-size: 16px; }
+@media (max-width: 760px) {
+  .ofd-cards { grid-template-columns: minmax(0, 1fr); gap: 52px; }
+  .ofd-intro { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .ofd-res-text { padding-right: 0; gap: 8px; }
+  .ofd-res strong { font-size: 16.5px; }
 }
+@media (prefers-reduced-motion: reduce) { .ofd-btn.on .ofd-bars i { animation: none; } .ofd-cards li:hover .ofd-pic img { transform: none; } .ofd-res a:hover .ofd-thumb svg { transform: none; } }
