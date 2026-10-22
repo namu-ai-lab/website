@@ -123,10 +123,10 @@ export const playground: Record<Lang, PlaygroundCopy> = {
   en: {
     sub: "Hear, speak, translate and converse in the languages of the Sahel",
     tabs: [
+      { id: "converse", label: "Converse", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "tts", label: "Text to speech", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
       { id: "stt", label: "Transcribe", dot: ["#c4865a", "#f6e6d6", "#5e3418"] },
       { id: "translate", label: "Translate", dot: ["#8fa6d6", "#f4ece2", "#7a4325"] },
-      { id: "converse", label: "Converse", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
     ],
     build: "Start building",
@@ -161,10 +161,10 @@ export const playground: Record<Lang, PlaygroundCopy> = {
   fr: {
     sub: "Écouter, parler, traduire et converser dans les langues du Sahel",
     tabs: [
+      { id: "converse", label: "Converser", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "tts", label: "Synthèse vocale", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
       { id: "stt", label: "Transcription", dot: ["#c4865a", "#f6e6d6", "#5e3418"] },
       { id: "translate", label: "Traduction", dot: ["#8fa6d6", "#f4ece2", "#7a4325"] },
-      { id: "converse", label: "Converser", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
     ],
     build: "Commencer à construire",
