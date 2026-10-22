@@ -11,7 +11,7 @@ export type Script = { id: string; label: string; text: string; gloss: string };
 /* palette: main, light, deep, and an accent of another hue that drifts through it */
 export type Voice = { id: string; name: string; note: string; palette: readonly string[] };
 
-export type Tab = "speak" | "translate" | "converse" | "api";
+export type Tab = "tts" | "stt" | "translate" | "converse" | "api";
 /* a short clip a visitor can send instead of recording: what it says, and what that means */
 export type Sample = { id: string; label: string; src: string; says: string; meaning: string };
 
@@ -23,14 +23,9 @@ export type PlaygroundCopy = {
     scripts: string; voices: string; previous: string; next: string; play: string; stop: string; generate: string;
     label: string; placeholder: string; count: (n: number, max: number) => string; example: string; live: string; download: string; empty: string; limit: string;
   };
-  /* Speak & listen: one card, both ways (Tafiya reads what is written; Tatsuniya writes what is said) */
-  speak: {
-    say: string; transcribe: string; mic: string; micStop: string; idle: string; speakNow: string;
-    heardBy: (s: string) => string; echoed: string; hearBack: string; approx: string; heardAnnounce: string;
-  };
   listen: {
-    record: string; stop: string; upload: string; samples: string; idleTranslate: { fr: string; ha: string };
-    listening: (s: number) => string; transcribing: string; translating: string; emptyTranslate: string;
+    record: string; stop: string; upload: string; samples: string; idle: string; idleTranslate: { fr: string; ha: string };
+    listening: (s: number) => string; transcribing: string; translating: string; result: string; empty: string; emptyTranslate: string;
     heard: string; translation: string; playTranslation: string; copy: string; copied: string; langs: { ha: string; fr: string };
     mic: string; tooLong: string; trimmed: string; unheard: string; badFile: string; seconds: (s: string) => string; limit: string;
     direction: string; dirs: { fr: string; ha: string };
@@ -67,15 +62,18 @@ export const voices: Record<Lang, Voice[]> = {
   ],
 };
 
-/* Kora's listening orb: kola and clay with the blue of the other language drifting through */
-export const koraPalette = ["#8fa6d6", "#f4ece2", "#7a4325", "#e8935a"] as const;
+/* the listening orbs: Tatsuniya in kola and clay, Kora with the blue of the other language drifting through */
+export const listenPalettes = {
+  stt: ["#c4865a", "#f6e6d6", "#5e3418", "#e8935a"],
+  translate: ["#8fa6d6", "#f4ece2", "#7a4325", "#e8935a"],
+} as const;
 
 export const translation = {
   ha: "Ina so in sayi gero a kasuwa gobe da safe.",
   fr: "Je voudrais acheter du mil au marché demain matin.",
 };
 
-/* Clips for Speak & listen's Transcribe and for Translate, so a visitor without a microphone can still try them (public/usecases/README.md):
+/* Clips for Speech to text and Translate, so a visitor without a microphone can still try them (public/usecases/README.md):
    Hausa spoken by Tafiya, and French spoken by Kora when it translated two of those Hausa clips. */
 const SAMPLES = {
   market: { src: "/usecases/translation-ha.m4a", says: "Nawa ne farashin buhun gero?" },
@@ -125,7 +123,8 @@ export const playground: Record<Lang, PlaygroundCopy> = {
   en: {
     sub: "Hear, speak, translate and converse in the languages of the Sahel",
     tabs: [
-      { id: "speak", label: "Speak & listen", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "tts", label: "Text to speech", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "stt", label: "Transcribe", dot: ["#c4865a", "#f6e6d6", "#5e3418"] },
       { id: "translate", label: "Translate", dot: ["#8fa6d6", "#f4ece2", "#7a4325"] },
       { id: "converse", label: "Converse", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
@@ -137,17 +136,12 @@ export const playground: Record<Lang, PlaygroundCopy> = {
       example: "Example, generated earlier by Tafiya", live: "Your text, generated live by Tafiya", download: "Download",
       empty: "Type some Hausa text first.", limit: "Live demo: up to 300 characters a request.",
     },
-    speak: {
-      say: "Say", transcribe: "Transcribe", mic: "Speak instead: Tatsuniya writes it down", micStop: "Stop recording",
-      idle: "Write it and hear it, or press the microphone and say it.", speakNow: "Speak in Hausa. Tatsuniya is listening…",
-      heardBy: s => `Heard by Tatsuniya · ${s} s of audio`, echoed: "Heard by Tatsuniya, spoken back by Tafiya", hearBack: "Hear it back",
-      approx: "The words light up with the voice, approximately.", heardAnnounce: "Tatsuniya heard:",
-    },
     listen: {
       record: "Record", stop: "Stop recording", upload: "Upload a clip", samples: "Samples",
+      idle: "Record up to 15 seconds of Hausa, upload a clip, or try a sample.",
       idleTranslate: { fr: "Speak Hausa for up to 15 seconds: Kora answers in French.", ha: "Speak French for up to 15 seconds: Kora answers in Hausa." },
       listening: s => `Listening… ${s} s left. Tap to stop.`, transcribing: "Transcribing…", translating: "Translating…",
-      emptyTranslate: "Kora’s translation will appear here.",
+      result: "Transcript", empty: "What Tatsuniya hears will be written here.", emptyTranslate: "Kora’s translation will appear here.",
       heard: "Heard", translation: "Translation", playTranslation: "Play the translation", copy: "Copy", copied: "Copied", langs: { ha: "Hausa", fr: "French" },
       mic: "Allow the microphone to record, or upload a clip instead.", tooLong: "Keep it under 15 seconds.", trimmed: "Only the first 15 seconds were sent.",
       unheard: "Nothing could be heard in that clip. Try again a little closer to the microphone.", badFile: "That file could not be read as audio.",
@@ -167,7 +161,8 @@ export const playground: Record<Lang, PlaygroundCopy> = {
   fr: {
     sub: "Écouter, parler, traduire et converser dans les langues du Sahel",
     tabs: [
-      { id: "speak", label: "Parler et écouter", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "tts", label: "Synthèse vocale", dot: ["#f29a5f", "#ffd8b8", "#b4552a"] },
+      { id: "stt", label: "Transcription", dot: ["#c4865a", "#f6e6d6", "#5e3418"] },
       { id: "translate", label: "Traduction", dot: ["#8fa6d6", "#f4ece2", "#7a4325"] },
       { id: "converse", label: "Converser", dot: ["#e8935a", "#7a4325", "#1c1410"] },
       { id: "api", label: "API", dot: ["#a39a90", "#ece7e1", "#4a453f"] },
@@ -179,17 +174,12 @@ export const playground: Record<Lang, PlaygroundCopy> = {
       example: "Exemple, généré à l’avance par Tafiya", live: "Votre texte, généré en direct par Tafiya", download: "Télécharger",
       empty: "Tapez d’abord un texte en haoussa.", limit: `Démo en direct${n}: jusqu’à 300 caractères par requête.`,
     },
-    speak: {
-      say: "Dire", transcribe: "Transcrire", mic: `Parler plutôt${n}: Tatsuniya l’écrit`, micStop: "Arrêter l’enregistrement",
-      idle: "Écrivez et écoutez, ou appuyez sur le micro et parlez.", speakNow: "Parlez haoussa. Tatsuniya écoute…",
-      heardBy: s => `Entendu par Tatsuniya · ${s}${n}s d’audio`, echoed: "Entendu par Tatsuniya, redit par Tafiya", hearBack: "Le réentendre",
-      approx: "Les mots s’allument avec la voix, approximativement.", heardAnnounce: `Tatsuniya a entendu${n}:`,
-    },
     listen: {
       record: "Enregistrer", stop: "Arrêter l’enregistrement", upload: "Envoyer un extrait", samples: "Extraits",
+      idle: "Enregistrez jusqu’à 15 secondes en haoussa, envoyez un extrait ou essayez un exemple.",
       idleTranslate: { fr: `Parlez haoussa jusqu’à 15 secondes${n}: Kora répond en français.`, ha: `Parlez français jusqu’à 15 secondes${n}: Kora répond en haoussa.` },
       listening: s => `À l’écoute… encore ${s}${n}s. Touchez pour arrêter.`, transcribing: "Transcription…", translating: "Traduction…",
-      emptyTranslate: "La traduction de Kora s’affichera ici.",
+      result: "Transcription", empty: "Ce que Tatsuniya entend s’écrira ici.", emptyTranslate: "La traduction de Kora s’affichera ici.",
       heard: "Entendu", translation: "Traduction", playTranslation: "Écouter la traduction", copy: "Copier", copied: "Copié", langs: { ha: "Haoussa", fr: "Français" },
       mic: "Autorisez le micro pour enregistrer, ou envoyez plutôt un extrait.", tooLong: "Restez sous les 15 secondes.", trimmed: "Seules les 15 premières secondes ont été envoyées.",
       unheard: "Rien n’a pu être entendu dans cet extrait. Réessayez un peu plus près du micro.", badFile: "Ce fichier n’a pas pu être lu comme de l’audio.",
