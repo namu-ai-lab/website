@@ -443,7 +443,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-row a.ftr-api:hover svg { transform: translate(2px, -2px); }
 .ftr-row .off em { margin-left: 8px; padding: 2px 8px; border-radius: var(--r-pill); background: rgba(21, 18, 15, .06); color: var(--ink-2); font-size: 12px; font-style: normal; vertical-align: 2px; }
 /* the Lab's name across the width, as "Google Labs" is: one line, sized to the page */
-.ftr-word { margin: 0; padding: 0 var(--gutter); max-width: var(--page); margin-inline: auto; box-sizing: content-box; color: #2b2622; font-size: min(calc((100vw - 2 * var(--gutter)) / 4.26), 304px); font-weight: 500;
+.ftr-word { pointer-events: none; margin: 0; padding: 0 var(--gutter); max-width: var(--page); margin-inline: auto; box-sizing: content-box; color: #2b2622; font-size: min(calc((100vw - 2 * var(--gutter)) / 4.26), 304px); font-weight: 500;
   line-height: .9; letter-spacing: -.055em; white-space: nowrap; text-align: center; user-select: none; }
 .ftr-base { display: flex; align-items: center; gap: 12px 40px; flex-wrap: wrap; margin-top: 44px; padding-block: 34px 40px; border-top: 1px solid var(--ink);
   font: 500 13px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; }

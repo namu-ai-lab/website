@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GlassArt, NightArt, Blueprint } from "@/components/Art";
 import { Reveal } from "@/components/Interactive";
+import { TallyLink } from "@/components/Tally";
 import { NewsArt } from "@/components/NewsArt";
 import { getNews, getProgramme, monthYear } from "@/content";
 import { isLang, lp, type Lang } from "@/i18n/config";
@@ -76,7 +77,7 @@ export default async function Data({ params }: { params: Promise<{ lang: string 
           <span className="art"><GlassArt motif="stack" palette="ember" ratio="wide" /></span>
           <span className="statement">{d.partner}</span>
           <span style={{ maxWidth: "40em", marginTop: 12, opacity: .9 }}>{rumbu.collaborate}</span>
-          <a className="pill light" href="mailto:contact@namuai.org?subject=Rumbu%2C%20Namu%20AI%20Lab">{c.common.getInTouch}</a>
+          <TallyLink className="pill light" form="partner" lang={lang} source="lab-data-rumbu">{c.common.getInTouch}</TallyLink>
         </div>
       </section>
     </div>
