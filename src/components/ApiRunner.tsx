@@ -10,6 +10,7 @@ import { Icon } from "./Icon";
 import { AgentOrb } from "./VoiceReel";
 import { API_DEMO, apiCopy, type ApiTask } from "@/content/api";
 import { lp, type Lang } from "@/i18n/config";
+import { useWakeOnFirstTouch } from "@/lib/wake";
 
 type CodeLang = "cURL" | "Python" | "JavaScript";
 const CODE_LANGS: CodeLang[] = ["cURL", "Python", "JavaScript"];
@@ -140,6 +141,7 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
   const [copied, setCopied] = useState(false);
   const [sampleBars, setSampleBars] = useState<number[]>([]);
   const audio = useAudio();
+  useWakeOnFirstTouch();
   const model = models.find(m => m.task === task)!;
   const list = task === "translate" ? API_DEMO.samples.translate[target] : API_DEMO.samples.transcribe;
   const clip = list[Math.min(sample, list.length - 1)];

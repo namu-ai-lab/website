@@ -3,13 +3,14 @@
 /* The home page console: try every one of the Lab's models, after elevenlabs.io's hero panel. Five tabs across the
    top; each puts one object in the middle (the voice reel, a listening orb, Aïr on a call, a code window) over the
    same bar: the choices in the middle, the way in on the right.
+     Converse         a live call with Aïr, a research preview (lib/call, /api/demo/converse); the console opens on it
      Text to speech   Tafiya reads what you type, live (/api/demo/speech); the examples play recordings at once
-     Speech to text   Tatsuniya writes down what you record, upload or pick (/api/demo/transcribe)
+     Transcribe       Tatsuniya writes down what you record, upload or pick (/api/demo/transcribe)
      Translate        Kora answers Hausa in French or French in Hausa, in writing and aloud (/api/demo/translate)
-     Converse         a live call with Aïr, a research preview (lib/call, /api/demo/converse)
      API              the code, run on the demo
    The browser never holds a key: /api/demo adds the server-held demo key, and the gateway caps the demo at 300
-   characters and 15 seconds of audio and limits each visitor. Tabs follow the WAI-ARIA tabs pattern. */
+   characters and 15 seconds of audio and limits each visitor. The models are woken at the visitor's first scroll or
+   touch (lib/wake), so the first live answer does not wait for a GPU to start. Tabs follow the WAI-ARIA tabs pattern. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
@@ -17,6 +18,7 @@ import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCo
 import { lp, type Lang } from "@/i18n/config";
 import { apiBase } from "@/lib/env";
 import { AirCall, TAP, wav16k, type CallState, type Persona } from "@/lib/call";
+import { useWakeOnFirstTouch } from "@/lib/wake";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const MAX_TEXT = 300;             // the gateway's demo cap on text
@@ -461,14 +463,14 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
 }
 
 /* ---------------------------------------------------------------- API: real requests, run on the demo */
-const SAMPLE = "Barka da safiya! Ga labaran yau.";
+const SAMPLE = "Sannu da zuwa! Muna farin cikin jin muryarku.";   // HA-REVIEW: the first example’s line
 const host = apiBase.replace(/^https?:\/\//, "");
 const CODE: Record<string, ReactNode> = {
   Python: <>
     <span className="k">import</span> os, requests{"\n\n"}r = requests.post({"\n"}{"    "}<span className="s">&quot;https://{host}/v1/speech&quot;</span>,{"\n"}
     {"    "}headers={"{"}<span className="s">&quot;Authorization&quot;</span>: <span className="s">f&quot;Bearer {"{"}os.environ[&apos;NAMU_API_KEY&apos;]{"}"}&quot;</span>{"}"},{"\n"}
     {"    "}json={"{"}<span className="s">&quot;voice&quot;</span>: <span className="s">&quot;nadia&quot;</span>, <span className="s">&quot;text&quot;</span>: <span className="s hl" lang="ha">&quot;{SAMPLE}&quot;</span>{"}"},{"\n"}){"\n"}
-    open(<span className="s">&quot;labarai.wav&quot;</span>, <span className="s">&quot;wb&quot;</span>).write(r.content)
+    open(<span className="s">&quot;sannu.wav&quot;</span>, <span className="s">&quot;wb&quot;</span>).write(r.content)
   </>,
   JavaScript: <>
     <span className="k">const</span> r = <span className="k">await</span> fetch(<span className="s">&quot;https://{host}/v1/speech&quot;</span>, {"{"}{"\n"}{"  "}method: <span className="s">&quot;POST&quot;</span>,{"\n"}
@@ -478,7 +480,7 @@ const CODE: Record<string, ReactNode> = {
   </>,
   cURL: <>
     curl https://{host}/v1/speech \{"\n"}{"  "}-H <span className="s">&quot;Authorization: Bearer $NAMU_API_KEY&quot;</span> \{"\n"}{"  "}-H <span className="s">&quot;Content-Type: application/json&quot;</span> \{"\n"}
-    {"  "}-d <span className="s">{"'{"}&quot;voice&quot;: &quot;nadia&quot;, &quot;text&quot;: </span><span className="s hl" lang="ha">&quot;{SAMPLE}&quot;</span><span className="s">{"}'"}</span> \{"\n"}{"  "}-o labarai.wav
+    {"  "}-d <span className="s">{"'{"}&quot;voice&quot;: &quot;nadia&quot;, &quot;text&quot;: </span><span className="s hl" lang="ha">&quot;{SAMPLE}&quot;</span><span className="s">{"}'"}</span> \{"\n"}{"  "}-o sannu.wav
   </>,
 };
 function Api({ lang }: { lang: Lang }) {
@@ -510,7 +512,7 @@ function Api({ lang }: { lang: Lang }) {
           <span className="pg-label">{t.output}</span>
           {error ? <span className="pg-error">{error}</span> : state === "idle" ? <span className="muted">—</span> : state === "running" ? <span className="muted">{t.running}</span> : clip && (
             <button type="button" className="pg-file pg-clip" onClick={() => player.play(clip.blob)}>
-              <Icon name="waveform" size={18} stroke={1.5} />labarai.wav
+              <Icon name="waveform" size={18} stroke={1.5} />sannu.wav
               <span className="bars" aria-hidden="true">{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ height: `${6 + Math.round(16 * Math.abs(Math.sin(i * 1.3) * Math.cos(i * .4)))}px` }} />)}</span>
               {clip.seconds && <span className="muted">{Number(clip.seconds).toFixed(1)} s</span>}
             </button>
@@ -525,7 +527,8 @@ function Api({ lang }: { lang: Lang }) {
 /* ---------------------------------------------------------------- the console */
 export function Playground({ lang }: { lang: Lang }) {
   const c = playground[lang];
-  const [tab, setTab] = useState<Tab>("tts");
+  const [tab, setTab] = useState<Tab>("converse");
+  useWakeOnFirstTouch();
   const ids = c.tabs.map(x => x.id);
   const build: Cta = { label: c.build, href: lp(lang, "/api#get-started") };
   const pick = (next: Tab, focus = false) => {
