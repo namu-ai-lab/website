@@ -73,17 +73,18 @@ const global: any = typeof window !== "undefined" ? window : {};
       void root.offsetWidth;
       requestAnimationFrame(() => root.classList.replace("is-waiting", "is-in"));
     }
-    if (!animate) { root.classList.add("is-in"); return { replay }; }
+    if (!animate) { root.classList.add("is-in"); return { replay, destroy() {} }; }
+    let io = null;
     if (!reduce) {
       root.classList.add("is-waiting");
-      const io = new IntersectionObserver(([e]) => {
+      io = new IntersectionObserver(([e]) => {
         if (!e.isIntersecting) return;
         io.disconnect();
         requestAnimationFrame(() => root.classList.replace("is-waiting", "is-in"));
       }, { threshold: 0.35 });
       io.observe(root);
     } else root.classList.add("is-in");
-    return { replay };
+    return { replay, destroy() { io?.disconnect(); } };
   }
 
 export { createTestSet, TEST_SET_STRINGS };
