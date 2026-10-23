@@ -44,8 +44,12 @@ import modal
 
 app = modal.App("namu-gateway")
 
-# Flip together with REQUIRE_PROXY_AUTH in the four model services.
-REQUIRE_PROXY_AUTH = False
+# The gateway itself stays public: its @modal.asgi_app() below takes no proxy
+# flag, on purpose. Here the flag only attaches the `namu-proxy-auth` secret,
+# so ModalUpstream sends Modal-Key / Modal-Secret to the four model services,
+# which refuse every request without them (REQUIRE_PROXY_AUTH in each). Deploy
+# this file first: a service locked before its callers hold the token fails.
+REQUIRE_PROXY_AUTH = True
 
 UPSTREAM = {
     "transcribe": "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run",

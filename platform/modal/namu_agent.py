@@ -94,13 +94,15 @@ MAX_HISTORY_MESSAGES = 12   # 6 user/assistant exchanges
 app = modal.App("namu-agent")
 
 # --- lockdown ---------------------------------------------------------------
-# When True, Modal itself rejects any request that lacks valid Modal-Key /
-# Modal-Secret headers, at its edge and BEFORE a container boots, so a stranger
-# who finds this URL can neither use the model nor make us pay for a GPU cold
-# start. Only namu-gateway (and the internal services below) hold the token.
-# Flip to True after the `namu-proxy-auth` Modal secret exists (Modal dashboard
-# -> Settings -> Proxy auth tokens), then redeploy. See platform/README.md.
-REQUIRE_PROXY_AUTH = False
+# Modal itself rejects any request that lacks valid Modal-Key / Modal-Secret
+# headers, at its edge and BEFORE a container boots, so a stranger who finds
+# this URL can neither use the model nor make us pay for a GPU cold start.
+# Only Namu's own callers hold the token (the `namu-proxy-auth` Modal secret):
+# namu-gateway; namu-agent and namu-interpret, for the services they call; and
+# the website's server, for the agent's text step (MODAL_PROXY_KEY/SECRET).
+# Callers are deployed before the services they call (platform/README.md,
+# step 8). To roll back one service, set this to False and redeploy it alone.
+REQUIRE_PROXY_AUTH = True
 
 
 def _internal_headers(extra: dict | None = None) -> dict:
