@@ -568,6 +568,11 @@ def test_a_failure_counts_nothing(endpoint, status):
     assert gw.billable_seconds(endpoint, status, sent_s=3.0, returned_s=2.0) == 0.0
 
 
+
+def test_a_negative_length_never_becomes_a_credit():
+    assert gw.billable_seconds("transcribe", 200, sent_s=-5000.0) == 0.0
+    assert gw.billable_seconds("converse", 200, sent_s=-5000.0, returned_s=2.0) == 0.0
+
 @pytest.mark.parametrize("path, call", [("/v1/translate", "translate"), ("/v1/converse", "converse")])
 def test_failed_translate_and_converse_are_recorded_at_zero_seconds(env, path, call):
     c, store, up, *_ = env

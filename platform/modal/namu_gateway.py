@@ -133,8 +133,9 @@ def billable_seconds(endpoint: str, status: int, sent_s: float = 0.0, returned_s
     """
     if not 200 <= status < 300:
         return 0.0
-    return {"transcribe": sent_s, "speech": returned_s, "translate": sent_s,
-            "converse": sent_s + returned_s}[endpoint]
+    counted = {"transcribe": sent_s, "speech": returned_s, "translate": sent_s,
+               "converse": sent_s + returned_s}[endpoint]
+    return max(0.0, counted)                   # a length is never a credit, however it was measured
 
 
 # ---------------------------------------------------------------- data shapes
