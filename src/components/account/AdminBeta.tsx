@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { accountCopy } from "@/content/account";
-import type { Profile } from "@/lib/account";
+import type { ProfileRow } from "@/lib/account";
 import type { Lang } from "@/i18n/config";
 
 const fmt = (lang: Lang, iso: string) =>
@@ -10,13 +10,13 @@ const fmt = (lang: Lang, iso: string) =>
 
 /* Every account, newest first: its status, what it is building, and its monthly audio allowance. Pause stops an
    account's keys at the gateway; Resume turns them back on; Save keeps a new allowance without changing the status. */
-export function AdminBeta({ lang, initial, me }: { lang: Lang; initial: Profile[]; me: string }) {
+export function AdminBeta({ lang, initial, me }: { lang: Lang; initial: ProfileRow[]; me: string }) {
   const t = accountCopy[lang].admin;
   const [rows, setRows] = useState(initial);
   const [minutes, setMinutes] = useState<Record<string, number>>(() => Object.fromEntries(initial.map(p => [p.user_id, Math.round(p.monthly_audio_seconds / 60)])));
   const [busy, setBusy] = useState<string | null>(null);
 
-  async function decide(p: Profile, status: Profile["beta_status"]) {
+  async function decide(p: ProfileRow, status: ProfileRow["beta_status"]) {
     setBusy(p.user_id);
     const res = await fetch("/api/admin/beta", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: p.user_id, status, minutes: minutes[p.user_id] }) });

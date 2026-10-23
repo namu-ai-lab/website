@@ -23,7 +23,7 @@ export default async function Settings({ params }: { params: Promise<{ lang: str
   return (
     <ConsoleShell lang={lang} page="settings" admin={profile.role === "admin"} user={user} access={profile.beta_status}
       title={consoleCopy[lang].nav.settings} lede={consoleCopy[lang].settings.lede}>
-      <SettingsPanel lang={lang} me={me} since={new Date(profile.created_at).toISOString()} allowanceMin={profile.monthly_audio_seconds / 60} />
+      <SettingsPanel lang={lang} me={me} since={profile.created_at.toISOString()} allowanceMin={profile.monthly_audio_seconds / 60} />
     </ConsoleShell>
   );
 }
