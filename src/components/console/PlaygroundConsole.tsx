@@ -236,6 +236,8 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   const codeRef = useRef<HTMLDialogElement>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const runId = useRef(0);
+  /* read after a run's await: the thread and the session as they are now, not as they were when the run began */
+  const latest = useRef({ outs, session }); latest.current = { outs, session };
 
   useEffect(() => {
     const u = new URL(window.location.href); u.searchParams.set("model", mode);
@@ -283,10 +285,12 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
         record(m, clip.name, { ...r, source: r.json?.source_text as string | undefined, text: r.json?.text as string | undefined,
           audio: a ? b64ToBlob(a) : undefined, stats: { ...r.stats, audioS } });
       } else {
-        const r = await call("converse", audio, type, `?persona=${persona}&session_id=${session}`);
+        const sid = session;
+        const r = await call("converse", audio, type, `?persona=${persona}&session_id=${sid}`);
+        if (latest.current.session !== sid) return;              // "New session" came while this turn was out: it belongs to the old one
         const a = r.json?.audio as string | undefined;
         const turn: Turn | null = r.json ? { heard: String(r.json.heard ?? ""), reply: String(r.json.reply ?? ""), audio: a ? b64ToBlob(a) : undefined } : null;
-        const prev = outs.converse?.turns ?? [];
+        const prev = latest.current.outs.converse?.turns ?? [];
         record(m, turn?.heard || clip.name, { ...r, turns: turn ? [...prev, turn] : prev, stats: { ...r.stats, audioS } });
         if (turn) setClips(c => ({ ...c, converse: null }));     // ready for the next question
       }
