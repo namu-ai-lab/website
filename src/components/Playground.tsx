@@ -436,11 +436,19 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
   const call = useRef<AirCall | null>(null);
   const voice = vs.find(v => v.id === persona) ?? vs[0];
 
+  /* One call at a time: the button shows "connecting" at once, and a second tap during the microphone prompt or the
+     welcome cannot start another call (which would keep its own microphone, out of reach of End). Callbacks from a
+     call that is no longer current are ignored. */
   const start = () => {
-    setError(null);
+    if (call.current) return;
+    setError(null); setState("connecting");
     const k = new AirCall(persona, {
-      state: s => { if (call.current === k) setState(s === "ended" ? "idle" : s); },
+      state: s => {
+        if (call.current !== k) return;
+        if (s === "ended") { call.current = null; setState("idle"); } else setState(s);
+      },
       problem: p => {
+        if (call.current !== k) return;
         setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed);
         if (p === "mic") track("mic_denied", { mode: "converse" }); else track("demo_run", { mode: "converse", result: p });
       },
