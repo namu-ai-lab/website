@@ -425,6 +425,18 @@ def test_ffprobe_is_pinned_to_the_file_and_the_demuxer(monkeypatch):
     assert args[-1].startswith("file:")
 
 
+
+@pytest.mark.parametrize("declared", ["-5000.0", "0.000000", "nan", "inf", "N/A", ""])
+def test_a_declared_length_that_is_not_positive_and_finite_is_refused(declared, monkeypatch):
+    # the length is the file's own claim: a forged negative one would credit the account
+    monkeypatch.setattr(gw.subprocess, "run", lambda *a, **k: type("Done", (), {"stdout": declared + "\n"})())
+    assert gw.probe_seconds(b"\x1a\x45\xdf\xa3" + b"\x00" * 60) is None
+
+
+def test_an_empty_wav_is_refused():
+    assert gw.probe_seconds(wav(0.0)) is None
+
+
 def test_gateway_refuses_a_playlist_before_any_gpu():
     store, up = FakeStore(), FakeUpstream()
     c = TestClient(gw.create_app(store, up, FakeLimiter(), PEPPER, now=Clock()))     # the real probe_seconds

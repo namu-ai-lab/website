@@ -33,6 +33,7 @@ import hashlib
 import hmac
 import io
 import json
+import math
 import os
 import subprocess
 import tempfile
@@ -171,12 +172,24 @@ def sniff_audio(data: bytes) -> str | None:
 
 
 def probe_seconds(data: bytes) -> float | None:
-    """Duration of an allowed audio container, read with ffprobe; None if
-    the container is not allowed or cannot be read.
+    """Duration of an allowed audio container; None if the container is not
+    allowed, cannot be read, or claims a length that is not a positive,
+    finite number of seconds.
 
     Done before forwarding, so an oversized or garbage upload is refused
-    without waking a GPU.
+    without waking a GPU. The length comes from the file's own header, which
+    the caller wrote: a forged negative one would credit the account, and NaN
+    slips past every cap.
     """
+    secs = header_seconds(data)
+    if secs is None or not math.isfinite(secs) or secs <= 0:
+        return None
+    return secs
+
+
+def header_seconds(data: bytes) -> float | None:
+    """The duration the container declares: WAV by Python's wave module,
+    anything else by ffprobe, pinned to the sniffed demuxer."""
     try:
         return wav_seconds(data)
     except Exception:
