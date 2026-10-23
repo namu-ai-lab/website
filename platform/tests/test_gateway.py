@@ -275,6 +275,30 @@ def test_upstream_failure_is_502_and_recorded(env):
     assert "boom" not in r.text            # internal errors are not leaked
 
 
+
+# ---------------------------------------------------------------- what counts against the allowance
+@pytest.mark.parametrize("endpoint, expected", [
+    ("transcribe", 3.0), ("speech", 2.0), ("translate", 3.0), ("converse", 5.0)])
+def test_a_success_counts_by_the_one_rule(endpoint, expected):
+    assert gw.billable_seconds(endpoint, 200, sent_s=3.0, returned_s=2.0) == expected
+
+
+@pytest.mark.parametrize("endpoint", ["transcribe", "speech", "translate", "converse"])
+@pytest.mark.parametrize("status", [400, 422, 429, 500, 502, 504])
+def test_a_failure_counts_nothing(endpoint, status):
+    assert gw.billable_seconds(endpoint, status, sent_s=3.0, returned_s=2.0) == 0.0
+
+
+@pytest.mark.parametrize("path, call", [("/v1/translate", "translate"), ("/v1/converse", "converse")])
+def test_failed_translate_and_converse_are_recorded_at_zero_seconds(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(500, b"boom"))
+    r = post_audio(c, path, seconds=30.0)
+    assert r.status_code == 502
+    u = store.usage[-1]
+    assert (u.endpoint, u.status, u.audio_seconds) == (call, 502, 0.0)
+
+
 def test_speech_returns_wav_and_counts_characters(env):
     c, store, up, *_ = env
     r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu da zuwa.", "voice": "warm"})

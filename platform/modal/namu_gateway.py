@@ -99,6 +99,23 @@ def hash_key(key: str, pepper: str) -> str:
     return hmac.new(pepper.encode(), key.encode(), hashlib.sha256).hexdigest()
 
 
+def billable_seconds(endpoint: str, status: int, sent_s: float = 0.0, returned_s: float = 0.0) -> float:
+    """The audio seconds one request counts against the monthly allowance: the one rule, in one place.
+
+    A request that did not succeed counts nothing, whatever failed: the docs say a 502 or 504 is safe
+    to retry, and a retry must not be charged twice. A success counts
+        transcribe  the audio sent
+        speech      the audio returned
+        translate   the audio sent; not the translated speech it can return, until the open billing
+                    question in platform/README.md is decided
+        converse    the audio sent and the spoken reply
+    """
+    if not 200 <= status < 300:
+        return 0.0
+    return {"transcribe": sent_s, "speech": returned_s, "translate": sent_s,
+            "converse": sent_s + returned_s}[endpoint]
+
+
 # ---------------------------------------------------------------- data shapes
 @dataclass
 class KeyRecord:
@@ -380,8 +397,10 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                                          f"Audio must be {int(limit)} seconds or shorter.")
         return data, secs, fields, None
 
-    def record(bg: BackgroundTasks, rec: KeyRecord, endpoint: str, model: str,
-               t0: float, status: int, seconds: float = 0.0, chars: int = 0):
+    def record(bg: BackgroundTasks, rec: KeyRecord, endpoint: str, model: str, t0: float, status: int,
+               sent_s: float = 0.0, returned_s: float = 0.0, chars: int = 0):
+        """One usage row per request that reached a model, with what it counts (billable_seconds)."""
+        seconds = billable_seconds(endpoint, status, sent_s, returned_s)
         rec.used_audio_seconds += seconds      # keep the cached quota honest
         bg.add_task(store.record, Usage(rec.key_id, rec.user_id, endpoint, model,
                                         round(seconds, 3), chars, status,
@@ -443,7 +462,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             record(bg, rec, "transcribe", "tatsuniya", t0, 502)
             return upstream_failed(reply)
         out = reply.json()
-        record(bg, rec, "transcribe", "tatsuniya", t0, 200, secs)
+        record(bg, rec, "transcribe", "tatsuniya", t0, 200, sent_s=secs)
         return {"model": "tatsuniya", "text": out.get("text", ""),
                 "language": language, "audio_seconds": round(secs, 2)}
 
@@ -478,7 +497,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             secs = wav_seconds(reply.content)
         except Exception:
             secs = 0.0
-        record(bg, rec, "speech", "tafiya", t0, 200, secs, len(text))
+        record(bg, rec, "speech", "tafiya", t0, 200, returned_s=secs, chars=len(text))
         if body.get("format") == "json":
             return {"model": "tafiya", "voice": voice, "audio_seconds": round(secs, 2),
                     "audio": base64.b64encode(reply.content).decode(), "sample_rate": 24000}
@@ -500,10 +519,10 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
         reply = await off_loop(upstream.translate, data, source, target)
         if reply.status != 200:
-            record(bg, rec, "translate", "kora", t0, 502, secs)
+            record(bg, rec, "translate", "kora", t0, 502, sent_s=secs)
             return upstream_failed(reply)
         out = reply.json()
-        record(bg, rec, "translate", "kora", t0, 200, secs)
+        record(bg, rec, "translate", "kora", t0, 200, sent_s=secs)
         res = {"model": "kora", "source": source, "target": target,
                "source_text": out.get("source_text", ""), "text": out.get("target_text", ""),
                "audio_seconds": round(secs, 2)}
@@ -529,14 +548,14 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         sid = f"{rec.user_id}:{client_sid}" if client_sid else None
         reply = await off_loop(upstream.converse, data, persona, sid)
         if reply.status != 200:
-            record(bg, rec, "converse", "air", t0, 502, secs)
+            record(bg, rec, "converse", "air", t0, 502, sent_s=secs)
             return upstream_failed(reply)
         out = reply.json()
         try:
             out_secs = wav_seconds(base64.b64decode(out.get("audio") or ""))
         except Exception:
             out_secs = 0.0
-        record(bg, rec, "converse", "air", t0, 200, secs + out_secs)
+        record(bg, rec, "converse", "air", t0, 200, sent_s=secs, returned_s=out_secs)
         return {"model": "air", "persona": persona, "session_id": client_sid,
                 "heard": out.get("question", ""), "reply": out.get("reply", ""),
                 "audio": out.get("audio"), "sample_rate": 24000,
