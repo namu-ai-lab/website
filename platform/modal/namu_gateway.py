@@ -186,6 +186,8 @@ def address_bucket(host: str | None) -> str:
         ip = ipaddress.ip_address(host or "")
     except ValueError:
         return host or "unknown"
+    if ip.version == 6 and ip.ipv4_mapped:     # ::ffff:a.b.c.d is an IPv4 caller on a dual-stack socket
+        ip = ip.ipv4_mapped
     if ip.version == 6:
         return str(ipaddress.ip_network(f"{ip}/64", strict=False))
     return str(ip)

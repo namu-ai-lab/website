@@ -53,7 +53,8 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   quota → per-key rate limit (60/min by default) → size and duration caps (25 MB, 5 min, 2,000 characters),
   measured with ffprobe *before* any GPU is called. `/v1/usage` takes the same checks up to "owner active".
   An unknown key is remembered for 30 s too, and keys that need a database lookup are limited to 60 a minute per
-  caller address (per container; IPv6 by /64), so a flood of made-up keys never reaches Postgres.
+  caller address (per container; IPv6 by /64), so a flood of made-up keys reaches Postgres at most 60 times a minute
+  per address and container.
 - **Capacity**: each gateway container serves 32 requests at once (`@modal.concurrent`, `MAX_INPUTS`), up to four
   containers. More in flight widens the quota race (the allowance is checked, then recorded) until it is reserved
   atomically (review batch 13).

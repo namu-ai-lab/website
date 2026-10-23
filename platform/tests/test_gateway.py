@@ -911,6 +911,8 @@ def test_ipv6_callers_are_counted_by_their_64():
     assert gw.address_bucket("2001:db8:1:2::1") == gw.address_bucket("2001:db8:1:2:ffff::9")
     assert gw.address_bucket("2001:db8:1:2::1") != gw.address_bucket("2001:db8:1:3::1")
     assert gw.address_bucket("203.0.113.7") == "203.0.113.7"
+    assert gw.address_bucket("::ffff:203.0.113.7") == "203.0.113.7"          # not one bucket for every IPv4 caller
+    assert gw.address_bucket("::ffff:203.0.113.7") != gw.address_bucket("::ffff:198.51.100.9")
     assert gw.address_bucket(None) == "unknown"
 
 
