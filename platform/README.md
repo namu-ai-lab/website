@@ -77,7 +77,9 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 - **Errors** all share `{ "error": { "type", "message", "request_id" } }`, including the gateway's 404, 405 and
   500, and every response carries `X-Request-Id`. A model that does not answer is 502 `upstream_error`; one that
   runs out of time is 504 `upstream_timeout` (95 s for the demo key, 280 s for the Playground, 840 s for developer
-  keys, following Modal's 303s for calls past 150 s); silence sent to translate or converse is 422 `nothing_heard`.
+  keys, counted from the request's arrival, across Modal's 303s for calls past 150 s; redirects are followed only to
+  the same origin, so the proxy token never leaves Modal); silence sent to translate or converse is 422
+  `nothing_heard`.
 - **Model services** do not answer the open internet (`REQUIRE_PROXY_AUTH = True` in each): Modal rejects requests
   without the proxy token at its edge, before a container (or a GPU) starts. Only Namu's own callers hold the token
   (the `namu-proxy-auth` Modal secret): the gateway, namu-agent and namu-interpret for the services they call, and

@@ -511,6 +511,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         return err(502, "upstream_error",
                    "The model service did not answer. Try again in a moment.")
 
+    def time_left(rec: KeyRecord, t0: float) -> float:
+        # The caller's budget runs from the request's arrival: reading, probing and checking the
+        # upload come out of it, so the website's routes still hear from the gateway before they quit.
+        return upstream_budget(rec) - (now() - t0)
+
     async def call_upstream(call, *args, expect: str = "json", silence_is_422: bool = False):
         """One call to a model service, with every way it can fail mapped to the API's envelope.
 
@@ -579,7 +584,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         language = fields.get("language", "ha")
         if language != "ha":
             return err(400, "unsupported_language", "Tatsuniya transcribes Hausa ('ha').")
-        out, status, e = await call_upstream(upstream.transcribe, data, language, upstream_budget(rec))
+        out, status, e = await call_upstream(upstream.transcribe, data, language, time_left(rec, t0))
         record(bg, rec, "transcribe", "tatsuniya", t0, status, sent_s=secs)
         if e:
             return e
@@ -610,7 +615,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return err(400, "unknown_voice", f"Unknown voice. Try one of: {', '.join(VOICES)}.")
         v = VOICES[voice]
         reply, status, e = await call_upstream(upstream.speak, text, v["language"], v["upstream"],
-                                               upstream_budget(rec), expect="audio")
+                                               time_left(rec, t0), expect="audio")
         if e:
             record(bg, rec, "speech", "tafiya", t0, status, chars=len(text))
             return e
@@ -639,7 +644,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if {source, target} != {"ha", "fr"}:
             return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
         out, status, e = await call_upstream(upstream.translate, data, source, target,
-                                             upstream_budget(rec), silence_is_422=True)
+                                             time_left(rec, t0), silence_is_422=True)
         record(bg, rec, "translate", "kora", t0, status, sent_s=secs)
         if e:
             return e
@@ -667,7 +672,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         # another developer's conversation by guessing a session id.
         sid = f"{rec.user_id}:{client_sid}" if client_sid else None
         out, status, e = await call_upstream(upstream.converse, data, persona, sid,
-                                             upstream_budget(rec), silence_is_422=True)
+                                             time_left(rec, t0), silence_is_422=True)
         if e:
             record(bg, rec, "converse", "air", t0, status, sent_s=secs)
             return e
@@ -743,29 +748,31 @@ class ModalUpstream:
 
     A Modal web call that runs past 150 s is answered with a 303 to the same URL plus a result
     parameter, which blocks until the work is done. Each call follows those 303s, within its time
-    budget, so a long translation is a result and not a failure. Redirects are followed only on
-    the same host: the proxy token must never leave Modal.
+    budget, so a long translation is a result and not a failure. Redirects are followed only to
+    the same origin (scheme, host and port): the proxy token must never leave Modal, nor travel
+    unencrypted.
     """
 
     MAX_HOPS = 20                              # Modal's own limit for a chain of result redirects
 
-    def __init__(self, urls: dict, proxy_key: str | None, proxy_secret: str | None, transport=None):
+    def __init__(self, urls: dict, proxy_key: str | None, proxy_secret: str | None, transport=None,
+                 clock=time.monotonic):
         import httpx
 
         h = {}
         if proxy_key and proxy_secret:
             h = {"Modal-Key": proxy_key, "Modal-Secret": proxy_secret}
-        self.urls = urls
+        self.urls, self.clock = urls, clock
         # One connection per request in flight at most, and MAX_INPUTS requests per container.
         self.http = httpx.Client(headers=h, transport=transport, follow_redirects=False,
                                  limits=httpx.Limits(max_connections=MAX_INPUTS))
 
     def _post(self, url: str, timeout: float, **kw) -> UpstreamReply:
-        deadline = time.monotonic() + timeout
+        deadline = self.clock() + timeout
         r = self._send("POST", url, deadline, **kw)
         for _ in range(self.MAX_HOPS):
             nxt = r.url.join(r.headers["location"]) if r.status_code == 303 and "location" in r.headers else None
-            if nxt is None or nxt.host != r.url.host:
+            if nxt is None or (nxt.scheme, nxt.host, nxt.port) != (r.url.scheme, r.url.host, r.url.port):
                 break
             r = self._send("GET", nxt, deadline)
         return UpstreamReply(r.status_code, r.content, r.headers.get("content-type", ""))
@@ -776,7 +783,7 @@ class ModalUpstream:
         import httpx
 
         for attempt in (1, 2):
-            left = deadline - time.monotonic()
+            left = deadline - self.clock()
             if left <= 0:
                 raise UpstreamTimeout("no time left")
             try:

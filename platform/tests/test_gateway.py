@@ -407,6 +407,60 @@ def test_a_redirect_to_another_host_is_not_followed():
     assert reply.status == 303 and hosts == ["interpret.modal.test"]      # the token never left
 
 
+
+@pytest.mark.parametrize("location", ["http://interpret.modal.test/v1/speech?__result=1",
+                                      "https://interpret.modal.test:8443/v1/speech?__result=1"])
+def test_a_redirect_that_changes_scheme_or_port_is_not_followed(location):
+    seen = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(303, headers={"location": location})
+    assert modal_upstream(handler).translate(wav(), "ha", "fr", 60).status == 303 and len(seen) == 1
+
+
+class FakeMonotonic:
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        return self.t
+
+
+def test_the_budget_covers_every_hop_together():
+    clock, hops = FakeMonotonic(), []
+
+    def handler(request):
+        hops.append(request.method)
+        clock.t += 100                                 # each hop waits 100 s before its 303
+        return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+    up = gw.ModalUpstream(URLS, "wk", "ws", transport=httpx.MockTransport(handler), clock=clock)
+    with pytest.raises(gw.UpstreamTimeout):
+        up.translate(wav(), "ha", "fr", 250)
+    assert hops == ["POST", "GET", "GET"]              # 300 s spent; a fourth hop would pass 250
+
+
+def test_a_chain_of_redirects_stops_at_modals_limit():
+    hops = []
+
+    def handler(request):
+        hops.append(1)
+        return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 303 and len(hops) == 1 + gw.ModalUpstream.MAX_HOPS
+
+
+def test_the_budget_runs_from_the_requests_arrival():
+    store, up, clock = FakeStore(), FakeUpstream(), Clock()
+
+    def slow_probe(data):
+        clock.t += 30                                  # thirty seconds spent before the model is called
+        return gw.wav_seconds(data)
+    c = TestClient(gw.create_app(store, up, FakeLimiter(), PEPPER, audio_seconds=slow_probe, now=clock))
+    post_audio(c, "/v1/transcribe")
+    assert up.budgets == [gw.UPSTREAM_TIMEOUT_S["api"] - 30]
+
+
 def test_a_read_timeout_is_an_upstream_timeout():
     def handler(request):
         raise httpx.ReadTimeout("read timed out", request=request)
