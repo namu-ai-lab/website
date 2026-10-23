@@ -1,3 +1,4 @@
+import "server-only";
 import { Pool } from "pg";
 
 /* The Neon Postgres database, from the server only. Every query that touches a developer's data filters on

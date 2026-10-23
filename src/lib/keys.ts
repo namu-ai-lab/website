@@ -1,3 +1,4 @@
+import "server-only";
 import { createHmac, randomBytes } from "node:crypto";
 import { KEY_PREFIX } from "./key-shape";
 

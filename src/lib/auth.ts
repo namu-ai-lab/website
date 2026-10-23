@@ -1,3 +1,4 @@
+import "server-only";
 import { createNeonAuth } from "@neondatabase/auth/next/server";
 
 /* Sign-in for the developer console: Neon Auth, the managed Better Auth that lives beside the database. Users and
