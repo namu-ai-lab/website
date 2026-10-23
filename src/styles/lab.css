@@ -856,8 +856,9 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 }
 @media (max-width: 640px) {
   .pg { border-radius: 20px; }
-  .pg-tabs { padding: 4px; }
-  .pg-tabs button { height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
+  /* phones: the tabs wrap onto a second, centred row when they do not fit, rather than hide the last ones behind the fade */
+  .pg-tabs { padding: 4px; flex-wrap: wrap; justify-content: center; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .pg-tabs button { flex-grow: 0; height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
   .pg-tabs .dot { display: none; }
   .pg-tts, .pg-listen { --disc: 136px; }
   .pg-tts .vr-names { height: 86px; margin-top: 0; }   /* room for a voice's note on three lines (French, one orb wide), in the panel's usual height */
