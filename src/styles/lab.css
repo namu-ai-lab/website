@@ -450,7 +450,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-base .parent { color: var(--ink); text-transform: none; letter-spacing: normal; }   /* the logo keeps its own lettering */
 .ftr-base .mark { display: block; height: 30px; width: auto; }
 .ftr-legal { display: flex; gap: 12px 40px; flex-wrap: wrap; margin-inline: auto; }
-.ftr-legal a { color: var(--ink); text-decoration: none; }
+.ftr-legal a { color: var(--ink); text-decoration: none; padding-block: 6px; margin-block: -6px; }   /* a 25 px tap target; the row keeps its height */
 .ftr-legal a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .ftr .lang-switch { flex: none; margin-left: 0; font-family: var(--sans); letter-spacing: 0; text-transform: none; background: rgba(21, 18, 15, .06); }
 .ftr-base small { color: var(--ink-3); font-size: 12px; }
