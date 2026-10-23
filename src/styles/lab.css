@@ -931,7 +931,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .docs-toc { position: sticky; top: 96px; }
 .docs-toc ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .docs-toc a { color: var(--ink-2); text-decoration: none; font-size: 15px; } .docs-toc a:hover { color: var(--ink); }
-.docs-body { max-width: 760px; }
+.docs-body { max-width: 760px; min-width: 0; }
 .docs-body section { padding-block: 32px; border-top: 1px solid var(--line); scroll-margin-top: 96px; }
 .docs-body section:first-child { border-top: 0; padding-top: 0; }
 .docs-body p, .docs-body li { color: var(--ink-2); }
@@ -946,7 +946,9 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .docs-params dt { font-weight: 500; } .docs-params dd { margin: 0; color: var(--ink-2); }
 .docs-warn { padding: 14px 18px; border-left: 3px solid var(--sahel-deep); background: var(--surface); border-radius: 0 12px 12px 0; }
 @media (max-width: 860px) {
-  .docs-grid { grid-template-columns: 1fr; gap: 24px; }
+  /* minmax(0, 1fr), not 1fr: a bare 1fr track grows to the longest code line, which made the page 780 px wide on a
+     390 px phone; this way code blocks scroll inside their own card */
+  .docs-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .docs-toc { position: static; }
   .docs-params div { grid-template-columns: 1fr; gap: 4px; }
 }
