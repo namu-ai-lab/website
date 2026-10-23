@@ -33,6 +33,25 @@ REFS = f"{VOL}/refs"
 SAMPLE_RATE = 24000     # OmniVoice output rate
 MIN_CONTAINERS = 0
 
+# A caller may set num_step, and GPU time grows with it: one request asking for
+# a million steps would hold an A10 until the timeout. The defaults (32 for
+# French, the model card's recommendation for Hausa) are used as they are; a
+# requested value is pulled into this range, which bounds the cost.
+NUM_STEP_RANGE = (4, 64)
+
+
+def clamp_num_step(requested, default: int) -> int:
+    """The step count to run: the default when none (or nonsense) is asked
+    for, otherwise the request pulled into NUM_STEP_RANGE."""
+    if not requested:
+        return default
+    try:
+        steps = int(requested)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    low, high = NUM_STEP_RANGE
+    return max(low, min(high, steps))
+
 app = modal.App("namu-voice")
 
 # --- lockdown ---------------------------------------------------------------
@@ -166,11 +185,11 @@ class Voice:
                 raise RuntimeError("French synthesis is not available on this container")
             ref_wav, ref_text = self.fr_voices.get(voice or "fr",
                                                    self.fr_voices["fr"])
-            model, steps = self.base, int(num_step or 32)
+            model, steps = self.base, clamp_num_step(num_step, 32)
         else:
             ref_wav, ref_text = self.ha_voices.get(
                 voice or self.ha_default, self.ha_voices[self.ha_default])
-            model, steps = self.kura, int(num_step or self.ha_steps)
+            model, steps = self.kura, clamp_num_step(num_step, self.ha_steps)
 
         t = time.time()
         a = model.generate(text=text, ref_audio=ref_wav, ref_text=ref_text,
