@@ -107,8 +107,11 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
           <form className="cx-set-row" onSubmit={changePassword}>
             <span>{t.passwordH}</span>
             <div className="cx-set-ctl cx-set-stack">
-              <input className="cx-input" type="password" autoComplete="current-password" placeholder={t.current} value={cur} onChange={e => { setCur(e.target.value); setPw({ state: "idle" }); }} required />
-              <input className="cx-input" type="password" autoComplete="new-password" placeholder={t.next} value={next} minLength={8} onChange={e => { setNext(e.target.value); setPw({ state: "idle" }); }} required />
+              {/* visible labels, not placeholders that vanish as soon as one types */}
+              <label className="cx-set-field"><span>{t.current}</span>
+                <input className="cx-input" type="password" autoComplete="current-password" value={cur} onChange={e => { setCur(e.target.value); setPw({ state: "idle" }); }} required /></label>
+              <label className="cx-set-field"><span>{t.next}</span>
+                <input className="cx-input" type="password" autoComplete="new-password" value={next} minLength={8} onChange={e => { setNext(e.target.value); setPw({ state: "idle" }); }} required /></label>
               <div className="cx-set-acts">
                 <button type="submit" className="cx-btn" disabled={pw.state === "saving" || !cur || !next}>{pw.state === "saving" ? t.changing : t.change}</button>
                 {pw.err ? <span className="cx-error" role="alert">{pw.err}</span>

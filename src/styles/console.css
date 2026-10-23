@@ -263,6 +263,8 @@
 .cx-set-row > span, .cx-set-row > label { padding-top: 10px; color: var(--ink-2); font-size: 15px; }
 .cx-set-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-height: 42px; }
 .cx-set-stack { display: grid; justify-items: start; gap: 10px; }
+.cx-set-field { display: grid; gap: 6px; width: min(340px, 100%); }
+.cx-set-field > span { color: var(--ink-2); font-size: 14px; }
 .cx-set-stack p { margin: 10px 0 0; font-size: 15px; }
 .cx-set-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .cx-set-val { font-size: 15.5px; }
