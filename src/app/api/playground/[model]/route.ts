@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { setting } from "@/lib/env";
 import { apiBase } from "@/lib/public-config";
 import { fail, signedIn } from "@/lib/http";
 
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   if (!Object.hasOwn(PATH, model)) return fail(404, "unknown_model", "Unknown model.");
   const s = await signedIn(req, true);
   if (s.e) return s.e;
-  const key = process.env.NAMU_SERVICE_KEY;
+  const key = setting("NAMU_SERVICE_KEY");
   if (!key) return fail(503, "playground_unavailable", "The Playground is not switched on for this deployment.");
 
   const headers: Record<string, string> = { Authorization: `Bearer ${key}`, "X-Namu-Account": s.user.id };
