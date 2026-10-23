@@ -32,6 +32,7 @@ export type ConsoleCopy = {
     createH: string; nameLabel: string; namePh: string; permsLabel: string; permsAll: string; permsRestricted: string; permsHelp: string;
     cancel: string; create: string; creating: string;
     saveH: string; saveBody: string; copy: string; copied: string; done: string; permsOf: string;
+    leaveQ: string; leaveBack: string; leaveYes: string;
     revokeH: string; revokeBody: string; revokeIt: string; revoking: string;
     editLabel: (name: string) => string; editH: string; save: string; saving: string; editNote: string; envHint: string;
     models: Record<string, { name: string; task: string }>;
@@ -140,6 +141,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       cancel: "Cancel", create: "Create secret key", creating: "Creating…",
       saveH: "Save your key", saveBody: "Copy it now and keep it somewhere safe, such as your server’s environment. For your security we keep only its fingerprint, so you will not be able to see it again.",
       copy: "Copy", copied: "Copied", done: "Done", permsOf: "Permissions",
+      leaveQ: "Have you saved your key? It will not be shown again.", leaveBack: "Back to the key", leaveYes: "Yes, close",
       revokeH: "Revoke secret key", revokeBody: "This key will stop working within a minute, and requests made with it will be refused. Anything still using it will break. This cannot be undone.",
       revokeIt: "Revoke key", revoking: "Revoking…",
       editLabel: k => `Edit ${k}`, editH: "Edit secret key", save: "Save", saving: "Saving…",
@@ -272,6 +274,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       cancel: "Annuler", create: "Créer la clé secrète", creating: "Création…",
       saveH: "Enregistrez votre clé", saveBody: "Copiez-la maintenant et gardez-la en lieu sûr, par exemple dans l’environnement de votre serveur. Pour votre sécurité, nous n’en gardons que l’empreinte : vous ne pourrez plus la voir.".replace(" :", `${n}:`),
       copy: "Copier", copied: "Copiée", done: "Terminé", permsOf: "Permissions",
+      leaveQ: `Avez-vous enregistré votre clé${n}? Elle ne sera plus affichée.`, leaveBack: "Revenir à la clé", leaveYes: "Oui, fermer",
       revokeH: "Révoquer la clé secrète", revokeBody: "Cette clé cessera de fonctionner en moins d’une minute et les requêtes qui l’utilisent seront refusées. Tout ce qui en dépend encore cessera de fonctionner. C’est irréversible.",
       revokeIt: "Révoquer la clé", revoking: "Révocation…",
       editLabel: k => `Modifier ${k}`, editH: "Modifier la clé secrète", save: "Enregistrer", saving: "Enregistrement…",

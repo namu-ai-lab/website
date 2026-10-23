@@ -188,6 +188,9 @@
 .cx-dialog-meta span { color: var(--ink); font-weight: 500; }
 .cx-dialog-meta code { color: var(--ink-2); font: inherit; }
 .cx-dialog-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+/* closing the key's dialog asks first: the question on the left, its two answers on the right */
+.cx-leave { flex-wrap: wrap; align-items: center; }
+.cx-dialog .cx-leave p { flex: 1 1 16em; color: var(--ink); font-weight: 500; }
 .cx-dialog .pg-code { margin: 0; }
 /* the new secret, shown once: the whole key in monospace beside its Copy button, then its name and permissions */
 .cx-key { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface); }
