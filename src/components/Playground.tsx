@@ -144,43 +144,59 @@ function useClipUrl() {
 }
 
 /* The microphone, through the same worklet as a call with Aïr (lib/call): loudness into `amp` for the orb, the seconds
-   left for the countdown, and 16 kHz WAV handed to `onClip` when the visitor stops or 15 seconds run out. */
+   left for the countdown, and 16 kHz WAV handed to `onClip` when the visitor stops or 15 seconds run out.
+   Opening the microphone takes a permission prompt and two awaits, so: a take that is still starting blocks another
+   (`starting`, which also disables the button); cancel() or the panel closing during the prompt leaves nothing behind
+   (each await is followed by a check, and a stale start closes what it opened); and finish() closes the take it is
+   given, never a newer one. */
 function useRecorder(amp: { current: number }, onClip: (wav: ArrayBuffer) => void) {
-  type Take = { ctx: AudioContext; stream: MediaStream; node: AudioWorkletNode; chunks: Float32Array[]; n: number };
+  type Take = { ctx: AudioContext; stream: MediaStream; node: AudioWorkletNode; chunks: Float32Array[]; n: number; closed: boolean };
   const take = useRef<Take | null>(null);
   const done = useRef(onClip); done.current = onClip;
   const [left, setLeft] = useState<number | null>(null);
-  const finish = (send: boolean) => {
-    const s = take.current;
-    if (!s) return;
-    take.current = null;
+  const [starting, setStarting] = useState(false);
+  const opening = useRef(false), gen = useRef(0), disposed = useRef(false);
+  const finish = (s: Take | null, send: boolean) => {
+    if (!s || s.closed) return;
+    s.closed = true;
     s.node.port.onmessage = null; s.node.disconnect(); s.stream.getTracks().forEach(t => t.stop());
     const rate = s.ctx.sampleRate; void s.ctx.close();
-    amp.current = 0; setLeft(null);
-    if (send && s.n > rate * 0.4) done.current(wav16k(s.chunks, rate));     // under 0.4 s is a stray tap, not speech
+    if (take.current === s) { take.current = null; amp.current = 0; setLeft(null); }
+    if (send && !disposed.current && s.n > rate * 0.4) done.current(wav16k(s.chunks, rate));     // under 0.4 s is a stray tap, not speech
   };
   const start = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
-    const ctx = new AudioContext();
+    if (opening.current || take.current) return;
+    const g = ++gen.current, stale = () => disposed.current || g !== gen.current;
+    opening.current = true; setStarting(true);
     try {
-      await ctx.resume().catch(() => {});          // iOS pauses the context while it switches to the microphone
-      await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TAP], { type: "application/javascript" })));
-      const node = new AudioWorkletNode(ctx, "namu-tap"), mute = ctx.createGain(); mute.gain.value = 0;
-      ctx.createMediaStreamSource(stream).connect(node); node.connect(mute); mute.connect(ctx.destination);
-      const s: Take = { ctx, stream, node, chunks: [], n: 0 }, max = (ctx.sampleRate * MAX_CLIP_MS) / 1000;
-      take.current = s;
-      node.port.onmessage = (e: MessageEvent<Float32Array>) => {
-        const x = e.data; s.chunks.push(x); s.n += x.length;
-        let sum = 0; for (const v of x) sum += v * v;
-        amp.current = reduced() ? 0 : Math.min(1, Math.sqrt(sum / x.length) * 6);
-        setLeft(Math.max(0, Math.ceil((max - s.n) / ctx.sampleRate)));
-        if (s.n >= max) finish(true);
-      };
-      setLeft(Math.round(MAX_CLIP_MS / 1000));
-    } catch (e) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); throw e; }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+      if (stale()) { stream.getTracks().forEach(t => t.stop()); return; }
+      const ctx = new AudioContext();
+      try {
+        await ctx.resume().catch(() => {});          // iOS pauses the context while it switches to the microphone
+        await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TAP], { type: "application/javascript" })));
+        if (stale()) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); return; }
+        const node = new AudioWorkletNode(ctx, "namu-tap"), mute = ctx.createGain(); mute.gain.value = 0;
+        ctx.createMediaStreamSource(stream).connect(node); node.connect(mute); mute.connect(ctx.destination);
+        const s: Take = { ctx, stream, node, chunks: [], n: 0, closed: false }, max = (ctx.sampleRate * MAX_CLIP_MS) / 1000;
+        take.current = s;
+        node.port.onmessage = (e: MessageEvent<Float32Array>) => {
+          const x = e.data; s.chunks.push(x); s.n += x.length;
+          let sum = 0; for (const v of x) sum += v * v;
+          amp.current = reduced() ? 0 : Math.min(1, Math.sqrt(sum / x.length) * 6);
+          setLeft(Math.max(0, Math.ceil((max - s.n) / ctx.sampleRate)));
+          if (s.n >= max) finish(s, true);
+        };
+        setLeft(Math.round(MAX_CLIP_MS / 1000));
+      } catch (e) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); throw e; }
+    } finally { if (g === gen.current) { opening.current = false; setStarting(false); } }
   };
-  useEffect(() => () => finish(false), []);
-  return { start, stop: () => finish(true), cancel: () => finish(false), recording: left !== null, left: left ?? 0 };
+  const cancel = () => { gen.current++; opening.current = false; setStarting(false); finish(take.current, false); };
+  useEffect(() => {
+    disposed.current = false;
+    return () => { disposed.current = true; gen.current++; finish(take.current, false); };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  return { start, stop: () => finish(take.current, true), cancel, starting, recording: left !== null, left: left ?? 0 };
 }
 
 /* An uploaded clip as 16 kHz mono WAV, cut to the demo's 15 seconds: any format the browser can decode goes in. */
@@ -344,7 +360,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
 
   async function record() {
     if (rec.recording) { rec.stop(); return; }
-    if (busy) return;
+    if (busy || rec.starting) return;
     player.stop(); reset(); setPicked(null); setOut(null);
     try { await rec.start(); } catch { setError(t.mic); track("mic_denied", { mode: mode === "stt" ? "transcribe" : "translate" }); }
   }
@@ -385,7 +401,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
         <div className={`pg-agent${rec.recording ? " live hearing" : ""}`}>
           <i aria-hidden="true" /><i aria-hidden="true" />
           <AgentOrb palette={listenPalettes[mode]} amp={amp} live={rec.recording || player.playing || busy} />
-          <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy}>
+          <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy || rec.starting}>
             <Icon name={rec.recording ? "stop" : "microphone"} size={22} stroke={1.6} />
           </button>
         </div>
