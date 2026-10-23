@@ -36,6 +36,7 @@ import io
 import json
 import math
 import os
+import random
 import subprocess
 import tempfile
 import time
@@ -90,6 +91,13 @@ DEMO_MAX_TEXT_CHARS = 300
 DEMO_IP_PER_HOUR = 30
 SERVICE_PER_MIN = 20          # the console Playground, per account
 KEY_CACHE_TTL = 30.0          # a revoked key stops working within this many seconds
+
+# How long the gateway waits for a model, in total, by who is asking. The website's demo and
+# Playground routes give up after 100-110 s and 290 s (src/app/api/demo, src/app/api/playground);
+# answering a little earlier turns their abort into the API's own 504, which counts nothing.
+# Developers' own calls get most of the gateway's 900 s function timeout.
+UPSTREAM_TIMEOUT_S = {"demo": 95.0, "playground": 280.0, "api": 840.0}
+CONNECT_TIMEOUT_S = 10.0
 
 KEY_PREFIX = "namu_sk_"
 
@@ -152,6 +160,19 @@ class UpstreamReply:
 
     def json(self) -> dict:
         return json.loads(self.content)
+
+
+class UpstreamTimeout(TimeoutError):
+    """A model service did not answer within the caller's budget (UPSTREAM_TIMEOUT_S): a 504."""
+
+
+def upstream_budget(rec: KeyRecord) -> float:
+    """Seconds to wait for a model on this key's behalf."""
+    if rec.is_demo:
+        return UPSTREAM_TIMEOUT_S["demo"]
+    if rec.is_service:
+        return UPSTREAM_TIMEOUT_S["playground"]
+    return UPSTREAM_TIMEOUT_S["api"]
 
 
 # ---------------------------------------------------------------- audio helpers
@@ -236,7 +257,8 @@ def header_seconds(data: bytes) -> float | None:
 def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_seconds,
                now=time.time):
     """store: lookup(hash)->KeyRecord|None, account(user_id)->(status, monthly_s, used_s)|None, record(Usage)
-    upstream: transcribe/speak/translate/converse(...)->UpstreamReply
+    upstream: transcribe/speak/translate/converse(..., timeout_s)->UpstreamReply; may raise, and raises
+              TimeoutError (UpstreamTimeout) when the time runs out
     limiter: hit(bucket, limit, window_s)->(allowed, retry_after_s)
     """
     import contextvars
@@ -491,7 +513,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         language = fields.get("language", "ha")
         if language != "ha":
             return err(400, "unsupported_language", "Tatsuniya transcribes Hausa ('ha').")
-        out, status, e = await call_upstream(upstream.transcribe, data, language)
+        out, status, e = await call_upstream(upstream.transcribe, data, language, upstream_budget(rec))
         record(bg, rec, "transcribe", "tatsuniya", t0, status, sent_s=secs)
         if e:
             return e
@@ -522,7 +544,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return err(400, "unknown_voice", f"Unknown voice. Try one of: {', '.join(VOICES)}.")
         v = VOICES[voice]
         reply, status, e = await call_upstream(upstream.speak, text, v["language"], v["upstream"],
-                                               expect="audio")
+                                               upstream_budget(rec), expect="audio")
         if e:
             record(bg, rec, "speech", "tafiya", t0, status, chars=len(text))
             return e
@@ -551,7 +573,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if {source, target} != {"ha", "fr"}:
             return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
         out, status, e = await call_upstream(upstream.translate, data, source, target,
-                                             silence_is_422=True)
+                                             upstream_budget(rec), silence_is_422=True)
         record(bg, rec, "translate", "kora", t0, status, sent_s=secs)
         if e:
             return e
@@ -579,7 +601,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         # another developer's conversation by guessing a session id.
         sid = f"{rec.user_id}:{client_sid}" if client_sid else None
         out, status, e = await call_upstream(upstream.converse, data, persona, sid,
-                                             silence_is_422=True)
+                                             upstream_budget(rec), silence_is_422=True)
         if e:
             record(bg, rec, "converse", "air", t0, status, sent_s=secs)
             return e
@@ -649,42 +671,77 @@ class PostgresStore:
 
 
 class ModalUpstream:
-    """The four model services, called with Modal proxy-auth headers."""
+    """The four model services, called with Modal proxy-auth headers.
 
-    def __init__(self, urls: dict, proxy_key: str | None, proxy_secret: str | None):
+    A Modal web call that runs past 150 s is answered with a 303 to the same URL plus a result
+    parameter, which blocks until the work is done. Each call follows those 303s, within its time
+    budget, so a long translation is a result and not a failure. Redirects are followed only on
+    the same host: the proxy token must never leave Modal.
+    """
+
+    MAX_HOPS = 20                              # Modal's own limit for a chain of result redirects
+
+    def __init__(self, urls: dict, proxy_key: str | None, proxy_secret: str | None, transport=None):
         import httpx
 
         h = {}
         if proxy_key and proxy_secret:
             h = {"Modal-Key": proxy_key, "Modal-Secret": proxy_secret}
         self.urls = urls
-        self.http = httpx.Client(timeout=900, headers=h)
+        self.http = httpx.Client(headers=h, transport=transport, follow_redirects=False)
 
-    def _reply(self, r) -> UpstreamReply:
+    def _post(self, url: str, timeout: float, **kw) -> UpstreamReply:
+        deadline = time.monotonic() + timeout
+        r = self._send("POST", url, deadline, **kw)
+        for _ in range(self.MAX_HOPS):
+            nxt = r.url.join(r.headers["location"]) if r.status_code == 303 and "location" in r.headers else None
+            if nxt is None or nxt.host != r.url.host:
+                break
+            r = self._send("GET", nxt, deadline)
         return UpstreamReply(r.status_code, r.content, r.headers.get("content-type", ""))
 
-    def transcribe(self, data: bytes, language: str) -> UpstreamReply:
-        return self._reply(self.http.post(
-            f"{self.urls['transcribe']}/v1/transcribe", params={"language": language},
-            content=data, headers={"Content-Type": "application/octet-stream"}))
+    def _send(self, method: str, url, deadline: float, **kw):
+        """One request within what is left of the budget. A failed connection is retried once:
+        nothing reached the model, so it cannot run twice. Out of time -> UpstreamTimeout."""
+        import httpx
 
-    def speak(self, text: str, language: str, voice: str) -> UpstreamReply:
-        return self._reply(self.http.post(
-            f"{self.urls['voice']}/v1/speak",
-            json={"text": text, "language": language, "voice": voice}))
+        for attempt in (1, 2):
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise UpstreamTimeout("no time left")
+            try:
+                return self.http.request(method, url, timeout=httpx.Timeout(
+                    left, connect=min(left, CONNECT_TIMEOUT_S)), **kw)
+            except (httpx.ConnectError, httpx.ConnectTimeout):
+                if attempt == 2:
+                    raise
+                # Jitter, so containers that lost their connections together do not all come back at once.
+                time.sleep(random.uniform(0.2, 1.0))
+            except httpx.TimeoutException as e:
+                raise UpstreamTimeout(type(e).__name__) from e
 
-    def translate(self, data: bytes, source: str, target: str) -> UpstreamReply:
-        return self._reply(self.http.post(
-            f"{self.urls['interpret']}/v1/speech", params={"source": source, "target": target},
-            content=data, headers={"Content-Type": "application/octet-stream"}))
+    def transcribe(self, data: bytes, language: str, timeout: float) -> UpstreamReply:
+        return self._post(
+            f"{self.urls['transcribe']}/v1/transcribe", timeout, params={"language": language},
+            content=data, headers={"Content-Type": "application/octet-stream"})
 
-    def converse(self, data: bytes, persona: str, session_id: str | None) -> UpstreamReply:
+    def speak(self, text: str, language: str, voice: str, timeout: float) -> UpstreamReply:
+        return self._post(
+            f"{self.urls['voice']}/v1/speak", timeout,
+            json={"text": text, "language": language, "voice": voice})
+
+    def translate(self, data: bytes, source: str, target: str, timeout: float) -> UpstreamReply:
+        return self._post(
+            f"{self.urls['interpret']}/v1/speech", timeout, params={"source": source, "target": target},
+            content=data, headers={"Content-Type": "application/octet-stream"})
+
+    def converse(self, data: bytes, persona: str, session_id: str | None, timeout: float) -> UpstreamReply:
         params = {"persona": persona}
         if session_id:
             params["session_id"] = session_id
-        return self._reply(self.http.post(
-            f"{self.urls['agent']}/v1/speech", params=params, content=data,
-            headers={"Content-Type": "application/octet-stream"}))
+        return self._post(
+            f"{self.urls['agent']}/v1/speech", timeout, params=params, content=data,
+            headers={"Content-Type": "application/octet-stream"})
 
 
 class DictLimiter:

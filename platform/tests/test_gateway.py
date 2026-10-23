@@ -72,27 +72,32 @@ class FakeStore:
 class FakeUpstream:
     def __init__(self):
         self.calls = []
+        self.budgets = []
         self.fail = False
 
     def _ok(self, payload):
         return gw.UpstreamReply(200, __import__("json").dumps(payload).encode())
 
-    def transcribe(self, data, language):
+    def transcribe(self, data, language, timeout):
         self.calls.append(("transcribe", language))
+        self.budgets.append(timeout)
         if self.fail:
             return gw.UpstreamReply(500, b"boom")
         return self._ok({"text": "sannu da zuwa"})
 
-    def speak(self, text, language, voice):
+    def speak(self, text, language, voice, timeout):
         self.calls.append(("speak", language, voice))
+        self.budgets.append(timeout)
         return gw.UpstreamReply(200, wav(2.0, 24000), "audio/wav")
 
-    def translate(self, data, source, target):
+    def translate(self, data, source, target, timeout):
         self.calls.append(("translate", source, target))
+        self.budgets.append(timeout)
         return self._ok({"source_text": "sannu", "target_text": "bonjour", "audio": "QUJD"})
 
-    def converse(self, data, persona, session_id):
+    def converse(self, data, persona, session_id, timeout):
         self.calls.append(("converse", persona, session_id))
+        self.budgets.append(timeout)
         return self._ok({"question": "wane sunana?", "reply": "Sunanka Musa.",
                          "audio": base64.b64encode(wav(1.5, 24000)).decode()})
 
@@ -354,6 +359,122 @@ def test_speech_that_is_not_audio_is_a_502(env):
     c, store, up, *_ = env
     up.speak = lambda *a, **k: gw.UpstreamReply(200, b'{"status": "warm"}', "application/json")
     assert call_speech(c).status_code == 502
+
+
+
+def test_the_wait_fits_who_is_asking(env):
+    c, store, up, *_ = env
+    post_audio(c, "/v1/transcribe", key=DEMO)
+    post_audio(c, "/v1/transcribe")
+    c.post("/v1/transcribe", headers=as_account("dev-1"), files={"file": ("a.wav", wav(), "audio/wav")})
+    assert up.budgets == [gw.UPSTREAM_TIMEOUT_S["demo"], gw.UPSTREAM_TIMEOUT_S["api"],
+                          gw.UPSTREAM_TIMEOUT_S["playground"]]
+
+
+# ---------------------------------------------------------------- the real HTTP client, against a fake Modal
+URLS = {name: f"https://{name}.modal.test" for name in ("transcribe", "voice", "interpret", "agent")}
+
+
+def modal_upstream(handler):
+    return gw.ModalUpstream(URLS, "wk-test", "ws-test", transport=httpx.MockTransport(handler))
+
+
+@pytest.fixture
+def no_jitter(monkeypatch):
+    monkeypatch.setattr(gw.random, "uniform", lambda a, b: 0.0)
+
+
+def test_a_long_call_follows_modals_303_to_the_result():
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.params.get("__result"), request.headers.get("modal-key")))
+        if "__result" not in request.url.params:
+            return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+        return httpx.Response(200, json={"source_text": "sannu", "target_text": "bonjour"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 200 and reply.json()["target_text"] == "bonjour"
+    assert seen == [("POST", None, "wk-test"), ("GET", "1", "wk-test")]
+
+
+def test_a_redirect_to_another_host_is_not_followed():
+    hosts = []
+
+    def handler(request):
+        hosts.append(request.url.host)
+        return httpx.Response(303, headers={"location": "https://elsewhere.example/steal"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 303 and hosts == ["interpret.modal.test"]      # the token never left
+
+
+def test_a_read_timeout_is_an_upstream_timeout():
+    def handler(request):
+        raise httpx.ReadTimeout("read timed out", request=request)
+    with pytest.raises(gw.UpstreamTimeout):
+        modal_upstream(handler).transcribe(wav(), "ha", 60)
+
+
+def test_no_time_left_is_an_upstream_timeout():
+    with pytest.raises(gw.UpstreamTimeout):
+        modal_upstream(lambda request: httpx.Response(200, json={})).transcribe(wav(), "ha", 0)
+
+
+def test_a_failed_connection_is_retried_once(no_jitter):
+    attempts = []
+
+    def handler(request):
+        attempts.append(request.method)
+        if len(attempts) == 1:
+            raise httpx.ConnectError("connection refused", request=request)
+        return httpx.Response(200, json={"text": "sannu"})
+    assert modal_upstream(handler).transcribe(wav(), "ha", 60).json() == {"text": "sannu"}
+    assert attempts == ["POST", "POST"]
+
+
+def test_other_failures_are_not_retried():
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        raise httpx.RemoteProtocolError("server hung up", request=request)    # the model may have started
+    with pytest.raises(httpx.RemoteProtocolError):
+        modal_upstream(handler).transcribe(wav(), "ha", 60)
+    assert len(attempts) == 1
+
+
+def gateway_with(handler):
+    store = FakeStore()
+    app = gw.create_app(store, modal_upstream(handler), FakeLimiter(), PEPPER, audio_seconds=gw.wav_seconds)
+    return TestClient(app), store
+
+
+def test_end_to_end_connect_error_is_a_502_envelope_with_a_zero_second_row(no_jitter):
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/transcribe", seconds=5.0)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+def test_end_to_end_read_timeout_is_a_504_envelope_with_a_zero_second_row():
+    def handler(request):
+        raise httpx.ReadTimeout("read timed out", request=request)
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/translate", seconds=5.0)
+    assert r.status_code == 504 and r.json()["error"]["type"] == "upstream_timeout"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (504, 0.0)
+
+
+def test_end_to_end_a_303_is_followed_and_charged_once():
+    def handler(request):
+        if "__result" not in request.url.params:
+            return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+        return httpx.Response(200, json={"source_text": "sannu", "target_text": "bonjour"})
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/translate", seconds=5.0)
+    assert r.status_code == 200 and r.json()["text"] == "bonjour"
+    assert [(u.status, u.audio_seconds) for u in store.usage] == [(200, 5.0)]
 
 
 # ---------------------------------------------------------------- what counts against the allowance
