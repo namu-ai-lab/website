@@ -148,3 +148,6 @@ them: both Hugging Face tokens (the `huggingface-token` Modal secret), and the O
   `--rotate-gateway-password` sets a new password for this database and saves it (then `npm run modal:secrets` and
   redeploy the gateway).
 
+Before the first run against production, run it on a Neon branch of production: `--dry-run` should list `0001`–`0004`
+as recorded and `0005` as pending; the real run should apply only `0005`; a second run should say "no migrations
+pending". Then check that `.env.local` still names production in `GATEWAY_DATABASE_URL` (the runner warns if not).
