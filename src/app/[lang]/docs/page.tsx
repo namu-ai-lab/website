@@ -38,7 +38,7 @@ export default async function Docs({ params }: { params: Promise<{ lang: string 
           <section id="quickstart">
             <h2 className="h2">{d.quickH}</h2>
             <ol>{d.quick.map(q => <li key={q}>{q}</li>)}</ol>
-            <CodeTabs code={code.speech} copyLabel={k.copy} copiedLabel={k.copied} />
+            <CodeTabs code={code.speech} copyLabel={k.copy} copiedLabel={k.copied} failedLabel={k.copyFailed} />
             <p className="meta">{k.base}: <code>{apiBase}</code></p>
           </section>
 
@@ -58,7 +58,7 @@ export default async function Docs({ params }: { params: Promise<{ lang: string 
               <dl className="docs-params">{e.params.map(([p, v]) => <div key={p}><dt><code>{p}</code></dt><dd>{v}</dd></div>)}</dl>
               <h3 className="h3">{d.returnsH}</h3>
               <p><code>{e.returns}</code></p>
-              <CodeTabs code={code[e.id]} copyLabel={k.copy} copiedLabel={k.copied} />
+              <CodeTabs code={code[e.id]} copyLabel={k.copy} copiedLabel={k.copied} failedLabel={k.copyFailed} />
             </section>
           ))}
 

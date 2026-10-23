@@ -7,6 +7,7 @@
    with the audio. Converse is a live call, so it points to the home page's call instead of running here. */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { CopyButton } from "./ui/CopyButton";
 import { AgentOrb } from "./VoiceReel";
 import { API_DEMO, apiCopy, type ApiTask } from "@/content/api";
 import { lp, type Lang } from "@/i18n/config";
@@ -64,15 +65,17 @@ export function Highlight({ code, lang }: { code: string; lang: CodeLang | "json
 }
 
 /* ---------------------------------------------------------------- audio: play, follow, draw */
+/* After unmount it plays nothing, and its AudioContext is closed with it. */
 function useAudio() {
   const el = useRef<HTMLAudioElement | null>(null), analyser = useRef<AnalyserNode | null>(null), url = useRef<string | null>(null);
+  const context = useRef<AudioContext | null>(null), disposed = useRef(false);
   const amp = useRef(0), [playing, setPlaying] = useState<string | null>(null), [progress, setProgress] = useState(0);
   const ensure = () => {
     if (el.current) return el.current;
     const a = new Audio();
     a.onended = a.onpause = () => { setPlaying(null); amp.current = 0; };
     try {
-      const ctx = new AudioContext(), node = ctx.createAnalyser(); node.fftSize = 512;
+      const ctx = (context.current = new AudioContext()), node = ctx.createAnalyser(); node.fftSize = 512;
       ctx.createMediaElementSource(a).connect(node); node.connect(ctx.destination);
       analyser.current = node; a.addEventListener("play", () => { void ctx.resume(); });
     } catch { /* no Web Audio: the sound still plays, the orb stays calm */ }
@@ -94,8 +97,17 @@ function useAudio() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [playing]);
-  useEffect(() => () => { el.current?.pause(); if (url.current) URL.revokeObjectURL(url.current); }, []);
+  useEffect(() => {
+    disposed.current = false;
+    return () => {
+      disposed.current = true;
+      el.current?.pause(); el.current = null; analyser.current = null;
+      if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
+      void context.current?.close().catch(() => {}); context.current = null;
+    };
+  }, []);
   const play = (id: string, src: Blob | string) => {
+    if (disposed.current) return;
     const a = ensure();
     if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
     a.src = typeof src === "string" ? src : (url.current = URL.createObjectURL(src));
@@ -138,7 +150,7 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
   const [sample, setSample] = useState(0);
   const [busy, setBusy] = useState(false), [waking, setWaking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
-  const [copied, setCopied] = useState(false);
+  const codeEl = useRef<HTMLElement>(null);
   const [sampleBars, setSampleBars] = useState<number[]>([]);
   const audio = useAudio();
   useWakeOnFirstTouch();
@@ -148,7 +160,11 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
   const code = useMemo(() => requestCode(task, codeLang, base, { text, voice, file: task === "converse" ? "turn.wav" : fileOf(clip.src), target }),
     [task, codeLang, base, text, voice, clip.src, target]);
 
-  useEffect(() => { setResult(null); audio.stop(); }, [task, target]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* one request at a time, abandoned when the task or the direction changes or the page goes, so a speech reply
+     cannot land (and play) under Transcribe */
+  const req = useRef<AbortController | null>(null);
+  useEffect(() => { req.current?.abort(); setResult(null); audio.stop(); }, [task, target]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => req.current?.abort(), []);
   useEffect(() => {
     if (task !== "transcribe" && task !== "translate") return;
     let live = true;
@@ -174,33 +190,38 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
 
   async function run() {
     if (busy || task === "converse") return;
+    const ac = (req.current = new AbortController()), { signal } = ac;
     setBusy(true); setResult(null); audio.stop();
     const t0 = performance.now();
     try {
       let res: Response;
       if (task === "speech") {
-        res = await fetch("/api/demo/speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.trim(), voice }) });
+        res = await fetch("/api/demo/speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.trim(), voice }), signal });
       } else {
-        const body = await (await fetch(clip.src)).arrayBuffer();
-        res = await fetch(`/api/demo/${task}${task === "translate" ? `?target=${target}` : ""}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
+        const body = await (await fetch(clip.src, { signal })).arrayBuffer();
+        res = await fetch(`/api/demo/${task}${task === "translate" ? `?target=${target}` : ""}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body, signal });
       }
       const ms = performance.now() - t0;
       if (!res.ok) {
         const j = await res.json().catch(() => null) as { error?: { type?: string } } | null;
+        if (signal.aborted) return;
         const message = res.status === 429 ? t.limited : res.status === 503 || res.status === 404 ? t.unavailable : j?.error?.type === "text_too_long" ? t.tooLong : t.failed;
         setResult({ status: res.status, ms, kind: "error", message });
       } else if (task === "speech") {
-        const blob = await res.blob();
-        setResult({ status: res.status, ms, kind: "audio", blob, seconds: res.headers.get("x-audio-seconds") ?? "", bars: await peaks(blob) });
+        const blob = await res.blob(), bars = await peaks(blob);
+        if (signal.aborted) return;
+        setResult({ status: res.status, ms, kind: "audio", blob, seconds: res.headers.get("x-audio-seconds") ?? "", bars });
         audio.play("out", blob);
       } else {
         const json = await res.json() as Record<string, unknown>;
+        if (signal.aborted) return;
         const b64 = typeof json.audio === "string" ? json.audio : null;
         setResult({ status: res.status, ms, kind: "json", json, audio: b64 ? new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: "audio/wav" }) : undefined });
       }
     } catch {
+      if (signal.aborted) return;
       setResult({ status: 0, ms: performance.now() - t0, kind: "error", message: t.failed });
-    } finally { setBusy(false); }
+    } finally { if (req.current === ac) { req.current = null; setBusy(false); } }
   }
 
   /* the generated speech as a file to save, released when the next result replaces it */
@@ -264,11 +285,9 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
               <div className="ar-langs" role="radiogroup" aria-label={t.code}>
                 {CODE_LANGS.map(l => <button key={l} type="button" role="radio" aria-checked={codeLang === l} onClick={() => setCodeLang(l)}>{l}</button>)}
               </div>
-              <button type="button" className="ar-copy" onClick={() => { void navigator.clipboard?.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }); }}>
-                <Icon name={copied ? "check" : "copy"} size={14} stroke={1.7} />{copied ? t.copied : t.copy}
-              </button>
+              <CopyButton text={code} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={codeEl} className="ar-copy" icon={{ size: 14, stroke: 1.7 }} />
             </div>
-            <pre tabIndex={0}><code><Highlight code={code} lang={codeLang} /></code></pre>
+            <pre tabIndex={0}><code ref={codeEl}><Highlight code={code} lang={codeLang} /></code></pre>
             <div className="ar-code-foot">
               <span>{t.note}</span>
               {task === "converse"

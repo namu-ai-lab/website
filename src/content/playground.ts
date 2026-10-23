@@ -26,7 +26,7 @@ export type PlaygroundCopy = {
   listen: {
     record: string; stop: string; upload: string; samples: string; idle: string; idleTranslate: { fr: string; ha: string };
     listening: (s: number) => string; transcribing: string; translating: string; result: string; empty: string; emptyTranslate: string;
-    heard: string; translation: string; playTranslation: string; copy: string; copied: string; langs: { ha: string; fr: string };
+    heard: string; translation: string; playTranslation: string; copy: string; copied: string; copyFailed: string; langs: { ha: string; fr: string };
     mic: string; tooLong: string; trimmed: string; unheard: string; badFile: string; seconds: (s: string) => string; limit: string;
     direction: string; dirs: { fr: string; ha: string };
   };
@@ -142,7 +142,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
       idleTranslate: { fr: "Speak Hausa for up to 15 seconds: Kora answers in French.", ha: "Speak French for up to 15 seconds: Kora answers in Hausa." },
       listening: s => `Listening… ${s} s left. Tap to stop.`, transcribing: "Transcribing…", translating: "Translating…",
       result: "Transcript", empty: "What Tatsuniya hears will be written here.", emptyTranslate: "Kora’s translation will appear here.",
-      heard: "Heard", translation: "Translation", playTranslation: "Play the translation", copy: "Copy", copied: "Copied", langs: { ha: "Hausa", fr: "French" },
+      heard: "Heard", translation: "Translation", playTranslation: "Play the translation", copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", langs: { ha: "Hausa", fr: "French" },
       mic: "Allow the microphone to record, or upload a clip instead.", tooLong: "Keep it under 15 seconds.", trimmed: "Only the first 15 seconds were sent.",
       unheard: "Nothing could be heard in that clip. Try again a little closer to the microphone.", badFile: "That file could not be read as audio.",
       seconds: s => `${s} s of audio`, limit: "Live demo: up to 15 seconds a clip.",
@@ -180,7 +180,7 @@ export const playground: Record<Lang, PlaygroundCopy> = {
       idleTranslate: { fr: `Parlez haoussa jusqu’à 15 secondes${n}: Kora répond en français.`, ha: `Parlez français jusqu’à 15 secondes${n}: Kora répond en haoussa.` },
       listening: s => `À l’écoute… encore ${s}${n}s. Touchez pour arrêter.`, transcribing: "Transcription…", translating: "Traduction…",
       result: "Transcription", empty: "Ce que Tatsuniya entend s’écrira ici.", emptyTranslate: "La traduction de Kora s’affichera ici.",
-      heard: "Entendu", translation: "Traduction", playTranslation: "Écouter la traduction", copy: "Copier", copied: "Copié", langs: { ha: "Haoussa", fr: "Français" },
+      heard: "Entendu", translation: "Traduction", playTranslation: "Écouter la traduction", copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`, langs: { ha: "Haoussa", fr: "Français" },
       mic: "Autorisez le micro pour enregistrer, ou envoyez plutôt un extrait.", tooLong: "Restez sous les 15 secondes.", trimmed: "Seules les 15 premières secondes ont été envoyées.",
       unheard: "Rien n’a pu être entendu dans cet extrait. Réessayez un peu plus près du micro.", badFile: "Ce fichier n’a pas pu être lu comme de l’audio.",
       seconds: s => `${s}${n}s d’audio`, limit: `Démo en direct${n}: jusqu’à 15 secondes par extrait.`,

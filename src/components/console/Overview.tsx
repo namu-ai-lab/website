@@ -13,7 +13,7 @@ import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 import { SCOPES, type Scope } from "@/lib/key-shape";
 
-export type Recent = { id: string; created_at: string; endpoint: Scope; status: number; latency_ms: number; key_name: string | null; is_service: boolean | null };
+export type Recent = { id: string; created_at: Date; endpoint: Scope; status: number; latency_ms: number; key_name: string | null; is_service: boolean | null };
 export type Point = { requests: number; errors: number; audioMin: number; chars: number; latencyMs: number | null };
 export type HomeRange = "24h" | "7d" | "14d" | "30d";
 const PATH: Record<Scope, string> = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" };
@@ -113,7 +113,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
                 <span className="cx-recent-what"><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}
                   <em>{r.is_service ? t.playgroundKey : r.key_name ?? "–"}</em></span>
                 <span className="cx-muted cx-small">{nf.format(r.latency_ms / 1000)} s</span>
-                <span className="cx-muted cx-small cx-recent-when"><LocalTime iso={new Date(r.created_at).toISOString()} lang={lang} rel /></span>
+                <span className="cx-muted cx-small cx-recent-when"><LocalTime iso={r.created_at.toISOString()} lang={lang} rel /></span>
               </li>
             ))}</ul>
           )}

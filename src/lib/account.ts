@@ -3,10 +3,14 @@ import { lp, type Lang } from "@/i18n/config";
 import { currentUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 
+/** A profile as the database driver returns it: pg reads timestamptz as Date. */
 export type Profile = {
   user_id: string; email: string | null; name: string | null; beta_status: "pending" | "approved" | "denied"; role: "user" | "admin";
-  use_case: string | null; monthly_audio_seconds: number; created_at: string;
+  use_case: string | null; monthly_audio_seconds: number; created_at: Date;
 };
+/** A profile as the browser holds it (the admin page and /api/admin/beta): its date as an ISO string. */
+export type ProfileRow = Omit<Profile, "created_at"> & { created_at: string };
+export const profileRow = (p: Profile): ProfileRow => ({ ...p, created_at: p.created_at.toISOString() });
 
 /* Users live in Neon Auth's own schema (neon_auth."user", uuid ids); profiles keep the id as text. */
 const PROFILE = `select p.user_id, u.email, u.name, p.beta_status, p.role, p.use_case, p.monthly_audio_seconds, p.created_at

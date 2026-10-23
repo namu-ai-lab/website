@@ -1,8 +1,9 @@
 /* Audio in the browser for the console Playground: any clip (a recording, an upload, a sample) becomes 16 kHz mono
    16-bit WAV, the format every Namu speech model reads, resampled properly by an OfflineAudioContext; and any clip
-   can be summarised as peaks for a waveform. Client-only. */
+   can be summarised as peaks for a waveform. A clip also keeps its original bytes (`source`), which are far smaller
+   than the WAV for anything compressed, so a long clip can still be sent. Client-only. */
 
-export type Clip = { wav: Blob; seconds: number; peaks: number[]; name: string };
+export type Clip = { wav: Blob; source: Blob; seconds: number; peaks: number[]; name: string };
 
 const RATE = 16000;
 
@@ -41,7 +42,7 @@ export async function toClip(blob: Blob, name: string): Promise<Clip> {
   const node = off.createBufferSource();
   node.buffer = src; node.connect(off.destination); node.start();
   const mono = (await off.startRendering()).getChannelData(0);
-  return { wav: encodeWav(mono, RATE), seconds: src.duration, peaks: peaksOf(mono), name };
+  return { wav: encodeWav(mono, RATE), source: blob, seconds: src.duration, peaks: peaksOf(mono), name };
 }
 
 /** Peaks of audio that came back from the API (a WAV blob or base64). */
@@ -51,14 +52,22 @@ export async function peaksOfBlob(blob: Blob): Promise<number[]> {
 
 export const b64ToBlob = (b64: string, type = "audio/wav") => new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type });
 
-/* The microphone, recorded with MediaRecorder; `level` (0..1) follows the voice for a meter. Stops by itself at `maxS`. */
+/* The microphone, recorded with MediaRecorder; `level` (0..1) follows the voice for a meter. Stops by itself at `maxS`.
+   64 kbit/s is plenty for speech and keeps five minutes near 2.3 MB, under the Playground's upload limit (Chrome's
+   default, 128 kbit/s, would make 4.4 MB). */
+const RECORD_BPS = 64_000;
 export class Recorder {
   level = 0;
   private stream?: MediaStream; private rec?: MediaRecorder; private chunks: Blob[] = [];
   private ctx?: AudioContext; private analyser?: AnalyserNode; private raf = 0; private timer = 0;
+  private stopped = false;
 
+  /** Opens the microphone and records. If stop() comes while the permission prompt is still open, the microphone is
+      released as soon as it is granted and nothing is recorded. */
   async start(maxS: number, onAutoStop: () => void) {
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    if (this.stopped) { stream.getTracks().forEach(t => t.stop()); return; }
+    this.stream = stream;
     this.ctx = new AudioContext();
     this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 1024;
     this.ctx.createMediaStreamSource(this.stream).connect(this.analyser);
@@ -71,13 +80,15 @@ export class Recorder {
     };
     tick();
     this.chunks = [];
-    this.rec = new MediaRecorder(this.stream);
+    this.rec = new MediaRecorder(this.stream, { audioBitsPerSecond: RECORD_BPS });
     this.rec.ondataavailable = e => { if (e.data.size) this.chunks.push(e.data); };
     this.rec.start();
     this.timer = window.setTimeout(onAutoStop, maxS * 1000);
   }
 
+  /** Safe at any point, including while start() is still waiting for the microphone. */
   stop(): Promise<Blob> {
+    this.stopped = true;
     clearTimeout(this.timer); cancelAnimationFrame(this.raf); this.level = 0;
     return new Promise(resolve => {
       const done = () => {

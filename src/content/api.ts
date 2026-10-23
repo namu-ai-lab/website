@@ -24,7 +24,7 @@ export type ApiCopy = {
   meta: [string, string];
   status: string; h1: string; lede: string; start: string; docs: string; facts: string[];
   run: {
-    label: string; input: string; code: string; response: string; copy: string; copied: string;
+    label: string; input: string; code: string; response: string; copy: string; copied: string; copyFailed: string;
     go: string; going: string; waking: string; again: string; idle: (model: string) => string; yours: string; note: string;
     voice: string; voices: { id: "nadia" | "salim"; name: string }[]; text: string; count: (n: number, max: number) => string;
     sample: string; listen: string; direction: string; dirs: { fr: string; ha: string }; play: string; stop: string; download: string;
@@ -51,7 +51,7 @@ const en: ApiCopy = {
   start: "Get an API key", docs: "Read the docs",
   facts: ["Free during the beta", "30 minutes of audio a month", "No card needed"],
   run: {
-    label: "Try the API", input: "Input", code: "Request", response: "Response", copy: "Copy", copied: "Copied",
+    label: "Try the API", input: "Input", code: "Request", response: "Response", copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected",
     go: "Run", going: "Running…", waking: "Waking the model. The first request after a quiet spell can take up to a minute.", again: "Run again",
     idle: m => `Press Run to call ${m}, live.`, yours: "this request",
     note: "A real request to the live model, through the site’s demo key and its smaller limits.",
@@ -180,7 +180,7 @@ const frCopy: ApiCopy = {
   start: "Obtenir une clé d’API", docs: "Lire la documentation",
   facts: ["Gratuit pendant la bêta", "30 minutes d’audio par mois", "Sans carte bancaire"],
   run: {
-    label: "Essayer l’API", input: "Entrée", code: "Requête", response: "Réponse", copy: "Copier", copied: "Copié",
+    label: "Essayer l’API", input: "Entrée", code: "Requête", response: "Réponse", copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`,
     go: "Lancer", going: "En cours…", waking: "Réveil du modèle. Après un moment d’inactivité, la première requête peut prendre jusqu’à une minute.", again: "Relancer",
     idle: m => `Appuyez sur Lancer pour appeler ${m}, en direct.`, yours: "cette requête",
     note: "Une vraie requête au modèle en direct, avec la clé de démonstration du site et ses limites réduites.",

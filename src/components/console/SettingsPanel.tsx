@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "../Icon";
+import { CopyButton } from "../ui/CopyButton";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -24,7 +25,7 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
   const t = consoleCopy[lang].settings, router = useRouter();
   const [name, setName] = useState(me.name);
   const [nameState, setNameState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [copied, setCopied] = useState(false);
+  const idEl = useRef<HTMLElement>(null);
   const [methods, setMethods] = useState<string[] | null>(null);
   const [cur, setCur] = useState(""), [next, setNext] = useState("");
   const [pw, setPw] = useState<{ state: "idle" | "saving" | "done"; err?: string }>({ state: "idle" });
@@ -88,11 +89,8 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
         <div className="cx-card-head"><h2>{t.accountH}</h2></div>
         <div className="cx-set-row">
           <span>{t.id}</span>
-          <div className="cx-set-ctl"><code className="cx-secret">{me.id}</code>
-            <button type="button" className="cx-icon-btn" aria-label={t.copy} title={copied ? t.copied : t.copy}
-              onClick={async () => { await navigator.clipboard.writeText(me.id); setCopied(true); setTimeout(() => setCopied(false), 1600); }}>
-              <Icon name={copied ? "check" : "copy"} size={16} stroke={1.6} />
-            </button></div>
+          <div className="cx-set-ctl"><code className="cx-secret" ref={idEl}>{me.id}</code>
+            <CopyButton text={me.id} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={idEl} className="cx-icon-btn" iconOnly /></div>
         </div>
         <div className="cx-set-row"><span>{t.since}</span><div className="cx-set-ctl"><span className="cx-set-val">{date}</span></div></div>
         <div className="cx-set-row"><span>{t.plan}</span><div className="cx-set-ctl"><span className="cx-set-val">{t.planValue(String(Math.round(allowanceMin)))}</span></div></div>
@@ -109,8 +107,11 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
           <form className="cx-set-row" onSubmit={changePassword}>
             <span>{t.passwordH}</span>
             <div className="cx-set-ctl cx-set-stack">
-              <input className="cx-input" type="password" autoComplete="current-password" placeholder={t.current} value={cur} onChange={e => { setCur(e.target.value); setPw({ state: "idle" }); }} required />
-              <input className="cx-input" type="password" autoComplete="new-password" placeholder={t.next} value={next} minLength={8} onChange={e => { setNext(e.target.value); setPw({ state: "idle" }); }} required />
+              {/* visible labels, not placeholders that vanish as soon as one types */}
+              <label className="cx-set-field"><span>{t.current}</span>
+                <input className="cx-input" type="password" autoComplete="current-password" value={cur} onChange={e => { setCur(e.target.value); setPw({ state: "idle" }); }} required /></label>
+              <label className="cx-set-field"><span>{t.next}</span>
+                <input className="cx-input" type="password" autoComplete="new-password" value={next} minLength={8} onChange={e => { setNext(e.target.value); setPw({ state: "idle" }); }} required /></label>
               <div className="cx-set-acts">
                 <button type="submit" className="cx-btn" disabled={pw.state === "saving" || !cur || !next}>{pw.state === "saving" ? t.changing : t.change}</button>
                 {pw.err ? <span className="cx-error" role="alert">{pw.err}</span>

@@ -24,7 +24,7 @@ const RANGES = { "24h": "1 day", "7d": "7 days", "30d": "30 days" } as const;
 type Range = keyof typeof RANGES;
 const PAGE = 50;
 
-type Row = { id: string; created_at: string; endpoint: Scope; status: number; audio_seconds: string; characters: number; latency_ms: number;
+type Row = { id: string; created_at: Date; endpoint: Scope; status: number; audio_seconds: string; characters: number; latency_ms: number;
   key_name: string | null; prefix: string | null; is_service: boolean | null };
 
 /* Logs, after platform.openai.com/logs: every request from this account, newest first, fifty at a time, filtered by
@@ -41,8 +41,12 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
   const status = sp.status === "ok" || sp.status === "errors" ? sp.status : "";
   const keys = await sql<{ id: string; name: string; prefix: string }>("select id, name, prefix from public.api_keys where user_id = $1 order by created_at desc", [user.id]);
   const key = sp.key === "playground" || keys.some(k => k.id === sp.key) ? sp.key! : "";
-  const [beforeTs, beforeId] = (sp.before ?? "").split("_");
-  const before = beforeTs && /^\d+$/.test(beforeId ?? "") && !Number.isNaN(Date.parse(beforeTs)) ? { ts: beforeTs, id: beforeId } : null;
+  /* Older pages by id alone: it is an identity column, so it only grows, and unlike a timestamp it round-trips exactly.
+     The old (created_at, id) cursor went through toISOString(), which drops Postgres's microseconds, so rows in the
+     same millisecond as a page's last row were skipped. Links in the old `<time>_<id>` form still work: the id is
+     the part after "_". */
+  const beforeId = (sp.before ?? "").split("_").pop() ?? "";
+  const before = /^\d{1,19}$/.test(beforeId) ? beforeId : null;
 
   // Every condition is a bound parameter; the user id always comes first.
   const args: unknown[] = [user.id, RANGES[range]];
@@ -52,15 +56,15 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
   if (status === "errors") where.push("e.status >= 400");
   if (key === "playground") where.push("k.is_service");
   else if (key) { args.push(key); where.push(`e.key_id = $${args.length}`); }
-  if (before) { args.push(before.ts, before.id); where.push(`(e.created_at, e.id) < ($${args.length - 1}::timestamptz, $${args.length}::bigint)`); }
+  if (before) { args.push(before); where.push(`e.id < $${args.length}::bigint`); }
   const rows = await sql<Row>(`select e.id::text, e.created_at, e.endpoint, e.status, e.audio_seconds, e.characters, e.latency_ms,
       k.name as key_name, k.prefix, k.is_service
     from public.usage_events e left join public.api_keys k on k.id = e.key_id
-    where ${where.join(" and ")} order by e.created_at desc, e.id desc limit ${PAGE + 1}`, args);
+    where ${where.join(" and ")} order by e.id desc limit ${PAGE + 1}`, args);
   const more = rows.length > PAGE, page = rows.slice(0, PAGE);
   const last = page[page.length - 1];
   const keep = new URLSearchParams(Object.entries({ range: range === "7d" ? "" : range, model, status, key }).filter(([, v]) => v) as [string, string][]);
-  const olderHref = last ? `?${new URLSearchParams([...keep, ["before", `${new Date(last.created_at).toISOString()}_${last.id}`]])}` : "";
+  const olderHref = last ? `?${new URLSearchParams([...keep, ["before", last.id]])}` : "";
   const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
   const keyLabel = (r: Row) => (r.is_service ? t.playground : r.key_name ?? t.deletedKey);
 
@@ -89,7 +93,7 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
             </tr></thead>
             <tbody>{page.map(r => (
               <tr key={r.id}>
-                <td className="cx-when" data-label={t.th.time}><LocalTime iso={new Date(r.created_at).toISOString()} lang={lang} /></td>
+                <td className="cx-when" data-label={t.th.time}><LocalTime iso={r.created_at.toISOString()} lang={lang} /></td>
                 <td className="c-main c-first"><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></td>
                 <td data-label={t.th.key}>{keyLabel(r)}{r.prefix && !r.is_service && <code className="cx-ep">{r.prefix}…</code>}</td>
                 <td className="c-corner"><span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span></td>

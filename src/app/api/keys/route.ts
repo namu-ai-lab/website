@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { profileOf } from "@/lib/account";
 import { sql } from "@/lib/db";
-import { KEY_COLUMNS as COLUMNS, MAX_ACTIVE_KEYS, displayPrefix, generateKey, hashKey, isScopeList, type KeyRow } from "@/lib/keys";
+import { KEY_COLUMNS as COLUMNS, MAX_ACTIVE_KEYS, displayPrefix, generateKey, hashKey, isScopeList, keyRow, type KeyRecord } from "@/lib/keys";
 import { fail, signedIn } from "@/lib/http";
 
 /* The dashboard's key operations. Keys are minted here, on the server: the browser sees the secret once,
@@ -12,8 +12,8 @@ const noStore = { headers: { "Cache-Control": "no-store" } };
 export async function GET(req: NextRequest) {
   const s = await signedIn(req, false);
   if (s.e) return s.e;
-  const data = await sql<KeyRow>(`select ${COLUMNS} from public.api_keys where user_id = $1 order by created_at desc`, [s.user.id]);
-  return NextResponse.json({ data }, noStore);
+  const data = await sql<KeyRecord>(`select ${COLUMNS} from public.api_keys where user_id = $1 order by created_at desc`, [s.user.id]);
+  return NextResponse.json({ data: data.map(keyRow) }, noStore);
 }
 
 export async function POST(req: NextRequest) {
@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
   if (n >= MAX_ACTIVE_KEYS) return fail(409, "too_many_keys", `Revoke a key first: ${MAX_ACTIVE_KEYS} active keys at most.`);
 
   const key = generateKey();
-  const [data] = await sql<KeyRow>(
+  const [data] = await sql<KeyRecord>(
     `insert into public.api_keys (user_id, name, prefix, key_hash, scopes) values ($1, $2, $3, $4, $5) returning ${COLUMNS}`,
     [s.user.id, name, displayPrefix(key), hashKey(key), scopes]);
-  return NextResponse.json({ key, data }, { status: 201, ...noStore });
+  return NextResponse.json({ key, data: keyRow(data) }, { status: 201, ...noStore });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -42,11 +42,11 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id") ?? "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return fail(400, "bad_id", "Unknown key.");
   // Scoped to the caller: one account can never revoke another's key, even with its id.
-  const [data] = await sql<KeyRow>(
+  const [data] = await sql<KeyRecord>(
     `update public.api_keys set revoked_at = now() where id = $1 and user_id = $2 and revoked_at is null returning ${COLUMNS}`,
     [id, s.user.id]);
   if (!data) return fail(404, "not_found", "Unknown key.");
-  return NextResponse.json({ data }, noStore);
+  return NextResponse.json({ data: keyRow(data) }, noStore);
 }
 
 /* Edit a key, as on platform.openai.com: its name and the models it may call. The secret never changes; the gateway
@@ -61,10 +61,10 @@ export async function PATCH(req: NextRequest) {
   if (name === "") return fail(400, "missing_name", "Give the key a name.");
   if (body?.scopes !== undefined && !isScopeList(body.scopes)) return fail(400, "bad_scopes", "Pick at least one model.");
   const scopes = body?.scopes === undefined ? null : [...new Set(body.scopes as string[])];
-  const [data] = await sql<KeyRow>(
+  const [data] = await sql<KeyRecord>(
     `update public.api_keys set name = coalesce($3, name), scopes = coalesce($4, scopes)
      where id = $1 and user_id = $2 and revoked_at is null and not is_demo returning ${COLUMNS}`,
     [id, s.user.id, name, scopes]);
   if (!data) return fail(404, "not_found", "Unknown key.");
-  return NextResponse.json({ data }, noStore);
+  return NextResponse.json({ data: keyRow(data) }, noStore);
 }
