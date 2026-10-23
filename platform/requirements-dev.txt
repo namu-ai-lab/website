@@ -1,0 +1,8 @@
+# What platform/tests needs, pinned so a run today and a run next month test the same thing.
+#   python3 -m pip install -r platform/requirements-dev.txt
+#   python3 -m pytest platform/tests -q
+# Modal itself is not needed: platform/tests/conftest.py stands in for it when it is missing.
+pytest==9.1.1
+httpx==0.28.1
+fastapi==0.161.1
+python-multipart==0.0.32       # request.form(): the multipart uploads the gateway reads
