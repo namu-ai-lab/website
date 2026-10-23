@@ -99,6 +99,12 @@ KEY_CACHE_TTL = 30.0          # a revoked key stops working within this many sec
 UPSTREAM_TIMEOUT_S = {"demo": 95.0, "playground": 280.0, "api": 840.0}
 CONNECT_TIMEOUT_S = 10.0
 
+# Requests one gateway container serves at once (@modal.concurrent). Modal's default is one, which
+# made four slow calls, across four containers, an outage for everyone. A request spends nearly all
+# its time waiting for a model in a worker thread (off_loop), and the thread pool holds 40 threads,
+# shared with usage writes, so 32 leaves room. The database pool and the HTTP client are sized to it.
+MAX_INPUTS = 32
+
 KEY_PREFIX = "namu_sk_"
 
 
@@ -269,8 +275,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
     from fastapi.responses import JSONResponse, Response
     from starlette.concurrency import run_in_threadpool as off_loop
     from starlette.exceptions import HTTPException
-    # The store and upstream clients are blocking (httpx.Client). Every call to them
-    # goes through off_loop, so one slow GPU request never stalls the container.
+    # The store and upstream clients are blocking (httpx.Client, psycopg). Every call to them goes
+    # through off_loop, a worker thread, so while one request waits minutes for a GPU the event loop
+    # keeps serving the container's other requests (MAX_INPUTS of them).
 
     web = FastAPI(title="Namu API", version="1.0",
                   description="Speech models for the languages of the Sahel.",
@@ -630,8 +637,10 @@ class PostgresStore:
         # prepare_threshold=None: no server-side prepared statements, so Neon's
         # pooled (PgBouncer) endpoint is safe to use. Neon suspends an idle database
         # and drops its connections, so each one is checked before use, and idle ones
-        # are retired well before that happens.
-        self.pool = ConnectionPool(url, min_size=1, max_size=4, open=True, max_idle=120,
+        # are retired well before that happens. A request holds a connection only for a
+        # key lookup or a usage write, a few milliseconds, so 8 serve MAX_INPUTS requests
+        # (and four containers open at most 32 on Neon's pooled endpoint).
+        self.pool = ConnectionPool(url, min_size=1, max_size=8, open=True, max_idle=120,
                                    check=ConnectionPool.check_connection,
                                    kwargs={"prepare_threshold": None, "connect_timeout": 15})
 
@@ -688,7 +697,9 @@ class ModalUpstream:
         if proxy_key and proxy_secret:
             h = {"Modal-Key": proxy_key, "Modal-Secret": proxy_secret}
         self.urls = urls
-        self.http = httpx.Client(headers=h, transport=transport, follow_redirects=False)
+        # One connection per request in flight at most, and MAX_INPUTS requests per container.
+        self.http = httpx.Client(headers=h, transport=transport, follow_redirects=False,
+                                 limits=httpx.Limits(max_connections=MAX_INPUTS))
 
     def _post(self, url: str, timeout: float, **kw) -> UpstreamReply:
         deadline = time.monotonic() + timeout
@@ -786,6 +797,7 @@ image = (
     timeout=900,
     scaledown_window=600,
 )
+@modal.concurrent(max_inputs=MAX_INPUTS)
 @modal.asgi_app()
 def api():
     store = PostgresStore(os.environ["GATEWAY_DATABASE_URL"])
