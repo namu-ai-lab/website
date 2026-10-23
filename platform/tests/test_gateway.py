@@ -225,6 +225,30 @@ def test_audio_too_long_rejected_before_gpu(env):
     assert up.calls == []
 
 
+
+def test_a_declared_oversize_upload_is_refused_before_it_is_read(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/transcribe", headers={**auth(), "Content-Length": str(10**9)}, content=wav())
+    assert r.status_code == 413 and r.json()["error"]["type"] == "payload_too_large"
+    assert up.calls == []
+
+
+def test_a_raw_body_is_cut_off_at_the_cap(env, monkeypatch):
+    c, store, up, *_ = env
+    monkeypatch.setattr(gw, "MAX_UPLOAD_BYTES", 1000)
+    monkeypatch.setattr(gw, "MULTIPART_SLACK_BYTES", 0)
+    body = (b"\x00" * 500 for _ in range(10))            # chunked: no Content-Length to go by
+    r = c.post("/v1/transcribe", headers=auth(), content=body)
+    assert r.status_code == 413 and up.calls == []
+
+
+def test_a_multipart_file_over_the_cap_is_refused(env, monkeypatch):
+    c, store, up, *_ = env
+    monkeypatch.setattr(gw, "MAX_UPLOAD_BYTES", 1000)       # the 1 MB slack still lets the request in
+    r = post_audio(c, "/v1/transcribe")                     # one second of WAV: 32 KB
+    assert r.status_code == 413 and up.calls == []
+
+
 def test_demo_key_has_short_audio_cap(env):
     c, store, up, *_ = env
     r = post_audio(c, "/v1/transcribe", key=DEMO, seconds=gw.DEMO_MAX_AUDIO_SECONDS + 1)

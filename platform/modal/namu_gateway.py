@@ -85,6 +85,7 @@ PERSONAS = {"nadia", "salim"}
 
 # Limits. Demo keys are the server-held key behind the website's live demos.
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+MULTIPART_SLACK_BYTES = 1024 * 1024           # room for the multipart framing and the form's text fields
 MAX_AUDIO_SECONDS = 300.0
 MAX_TEXT_CHARS = 2000
 DEMO_MAX_AUDIO_SECONDS = 15.0
@@ -468,26 +469,48 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                                  {"Retry-After": str(retry)})
         return rec, None
 
+    async def read_capped(request: Request) -> bytes | None:
+        """A raw body, read no further than MAX_UPLOAD_BYTES; None if it is longer."""
+        chunks, size = [], 0
+        async for chunk in request.stream():
+            size += len(chunk)
+            if size > MAX_UPLOAD_BYTES:
+                return None
+            chunks.append(chunk)
+        return b"".join(chunks)
+
     async def read_audio(request: Request, rec: KeyRecord):
-        """-> (bytes, seconds, fields, None) or (None, None, None, error)."""
+        """-> (bytes, seconds, fields, None) or (None, None, None, error).
+
+        An oversized upload is refused before it is read into memory, which MAX_INPUTS requests
+        share: by its declared length, by the size of the spooled multipart file, or as a raw body
+        is streamed in.
+        """
+        too_big = err(413, "payload_too_large", "Audio must be 25 MB or smaller.")
+        declared = request.headers.get("content-length", "")
+        if declared.isdigit() and int(declared) > MAX_UPLOAD_BYTES + MULTIPART_SLACK_BYTES:
+            return None, None, None, too_big
         ct = request.headers.get("content-type", "")
         fields: dict[str, str] = {}
         if ct.startswith("multipart/form-data"):
-            form = await request.form()
+            form = await request.form()            # Starlette spools file parts to disk past 1 MB
             upload = form.get("file")
             if upload is None or isinstance(upload, str):
                 return None, None, None, err(400, "missing_file",
                                              "Send the audio as a multipart field named 'file'.")
+            if (upload.size or 0) > MAX_UPLOAD_BYTES:
+                return None, None, None, too_big
             data = await upload.read()
             fields = {k: v for k, v in form.items() if isinstance(v, str)}
         else:
-            data = await request.body()
+            data = await read_capped(request)
+            if data is None:
+                return None, None, None, too_big
             fields = dict(request.query_params)
         if not data:
             return None, None, None, err(400, "empty_audio", "The audio was empty.")
         if len(data) > MAX_UPLOAD_BYTES:
-            return None, None, None, err(413, "payload_too_large",
-                                         "Audio must be 25 MB or smaller.")
+            return None, None, None, too_big
         secs = await off_loop(audio_seconds, data)
         if secs is None:
             return None, None, None, err(415, "unsupported_audio",
