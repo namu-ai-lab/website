@@ -67,16 +67,16 @@ function demoMessage(e: unknown, c: PlaygroundCopy, kind: "text" | "audio" = "te
   if (e.status === 503 || e.status === 404) return c.live.unavailable;
   return c.live.failed;
 }
-async function speech(text: string, voice: string): Promise<{ blob: Blob; seconds: string }> {
-  const res = await demo("speech", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }) });
+async function speech(text: string, voice: string, signal?: AbortSignal): Promise<{ blob: Blob; seconds: string }> {
+  const res = await demo("speech", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }) }, signal);
   return { blob: await res.blob(), seconds: res.headers.get("x-audio-seconds") ?? "" };
 }
 
 /* Each example was spoken by Tafiya through the API beforehand (public/demo/<script>-<voice>.m4a, the best of five takes)
    and plays at once: the example is heard the moment it is picked, with no wait for a sleeping model, and it is the
    model's real output. Text the visitor types or edits is always generated live. */
-async function recorded(script: string, voice: string): Promise<Blob | null> {
-  try { const r = await fetch(`/demo/${script}-${voice}.m4a`); return r.ok ? await r.blob() : null; } catch { return null; }
+async function recorded(script: string, voice: string, signal?: AbortSignal): Promise<Blob | null> {
+  try { const r = await fetch(`/demo/${script}-${voice}.m4a`, { signal }); return r.ok ? await r.blob() : null; } catch { return null; }
 }
 
 /** True once a request has been waiting long enough that the model is probably waking up. */
@@ -273,6 +273,11 @@ function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
   const cache = useRef(new Map<string, Blob>());     // each voice and text is generated once per visit
   const box = useRef<HTMLTextAreaElement>(null);
   const waking = useWaking(busy);
+  /* a request still out when the tab closes is abandoned; one that comes back after the voice or the text changed is
+     kept in the cache but not played */
+  const req = useRef<AbortController | null>(null);
+  const shown = useRef(""); shown.current = `${vs[vi].id}\n${text.trim()}`;
+  useEffect(() => () => req.current?.abort(), []);
   useEffect(() => {                                   // the box is as tall as its text, no taller
     const el = box.current;
     if (!el) return;
@@ -291,9 +296,11 @@ function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
     let blob = cache.current.get(k);
     if (!blob) {
       setBusy(true);
-      try { blob = (example && await recorded(example.id, voice)) || (await speech(body, voice)).blob; cache.current.set(k, blob); }
-      catch (e) { setError(demoMessage(e, c, "text")); return; }
+      const ac = (req.current = new AbortController());
+      try { blob = (example && await recorded(example.id, voice, ac.signal)) || (await speech(body, voice, ac.signal)).blob; cache.current.set(k, blob); }
+      catch (e) { if (!ac.signal.aborted) setError(demoMessage(e, c, "text")); return; }
       finally { setBusy(false); }
+      if (shown.current !== k) return;
     }
     keepClip(blob, blob.type.includes("mp4") || blob.type.includes("m4a") ? `tafiya-${voice}-${example?.id ?? "clip"}.m4a` : `tafiya-${voice}.wav`);
     player.play(blob);
@@ -349,9 +356,11 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
   const file = useRef<HTMLInputElement>(null);
   const waking = useWaking(busy);
   const rec = useRecorder(amp, wav => { void send(wav); });
-  useEffect(() => () => abort.current?.abort(), []);
+  const gone = useRef(false);       // the panel has closed: a sample or upload still being read is not sent
+  useEffect(() => { gone.current = false; return () => { gone.current = true; abort.current?.abort(); }; }, []);
 
   async function send(audio: Blob | ArrayBuffer) {
+    if (gone.current) return;
     abort.current?.abort();
     const ac = (abort.current = new AbortController());
     setBusy(true); setError(null); setOut(null);
@@ -539,10 +548,13 @@ function Api({ lang }: { lang: Lang }) {
   const [error, setError] = useState<string | null>(null);
   const amp = useRef(0);
   const player = usePlayer(amp);
+  const req = useRef<AbortController | null>(null);
+  useEffect(() => () => req.current?.abort(), []);      // closing the tab abandons the request: nothing plays later
   async function run() {
+    const ac = (req.current = new AbortController());
     setState("running"); setError(null);
-    try { const out = await speech(SAMPLE, "nadia"); setClip(out); setState("done"); player.play(out.blob); }
-    catch (e) { setError(demoMessage(e, c)); setState("idle"); }
+    try { const out = await speech(SAMPLE, "nadia", ac.signal); setClip(out); setState("done"); player.play(out.blob); }
+    catch (e) { if (ac.signal.aborted) return; setError(demoMessage(e, c)); setState("idle"); }
   }
   return (
     <div className="pg-api">

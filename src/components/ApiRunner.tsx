@@ -159,7 +159,11 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
   const code = useMemo(() => requestCode(task, codeLang, base, { text, voice, file: task === "converse" ? "turn.wav" : fileOf(clip.src), target }),
     [task, codeLang, base, text, voice, clip.src, target]);
 
-  useEffect(() => { setResult(null); audio.stop(); }, [task, target]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* one request at a time, abandoned when the task or the direction changes or the page goes, so a speech reply
+     cannot land (and play) under Transcribe */
+  const req = useRef<AbortController | null>(null);
+  useEffect(() => { req.current?.abort(); setResult(null); audio.stop(); }, [task, target]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => req.current?.abort(), []);
   useEffect(() => {
     if (task !== "transcribe" && task !== "translate") return;
     let live = true;
@@ -185,33 +189,38 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
 
   async function run() {
     if (busy || task === "converse") return;
+    const ac = (req.current = new AbortController()), { signal } = ac;
     setBusy(true); setResult(null); audio.stop();
     const t0 = performance.now();
     try {
       let res: Response;
       if (task === "speech") {
-        res = await fetch("/api/demo/speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.trim(), voice }) });
+        res = await fetch("/api/demo/speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.trim(), voice }), signal });
       } else {
-        const body = await (await fetch(clip.src)).arrayBuffer();
-        res = await fetch(`/api/demo/${task}${task === "translate" ? `?target=${target}` : ""}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
+        const body = await (await fetch(clip.src, { signal })).arrayBuffer();
+        res = await fetch(`/api/demo/${task}${task === "translate" ? `?target=${target}` : ""}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body, signal });
       }
       const ms = performance.now() - t0;
       if (!res.ok) {
         const j = await res.json().catch(() => null) as { error?: { type?: string } } | null;
+        if (signal.aborted) return;
         const message = res.status === 429 ? t.limited : res.status === 503 || res.status === 404 ? t.unavailable : j?.error?.type === "text_too_long" ? t.tooLong : t.failed;
         setResult({ status: res.status, ms, kind: "error", message });
       } else if (task === "speech") {
-        const blob = await res.blob();
-        setResult({ status: res.status, ms, kind: "audio", blob, seconds: res.headers.get("x-audio-seconds") ?? "", bars: await peaks(blob) });
+        const blob = await res.blob(), bars = await peaks(blob);
+        if (signal.aborted) return;
+        setResult({ status: res.status, ms, kind: "audio", blob, seconds: res.headers.get("x-audio-seconds") ?? "", bars });
         audio.play("out", blob);
       } else {
         const json = await res.json() as Record<string, unknown>;
+        if (signal.aborted) return;
         const b64 = typeof json.audio === "string" ? json.audio : null;
         setResult({ status: res.status, ms, kind: "json", json, audio: b64 ? new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: "audio/wav" }) : undefined });
       }
     } catch {
+      if (signal.aborted) return;
       setResult({ status: 0, ms: performance.now() - t0, kind: "error", message: t.failed });
-    } finally { setBusy(false); }
+    } finally { if (req.current === ac) { req.current = null; setBusy(false); } }
   }
 
   /* the generated speech as a file to save, released when the next result replaces it */
