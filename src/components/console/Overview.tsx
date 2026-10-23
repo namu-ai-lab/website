@@ -11,6 +11,7 @@ import { Filters } from "./Filters";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
+import { numberFormat } from "@/i18n/format";
 import { SCOPES, type Scope } from "@/lib/key-shape";
 
 export type Recent = { id: string; created_at: string; endpoint: Scope; status: number; latency_ms: number; key_name: string | null; is_service: boolean | null };
@@ -43,7 +44,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
   { lang: Lang; range: HomeRange; series: Point[]; steps: [boolean, boolean, boolean]; notice?: ReactNode;
     usedMin: number; limitMin: number; resets: string; recent: Recent[] }) {
   const t = consoleCopy[lang].overview, m = consoleCopy[lang].keys.models, L = (p: string) => lp(lang, p);
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   const sum = (k: "requests" | "errors" | "audioMin" | "chars") => series.reduce((s, p) => s + p[k], 0);
   const requests = sum("requests"), errors = sum("errors");
   const ok = series.reduce((s, p) => s + (p.latencyMs === null ? 0 : p.requests - p.errors), 0);
