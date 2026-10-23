@@ -1,6 +1,6 @@
 export const site = {
   name: "Namu AI Lab",
-  url: "https://lab.namu-ai.org",
+  url: "https://www.namuai-lab.com",
   parent: { name: "Namu", url: "https://www.namu-ai.org" },
   description: "Namu AI Lab is the research unit of Namu. We study how machines hear, understand and answer in the languages of the Sahel.",
 };

@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { TallyLink } from "./Tally";
+import { track } from "@/lib/analytics";
 import { useCases, type UseCase } from "@/content/usecases";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -22,6 +23,7 @@ export function UseCases({ lang }: { lang: Lang }) {
   const play = (c: UseCase, k = 0) => {
     audio.current?.pause();
     if (k >= c.clips.length) { setPlaying(null); return; }
+    if (k === 0) track("example_play", { page: "home", case: c.id });
     const a = new Audio(c.clips[k].src);
     audio.current = a; setPlaying({ id: c.id, k });
     a.onended = () => { if (audio.current === a) play(c, k + 1); };

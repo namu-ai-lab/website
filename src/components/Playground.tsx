@@ -18,6 +18,7 @@ import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCo
 import { lp, type Lang } from "@/i18n/config";
 import { apiBase } from "@/lib/env";
 import { AirCall, TAP, wav16k, type CallState, type Persona } from "@/lib/call";
+import { track, type DemoMode } from "@/lib/analytics";
 import { useWakeOnFirstTouch } from "@/lib/wake";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -40,13 +41,19 @@ function useTicker(on: boolean, tick: (ms: number) => boolean | void) {
 class DemoError extends Error {
   constructor(readonly status: number, readonly type = "") { super(type || String(status)); }
 }
-/** POST to /api/demo/<path>; a failure carries the gateway's status and error type. */
+/** POST to /api/demo/<path>; a failure carries the gateway's status and error type. Each request is recorded as a
+ *  demo_run, ok or with the reason it failed (lib/analytics). */
 async function demo(path: string, init: RequestInit, signal?: AbortSignal): Promise<Response> {
-  const res = await fetch(`/api/demo/${path}`, { method: "POST", ...init, signal });
+  const mode = path.split("?")[0] as DemoMode;
+  let res: Response;
+  try { res = await fetch(`/api/demo/${path}`, { method: "POST", ...init, signal }); }
+  catch (e) { if (!signal?.aborted) track("demo_run", { mode, result: "network" }); throw e; }
   if (!res.ok) {
     const j = await res.json().catch(() => null) as { error?: { type?: string } } | null;
+    track("demo_run", { mode, result: j?.error?.type || String(res.status) });
     throw new DemoError(res.status, j?.error?.type ?? "");
   }
+  track("demo_run", { mode, result: "ok" });
   return res;
 }
 /** The failure, in words: the demo's limits by name, the rest as plainly as possible. */
@@ -339,7 +346,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
     if (rec.recording) { rec.stop(); return; }
     if (busy) return;
     player.stop(); reset(); setPicked(null); setOut(null);
-    try { await rec.start(); } catch { setError(t.mic); }
+    try { await rec.start(); } catch { setError(t.mic); track("mic_denied", { mode: mode === "stt" ? "transcribe" : "translate" }); }
   }
   async function sample(s: Sample) {
     rec.cancel(); reset(); setPicked(s.id);
@@ -433,9 +440,13 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
     setError(null);
     const k = new AirCall(persona, {
       state: s => { if (call.current === k) setState(s === "ended" ? "idle" : s); },
-      problem: p => setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed),
+      problem: p => {
+        setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed);
+        if (p === "mic") track("mic_denied", { mode: "converse" }); else track("demo_run", { mode: "converse", result: p });
+      },
     }, amp, reduced());
     call.current = k;
+    track("demo_run", { mode: "converse", result: "start" });
     void k.start();
   };
   const end = () => { call.current?.end(); call.current = null; setState("idle"); };

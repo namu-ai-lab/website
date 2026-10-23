@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { getNews, getPost, getPosts, getProgramme, fmtDate, monthYear } from "@/content";
 import { NewsArt } from "@/components/NewsArt";
 import { Share } from "@/components/PostTools";
+import { ReadDepth } from "@/components/ReadDepth";
 import { Icon } from "@/components/Icon";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 import { alternates } from "@/i18n/seo";
 import { localize } from "@/i18n/localize";
+import { site } from "@/content/site";
 
 export const dynamicParams = false;
 export function generateStaticParams() { return getPosts("en").map(p => ({ slug: p.slug })); }
@@ -39,8 +41,8 @@ export default async function PostPage({ params }: { params: Promise<{ lang: str
   const ld = {
     "@context": "https://schema.org", "@type": "BlogPosting", headline: post.title, description: post.dek, datePublished: post.date, inLanguage: lang,
     author: post.authors.length ? post.authors.map(name => ({ "@type": "Person", name })) : { "@type": "Organization", name: "Namu AI Lab" },
-    publisher: { "@type": "Organization", "@id": "https://lab.namu-ai.org/#org", name: "Namu AI Lab" },
-    mainEntityOfPage: `https://lab.namu-ai.org${L(`/research/${post.slug}`)}`,
+    publisher: { "@type": "Organization", "@id": `${site.url}/#org`, name: "Namu AI Lab" },
+    mainEntityOfPage: `${site.url}${L(`/research/${post.slug}`)}`,
   };
 
   return (
@@ -64,6 +66,7 @@ export default async function PostPage({ params }: { params: Promise<{ lang: str
         {post.origin && <div className="row"><span>{post.origin.label.replace(/ (on|sur) namu-ai\.org$/, "")}</span><a href={post.origin.href} className="textlink"><span>namu-ai.org</span><Icon name="external" size={14} stroke={1.6} /></a></div>}
         <div className="row"><span>{c.common.minRead(post.readMinutes)}</span><span>{byline}</span></div>
       </div>
+      <ReadDepth post={post.slug} />
 
       <section className="section" aria-labelledby="h-more" style={{ marginTop: 72 }}>
         <div className="wrap">

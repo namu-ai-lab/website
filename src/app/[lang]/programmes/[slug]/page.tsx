@@ -11,6 +11,7 @@ import { ProgrammeArt, darkArt } from "@/components/NewsArt";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 import { alternates } from "@/i18n/seo";
+import { site } from "@/content/site";
 
 export const dynamicParams = false;
 export function generateStaticParams() { return getProgrammes("en").map(p => ({ slug: p.slug })); }
@@ -55,7 +56,7 @@ export default async function ProgrammePage({ params }: { params: Promise<{ lang
   const dark = darkArt.has(p.slug);
   const pill = `pill lg ${dark ? "on-dark" : "frost"}`;
   const ld = { "@context": "https://schema.org", "@type": "ResearchProject", name: `${p.name}: ${p.title}`, description: p.sentence, inLanguage: lang,
-    parentOrganization: { "@type": "Organization", "@id": "https://lab.namu-ai.org/#org", name: "Namu AI Lab" } };
+    parentOrganization: { "@type": "Organization", "@id": `${site.url}/#org`, name: "Namu AI Lab" } };
 
   return (
     <article>
