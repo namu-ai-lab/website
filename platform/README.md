@@ -59,6 +59,15 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   (`X-Namu-Client-IP`); the gateway limits each IP to 30 requests per hour, 15 s of audio and 300 characters.
 - **Conversation memory** is namespaced by account (`user_id:session_id`).
 - **No content is stored**: `usage_events` holds durations, character counts, status codes and latency.
+- **What counts** against the allowance is one function, `billable_seconds` in the gateway: transcribe and translate
+  count the audio sent, speech the audio returned, converse both. A request that fails (any non-2xx, including a
+  502 or 504 the docs call safe to retry) is recorded with its status and 0 s. *Open question for the founder:*
+  translate can also return its translation spoken (`include_audio`); that audio is not counted today, and the
+  console says so. Counting it is a one-line change in `billable_seconds` plus the copy in `src/content`.
+- **Errors** all share `{ "error": { "type", "message", "request_id" } }`, including the gateway's 404, 405 and
+  500, and every response carries `X-Request-Id`. A model that does not answer is 502 `upstream_error`; one that
+  runs out of time is 504 `upstream_timeout` (95 s for the demo key, 280 s for the Playground, 840 s for developer
+  keys, following Modal's 303s for calls past 150 s); silence sent to translate or converse is 422 `nothing_heard`.
 - **Model services** do not answer the open internet (`REQUIRE_PROXY_AUTH = True` in each): Modal rejects requests
   without the proxy token at its edge, before a container (or a GPU) starts. Only Namu's own callers hold the token
   (the `namu-proxy-auth` Modal secret): the gateway, namu-agent and namu-interpret for the services they call, and
