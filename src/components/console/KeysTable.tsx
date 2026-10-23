@@ -8,6 +8,7 @@
    create dialog (the console's Home links here). */
 import { useEffect, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import { Icon } from "../Icon";
+import { CopyButton } from "../ui/CopyButton";
 import { consoleCopy } from "@/content/console";
 import { MAX_ACTIVE_KEYS, SCOPES, type KeyRow, type Scope } from "@/lib/key-shape";
 import type { Lang } from "@/i18n/config";
@@ -66,7 +67,6 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ key: string; name: string; scopes: Scope[] } | null>(null);
-  const [copied, setCopied] = useState<"secret" | "base" | "env" | null>(null);
   const [revoking, setRevoking] = useState<KeyRow | null>(null);
   const [editing, setEditing] = useState<KeyRow | null>(null);
   const [eName, setEName] = useState(""), [eAll, setEAll] = useState(true), [eChosen, setEChosen] = useState<Scope[]>([]);
@@ -83,7 +83,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const live = keys.filter(k => !k.revoked_at), gone = keys.filter(k => k.revoked_at);
   const scopes: Scope[] = all ? [...SCOPES] : chosen;
   const isAll = (s: Scope[]) => SCOPES.every(x => s.includes(x));
-  const copy = async (text: string, what: "secret" | "base" | "env") => { await navigator.clipboard.writeText(text); setCopied(what); setTimeout(() => setCopied(null), 1600); };
+  const copyLabels = { copy: t.copy, copied: t.copied, failed: t.copyFailed };
+  const baseEl = useRef<HTMLElement>(null), keyEl = useRef<HTMLElement>(null), envEl = useRef<HTMLElement>(null);   // selected if copying is refused
 
   async function create(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
@@ -142,8 +143,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     <>
       <div className="cx-toolbar">
         <div className="cx-base">
-          <span>{t.base}</span><code>{apiBase}</code>
-          <button type="button" className="cx-icon-btn" onClick={() => copy(apiBase, "base")} aria-label={t.copyBase} title={t.copyBase}><Icon name={copied === "base" ? "check" : "copy"} size={16} stroke={1.5} /></button>
+          <span>{t.base}</span><code ref={baseEl}>{apiBase}</code>
+          <CopyButton text={apiBase} labels={copyLabels} select={baseEl} className="cx-icon-btn" iconOnly name={t.copyBase} icon={{ size: 16, stroke: 1.5 }} />
         </div>
         <div className="cx-toolbar-end">
           <span className="cx-muted">{t.count(live.length, MAX_ACTIVE_KEYS)}</span>
@@ -192,8 +193,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
             {/* the whole key, always in view: it wraps rather than scrolls, and one click selects all of it; the dialog
                 opens with Copy focused */}
             <div className="cx-key">
-              <code className="cx-key-value">{secret.key}</code>
-              <button type="button" className="cx-btn" autoFocus onClick={() => copy(secret.key, "secret")}><Icon name={copied === "secret" ? "check" : "copy"} size={16} stroke={1.6} />{copied === "secret" ? t.copied : t.copy}</button>
+              <code className="cx-key-value" ref={keyEl}>{secret.key}</code>
+              <CopyButton text={secret.key} labels={copyLabels} select={keyEl} className="cx-btn" autoFocus />
             </div>
             <dl className="cx-key-meta">
               <div><dt>{t.th.name}</dt><dd>{secret.name}</dd></div>
@@ -202,8 +203,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
             <div className="cx-env-hint">
               <p>{t.envHint}</p>
               <div className="cx-env">
-                <pre className="cx-code wrap"><code>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
-                <button type="button" className="cx-icon-btn" onClick={() => copy(`export NAMU_API_KEY="${secret.key}"`, "env")} aria-label={t.copy}><Icon name={copied === "env" ? "check" : "copy"} size={16} stroke={1.6} /></button>
+                <pre className="cx-code wrap"><code ref={envEl}>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
+                <CopyButton text={`export NAMU_API_KEY="${secret.key}"`} labels={copyLabels} select={envEl} className="cx-icon-btn" iconOnly />
               </div>
             </div>
             {leaving ? (

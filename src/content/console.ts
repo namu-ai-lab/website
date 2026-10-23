@@ -31,7 +31,7 @@ export type ConsoleCopy = {
     emptyH: string; emptyBody: string;
     createH: string; nameLabel: string; namePh: string; permsLabel: string; permsAll: string; permsRestricted: string; permsHelp: string;
     cancel: string; create: string; creating: string;
-    saveH: string; saveBody: string; copy: string; copied: string; done: string; permsOf: string;
+    saveH: string; saveBody: string; copy: string; copied: string; copyFailed: string; done: string; permsOf: string;
     leaveQ: string; leaveBack: string; leaveYes: string;
     revokeH: string; revokeBody: string; revokeIt: string; revoking: string;
     editLabel: (name: string) => string; editH: string; save: string; saving: string; editNote: string; envHint: string;
@@ -51,7 +51,7 @@ export type ConsoleCopy = {
     output: string; transcript: string; heard: string; translation: string; you: string; air: string;
     empty: Record<"speech" | "transcribe" | "translate" | "converse", string>;
     stats: { status: string; latency: string; audio: string; chars: string };
-    download: string; copy: string; copied: string; play: string; pause: string;
+    download: string; copy: string; copied: string; copyFailed: string; play: string; pause: string;
     code: string; codeH: string; codeLede: string; close: string; wake: string; runsOn: string; history: string; noHistory: string;
     errors: { mic: string; decode: string; long: (m: number) => string; big: (mb: number) => string; generic: string };
   };
@@ -65,7 +65,7 @@ export type ConsoleCopy = {
   settings: {
     meta: [string, string]; lede: string;
     profileH: string; name: string; save: string; saving: string; saved: string; email: string; verified: string; unverified: string;
-    accountH: string; id: string; since: string; plan: string; planValue: (min: string) => string; copy: string; copied: string;
+    accountH: string; id: string; since: string; plan: string; planValue: (min: string) => string; copy: string; copied: string; copyFailed: string;
     securityH: string; methods: string; method: Record<string, string>;
     passwordH: string; current: string; next: string; change: string; changing: string; changed: string; rule: string;
     sessionsH: string; sessionsBody: string; signOutAll: string; signingOut: string;
@@ -140,7 +140,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       permsAll: "All", permsRestricted: "Restricted", permsHelp: "Choose the models this key may call.",
       cancel: "Cancel", create: "Create secret key", creating: "Creating…",
       saveH: "Save your key", saveBody: "Copy it now and keep it somewhere safe, such as your server’s environment. For your security we keep only its fingerprint, so you will not be able to see it again.",
-      copy: "Copy", copied: "Copied", done: "Done", permsOf: "Permissions",
+      copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", done: "Done", permsOf: "Permissions",
       leaveQ: "Have you saved your key? It will not be shown again.", leaveBack: "Back to the key", leaveYes: "Yes, close",
       revokeH: "Revoke secret key", revokeBody: "This key will stop working within a minute, and requests made with it will be refused. Anything still using it will break. This cannot be undone.",
       revokeIt: "Revoke key", revoking: "Revoking…",
@@ -170,7 +170,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         converse: "Record a question in Hausa. Aïr answers aloud, and remembers the conversation.",
       },
       stats: { status: "Status", latency: "Latency", audio: "Audio", chars: "Characters" },
-      download: "Download", copy: "Copy", copied: "Copied", play: "Play", pause: "Pause",
+      download: "Download", copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", play: "Play", pause: "Pause",
       code: "View code", codeH: "Use this request in your code", codeLede: "The same request as here, with your key read from NAMU_API_KEY.", close: "Close",
       wake: "The first request wakes the model: it can take about twenty seconds.", runsOn: "Runs on your account",
       history: "History", noHistory: "What you try here is listed in this tab until you leave the page.",
@@ -192,7 +192,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       meta: ["Settings", "Your Namu API profile, sign-in and account."],
       lede: "Your profile, how you sign in, and your account.",
       profileH: "Profile", name: "Name", save: "Save", saving: "Saving…", saved: "Saved", email: "Email", verified: "Verified", unverified: "Not verified",
-      accountH: "Account", id: "Account ID", since: "Member since", plan: "Plan", planValue: m => `Beta · free, ${m} minutes of audio a month`, copy: "Copy", copied: "Copied",
+      accountH: "Account", id: "Account ID", since: "Member since", plan: "Plan", planValue: m => `Beta · free, ${m} minutes of audio a month`, copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected",
       securityH: "Sign-in and security", methods: "Sign-in methods",
       method: { credential: "Email and password", google: "Google", github: "GitHub" },
       passwordH: "Change password", current: "Current password", next: "New password", change: "Change password", changing: "Changing…", changed: "Password changed.",
@@ -273,7 +273,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       permsAll: "Toutes", permsRestricted: "Restreintes", permsHelp: "Choisissez les modèles que cette clé peut appeler.",
       cancel: "Annuler", create: "Créer la clé secrète", creating: "Création…",
       saveH: "Enregistrez votre clé", saveBody: "Copiez-la maintenant et gardez-la en lieu sûr, par exemple dans l’environnement de votre serveur. Pour votre sécurité, nous n’en gardons que l’empreinte : vous ne pourrez plus la voir.".replace(" :", `${n}:`),
-      copy: "Copier", copied: "Copiée", done: "Terminé", permsOf: "Permissions",
+      copy: "Copier", copied: "Copiée", copyFailed: `Non copié${n}: le texte est sélectionné`, done: "Terminé", permsOf: "Permissions",
       leaveQ: `Avez-vous enregistré votre clé${n}? Elle ne sera plus affichée.`, leaveBack: "Revenir à la clé", leaveYes: "Oui, fermer",
       revokeH: "Révoquer la clé secrète", revokeBody: "Cette clé cessera de fonctionner en moins d’une minute et les requêtes qui l’utilisent seront refusées. Tout ce qui en dépend encore cessera de fonctionner. C’est irréversible.",
       revokeIt: "Révoquer la clé", revoking: "Révocation…",
@@ -303,7 +303,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         converse: "Enregistrez une question en haoussa. Aïr répond à voix haute et se souvient de la conversation.",
       },
       stats: { status: "Statut", latency: "Latence", audio: "Audio", chars: "Caractères" },
-      download: "Télécharger", copy: "Copier", copied: "Copié", play: "Lire", pause: "Pause",
+      download: "Télécharger", copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`, play: "Lire", pause: "Pause",
       code: "Voir le code", codeH: "Utiliser cette requête dans votre code", codeLede: "La même requête qu’ici, avec votre clé lue dans NAMU_API_KEY.", close: "Fermer",
       wake: "La première requête réveille le modèle : cela peut prendre une vingtaine de secondes.".replace(" :", `${n}:`), runsOn: "Sur votre compte",
       history: "Historique", noHistory: "Ce que vous essayez ici s’affiche dans cet onglet jusqu’à ce que vous quittiez la page.",
@@ -325,7 +325,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       meta: ["Paramètres", "Votre profil, votre connexion et votre compte sur l’API Namu."],
       lede: "Votre profil, votre façon de vous connecter et votre compte.",
       profileH: "Profil", name: "Nom", save: "Enregistrer", saving: "Enregistrement…", saved: "Enregistré", email: "Adresse e-mail", verified: "Vérifiée", unverified: "Non vérifiée",
-      accountH: "Compte", id: "Identifiant du compte", since: "Membre depuis", plan: "Offre", planValue: m => `Bêta · gratuite, ${m} minutes d’audio par mois`, copy: "Copier", copied: "Copié",
+      accountH: "Compte", id: "Identifiant du compte", since: "Membre depuis", plan: "Offre", planValue: m => `Bêta · gratuite, ${m} minutes d’audio par mois`, copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`,
       securityH: "Connexion et sécurité", methods: "Moyens de connexion",
       method: { credential: "E-mail et mot de passe", google: "Google", github: "GitHub" },
       passwordH: "Changer de mot de passe", current: "Mot de passe actuel", next: "Nouveau mot de passe", change: "Changer le mot de passe", changing: "Modification…", changed: "Mot de passe modifié.",

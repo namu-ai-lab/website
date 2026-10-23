@@ -7,6 +7,7 @@
    with the audio. Converse is a live call, so it points to the home page's call instead of running here. */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { CopyButton } from "./ui/CopyButton";
 import { AgentOrb } from "./VoiceReel";
 import { API_DEMO, apiCopy, type ApiTask } from "@/content/api";
 import { lp, type Lang } from "@/i18n/config";
@@ -149,7 +150,7 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
   const [sample, setSample] = useState(0);
   const [busy, setBusy] = useState(false), [waking, setWaking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
-  const [copied, setCopied] = useState(false);
+  const codeEl = useRef<HTMLElement>(null);
   const [sampleBars, setSampleBars] = useState<number[]>([]);
   const audio = useAudio();
   useWakeOnFirstTouch();
@@ -284,11 +285,9 @@ export function ApiRunner({ lang, base }: { lang: Lang; base: string }) {
               <div className="ar-langs" role="radiogroup" aria-label={t.code}>
                 {CODE_LANGS.map(l => <button key={l} type="button" role="radio" aria-checked={codeLang === l} onClick={() => setCodeLang(l)}>{l}</button>)}
               </div>
-              <button type="button" className="ar-copy" onClick={() => { void navigator.clipboard?.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }); }}>
-                <Icon name={copied ? "check" : "copy"} size={14} stroke={1.7} />{copied ? t.copied : t.copy}
-              </button>
+              <CopyButton text={code} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={codeEl} className="ar-copy" icon={{ size: 14, stroke: 1.7 }} />
             </div>
-            <pre tabIndex={0}><code><Highlight code={code} lang={codeLang} /></code></pre>
+            <pre tabIndex={0}><code ref={codeEl}><Highlight code={code} lang={codeLang} /></code></pre>
             <div className="ar-code-foot">
               <span>{t.note}</span>
               {task === "converse"

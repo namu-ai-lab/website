@@ -13,6 +13,7 @@
    touch (lib/wake), so the first live answer does not wait for a GPU to start. Tabs follow the WAI-ARIA tabs pattern. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { CopyButton } from "./ui/CopyButton";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
 import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
@@ -250,16 +251,6 @@ function Pills<T extends string>({ items, value, onPick, label, disabled, extra 
   );
 }
 
-function CopyButton({ text, labels }: { text: string; labels: { copy: string; copied: string } }) {
-  const [done, setDone] = useState(false);
-  useEffect(() => { setDone(false); }, [text]);
-  return (
-    <button type="button" className="pg-mini" onClick={() => { void navigator.clipboard?.writeText(text).then(() => setDone(true)); }}>
-      <Icon name={done ? "check" : "copy"} size={15} stroke={1.6} />{done ? labels.copied : labels.copy}
-    </button>
-  );
-}
-
 /* ---------------------------------------------------------------- Text to speech (Tafiya) */
 function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
   const c = playground[lang], t = c.tts, ss = scripts[lang], vs = voices[lang];
@@ -354,6 +345,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
   const player = usePlayer(amp);
   const abort = useRef<AbortController | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const said = useRef<HTMLParagraphElement>(null);
   const waking = useWaking(busy);
   const rec = useRecorder(amp, wav => { void send(wav); });
   const gone = useRef(false);       // the panel has closed: a sample or upload still being read is not sent
@@ -442,11 +434,11 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
                 <span className="pg-row-acts">
                   {out.audio && <button type="button" className="pg-mini" onClick={() => out.audio && (player.playing ? player.stop() : player.play(out.audio))}>
                     <Icon name={player.playing ? "stop" : "play"} size={14} stroke={1.8} />{player.playing ? c.tts.stop : t.playTranslation}</button>}
-                  <CopyButton text={out.text} labels={t} />
+                  <CopyButton text={out.text} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={said} className="pg-mini" icon={{ size: 15, stroke: 1.6 }} />
                 </span>
               )}
             </div>
-            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
+            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"} ref={said}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
           </div>
         </div>
       </div>

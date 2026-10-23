@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CodeTabs } from "../CodeTabs";
 import { Icon } from "../Icon";
+import { CopyButton } from "../ui/CopyButton";
 import { MODEL_ORB } from "./colours";
 import { consoleCopy } from "@/content/console";
 import type { Lang } from "@/i18n/config";
@@ -232,7 +233,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   const [outs, setOuts] = useState<Partial<Record<Mode, Out>>>({});
   const [busy, setBusy] = useState<Mode | null>(null), [slow, setSlow] = useState(false);
   const [runs, setRuns] = useState<Run[]>([]);
-  const [copied, setCopied] = useState(false);
+  const transcriptEl = useRef<HTMLParagraphElement>(null);
   const codeRef = useRef<HTMLDialogElement>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const runId = useRef(0);
@@ -310,9 +311,8 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   else if (out && mode === "speech" && out.audio) output = <Player blob={out.audio} t={t} name={`tafiya-${voice}.wav`} />;
   else if (out && mode === "transcribe") output = (
     <div className="cx-pg-text">
-      <p lang="ha">{out.text || "…"}</p>
-      <button type="button" className="cx-btn" onClick={async () => { await navigator.clipboard.writeText(out.text ?? ""); setCopied(true); setTimeout(() => setCopied(false), 1600); }}>
-        <Icon name={copied ? "check" : "copy"} size={15} stroke={1.6} />{copied ? t.copied : t.copy}</button>
+      <p lang="ha" ref={transcriptEl}>{out.text || "…"}</p>
+      <CopyButton text={out.text ?? ""} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={transcriptEl} className="cx-btn" icon={{ size: 15, stroke: 1.6 }} />
     </div>
   );
   else if (out && mode === "translate") output = (
@@ -419,7 +419,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
         <div className="cx-dialog-body">
           <h2 id="cx-code-h">{t.codeH}</h2>
           <p>{t.codeLede}</p>
-          <CodeTabs code={code} copyLabel={t.copy} copiedLabel={t.copied} />
+          <CodeTabs code={code} copyLabel={t.copy} copiedLabel={t.copied} failedLabel={t.copyFailed} />
           <div className="cx-dialog-acts"><button type="button" className="cx-btn primary" onClick={() => setCodeOpen(false)}>{t.close}</button></div>
         </div>
       </dialog>
