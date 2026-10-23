@@ -6,6 +6,7 @@ import { AccountMenu } from "./AccountMenu";
 import { ConsoleDrawer } from "./ConsoleDrawer";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
+import type { IconName } from "@/lib/icons";
 
 export type ConsoleUser = { name?: string | null; email: string; image?: string | null };
 export type Access = "approved" | "pending" | "denied";
@@ -19,7 +20,7 @@ export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limi
 export function ConsoleShell({ lang, page, admin, user, access, title, lede, actions, children }:
   { lang: Lang; page: Page; admin: boolean; user: ConsoleUser; access: Access; title: string; lede?: string; actions?: ReactNode; children: ReactNode }) {
   const t = consoleCopy[lang], L = (p: string) => lp(lang, p);
-  type Item = { id: Page; label: string; href: string; icon: string };
+  type Item = { id: Page; label: string; href: string; icon: IconName };
   const items: Item[] = [
     { id: "overview", label: t.nav.overview, href: L("/account"), icon: "home" },
     { id: "playground", label: t.nav.playground, href: L("/account/playground"), icon: "waveform" },
@@ -28,7 +29,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
     { id: "logs", label: t.nav.logs, href: L("/account/logs"), icon: "logs" },
     { id: "limits", label: t.nav.limits, href: L("/account/limits"), icon: "gauge" },
     { id: "settings", label: t.nav.settings, href: L("/account/settings"), icon: "sliders" },
-    ...(admin ? [{ id: "admin" as Page, label: t.nav.admin, href: L("/account/admin"), icon: "person" }] : []),
+    ...(admin ? [{ id: "admin", label: t.nav.admin, href: L("/account/admin"), icon: "person" } satisfies Item] : []),
   ];
   return (
     <div className="cx">
