@@ -143,11 +143,16 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
       onClip(c);
     } catch { setErr(t.errors.decode); } finally { setReading(false); }
   };
+  /* The recorder is held before the permission prompt, so a second tap cannot open another and leaving the page
+     mid-prompt stops the one being opened (the cleanup above stops rec.current). */
   const start = async () => {
+    if (rec.current) return;
     setErr(null);
-    const r = new Recorder();
-    try { await r.start(LIMITS.audioMinutes * 60, () => void stop()); } catch { setErr(t.errors.mic); return; }
-    rec.current = r; setElapsed(0); setRecording(true);
+    const r = (rec.current = new Recorder());
+    try { await r.start(LIMITS.audioMinutes * 60, () => void stop()); }
+    catch { if (rec.current === r) rec.current = null; setErr(t.errors.mic); return; }
+    if (rec.current !== r) return;                    // stopped while the prompt was open
+    setElapsed(0); setRecording(true);
   };
   const stop = async () => {
     const r = rec.current; rec.current = null; setRecording(false);

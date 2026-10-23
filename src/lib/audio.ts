@@ -60,9 +60,14 @@ export class Recorder {
   level = 0;
   private stream?: MediaStream; private rec?: MediaRecorder; private chunks: Blob[] = [];
   private ctx?: AudioContext; private analyser?: AnalyserNode; private raf = 0; private timer = 0;
+  private stopped = false;
 
+  /** Opens the microphone and records. If stop() comes while the permission prompt is still open, the microphone is
+      released as soon as it is granted and nothing is recorded. */
   async start(maxS: number, onAutoStop: () => void) {
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    if (this.stopped) { stream.getTracks().forEach(t => t.stop()); return; }
+    this.stream = stream;
     this.ctx = new AudioContext();
     this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 1024;
     this.ctx.createMediaStreamSource(this.stream).connect(this.analyser);
@@ -81,7 +86,9 @@ export class Recorder {
     this.timer = window.setTimeout(onAutoStop, maxS * 1000);
   }
 
+  /** Safe at any point, including while start() is still waiting for the microphone. */
   stop(): Promise<Blob> {
+    this.stopped = true;
     clearTimeout(this.timer); cancelAnimationFrame(this.raf); this.level = 0;
     return new Promise(resolve => {
       const done = () => {
