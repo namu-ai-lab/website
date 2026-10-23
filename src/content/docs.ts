@@ -55,7 +55,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     ],
     errorsH: "Errors", errorsSub: "Errors are JSON: { \"error\": { \"type\", \"message\", \"request_id\" } }; every response also carries X-Request-Id. Retry 429 after the Retry-After header, and 502 or 504 after a short wait. A request that fails counts nothing against your allowance.",
     errors: [
-      ["400", "invalid_json · missing_text · missing_file · empty_audio · unknown_voice · unsupported_language · unsupported_pair · unknown_persona", "The request is incomplete, or names a voice, language or persona the model does not offer."],
+      ["400", "invalid_json · invalid_request · missing_text · missing_file · empty_audio · unknown_voice · unsupported_language · unsupported_pair · unknown_persona", "The request is incomplete, or names a voice, language or persona the model does not offer."],
       ["401", "missing_api_key · invalid_api_key · key_revoked", "No key, an unknown key, or a revoked one."],
       ["403", "account_paused · insufficient_scope", "The account is paused, or the key may not call this model."],
       ["413", "payload_too_large · audio_too_long · text_too_long", "Over a request limit (below)."],
@@ -109,7 +109,7 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     ],
     errorsH: "Erreurs", errorsSub: `Les erreurs sont en JSON${n}: { "error": { "type", "message", "request_id" } }${n}; chaque réponse porte aussi X-Request-Id. Réessayez un 429 après l’en-tête Retry-After, et un 502 ou 504 après une courte attente. Une requête qui échoue ne compte pas dans votre allocation.`,
     errors: [
-      ["400", "invalid_json · missing_text · missing_file · empty_audio · unknown_voice · unsupported_language · unsupported_pair · unknown_persona", "La requête est incomplète, ou demande une voix, une langue ou un personnage que le modèle ne propose pas."],
+      ["400", "invalid_json · invalid_request · missing_text · missing_file · empty_audio · unknown_voice · unsupported_language · unsupported_pair · unknown_persona", "La requête est incomplète, ou demande une voix, une langue ou un personnage que le modèle ne propose pas."],
       ["401", "missing_api_key · invalid_api_key · key_revoked", "Pas de clé, une clé inconnue ou une clé révoquée."],
       ["403", "account_paused · insufficient_scope", "Le compte est en pause, ou la clé n’a pas accès à ce modèle."],
       ["413", "payload_too_large · audio_too_long · text_too_long", "Au-delà d’une limite de requête (ci-dessous)."],

@@ -352,6 +352,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
     @web.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         kind, message = {
+            # Starlette's own 400: a multipart body it could not parse
+            400: ("invalid_request", f"The request body could not be read: {exc.detail}"),
             404: ("not_found", "No such endpoint. The API is under /v1; see /docs."),
             405: ("method_not_allowed", f"{request.method} is not allowed on {request.url.path}."),
         }.get(exc.status_code, ("http_error", str(exc.detail)))

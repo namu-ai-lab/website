@@ -723,6 +723,15 @@ def test_wrong_method_is_a_405_envelope(env):
     assert "POST" in r.headers["allow"]
 
 
+
+def test_a_multipart_body_that_cannot_be_parsed_is_a_400_envelope(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/transcribe", content=b"--xyz\r\nnot a part",
+               headers={**auth(), "Content-Type": "multipart/form-data; boundary=xyz"})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_request"
+    assert up.calls == []
+
+
 def test_an_unexpected_failure_is_a_500_envelope(env):
     store, up = FakeStore(), FakeUpstream()
 
