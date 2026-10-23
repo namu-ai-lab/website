@@ -728,7 +728,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .vr.duo .vr-arrow { display: none; }
 .vr.duo .vr-name { width: 190px; margin-left: -95px; }
 .vr.duo .vr-name span { white-space: normal; text-wrap: balance; }
-@media (max-width: 640px) { .vr.duo .vr-name { width: 42vw; margin-left: -21vw; } .vr.duo .vr-name span { font-size: 13px; } }
+/* on phones the orbs' centres are 1.1 orbs apart (VoiceReel's duoPlaces), so a caption one orb wide, or 36vw once the
+   orbs shrink to fit, always leaves a gap between the two notes; 42vw printed them over each other */
+@media (max-width: 640px) {
+  .vr.duo .vr-name { --vr-name-w: min(36vw, var(--disc)); width: var(--vr-name-w); margin-left: calc(var(--vr-name-w) / -2); }
+  .vr.duo .vr-name span { font-size: 13px; }
+}
 .vr.duo .vr-play { transition: opacity calc(.35s * var(--motion)) var(--ease), transform calc(.5s * var(--motion)) var(--ease-out), left calc(.5s * var(--motion)) var(--ease-out); }
 .vr-arrow.prev { left: calc(50% - 168px); }
 .vr-arrow.next { left: calc(50% + 136px); }
@@ -853,7 +858,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .pg-tabs button { height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
   .pg-tabs .dot { display: none; }
   .pg-tts, .pg-listen { --disc: 136px; }
-  .pg-tts .vr-names { height: 80px; margin-top: 4px; }   /* room for a voice's note on two lines (French) */
+  .pg-tts .vr-names { height: 86px; margin-top: 0; }   /* room for a voice's note on three lines (French, one orb wide), in the panel's usual height */
   .pg-text { padding: 14px 16px 10px; }
   .pg-card-foot { flex-wrap: wrap; row-gap: 8px; }
   .pg-tag { flex: 1 0 100%; }
