@@ -23,7 +23,8 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 | --- | --- |
 | `db/migrations/0001_namu_api.sql` | Namu's tables and the two functions the gateway calls |
 | `db/migrations/0002_neon_auth.sql` | The move from Better Auth's tables to Neon Auth's (`neon_auth."user"`) |
-| `scripts/db-migrate.mjs` | Checks that Neon Auth is on, creates the `namu_gateway` role, then applies `db/migrations/` |
+| `scripts/db-migrate.mjs` | Checks that Neon Auth is on, applies each new file in `db/migrations/` once, then sets up the `namu_gateway` role and its grants (see "Database migrations") |
+| `db/gateway-grants.sql` | What the gateway's database role may call; applied on every migrate |
 | `scripts/env-init.mjs`, `db-admin.mjs`, `modal-secrets.mjs` | Generate local secrets, make an admin / mark the demo key, copy secrets to Modal |
 | `src/lib/auth.ts`, `src/app/api/auth/[...path]`, `src/proxy.ts` | Sign-in: Neon Auth, relayed through the site; the proxy finishes the Google and GitHub return trip |
 | `src/components/account/AuthFlow.tsx`, `src/app/[lang]/{login,signup,reset-password}` | The doors: log in, sign up (with a 6-digit code), reset a password |
@@ -39,7 +40,7 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   prefix, so a copy of the database alone does not reveal usable keys.
 - **The database is never reached from the browser.** The website's server connects with `DATABASE_URL` and
   every query that touches a developer's data filters on the signed-in user's id. The gateway connects as
-  `namu_gateway`, a role that can only call `namu_key_lookup` and `namu_record_usage`: it cannot read or change
+  `namu_gateway`, a role that can only call the functions in `db/gateway-grants.sql`: it cannot read or change
   a table directly, so a leak of the gateway's secret exposes no account data.
 - **Sign-in** is Neon Auth (Neon's managed Better Auth): email and password, with a 6-digit code to verify the
   address, or Google and GitHub. Passwords and sessions are held by Neon Auth in its own `neon_auth` schema, not in
@@ -121,3 +122,32 @@ curl $API/v1/speech -H "Authorization: Bearer $NAMU_API_KEY" -H "Content-Type: a
 Some tokens were pasted into chat sessions while this was built. Rotate them and update the secrets that hold
 them: both Hugging Face tokens (the `huggingface-token` Modal secret), and the OpenRouter key (the
 `gemini-api-key` Modal secret used by `namu-agent`).
+
+## Database migrations
+
+`npm run db:migrate` applies `db/migrations/*.sql` in name order, each file once. The files applied are recorded in
+`public.schema_migrations` (file name, SHA-256 of the text, when), so:
+
+- **Each file runs inside a transaction**, together with its ledger row: it applies whole or not at all. So a file
+  must not contain its own `begin`/`commit`, nor statements that cannot run in a transaction (`create index
+  concurrently`, `vacuum`). Two runs at once are safe: each transaction takes an advisory lock first.
+- **An applied file is never edited.** Before writing anything, the runner compares checksums and refuses if an
+  applied file's text has changed; put the change in a new, numbered file. Line endings and a byte-order mark do not
+  count, so a Windows checkout is not an edit.
+- **`npm run db:migrate -- --dry-run`** says what would be recorded and applied, and changes nothing (the npm-style
+  `npm run db:migrate --dry-run` works too).
+- **Databases migrated before the ledger** (every run re-applied every file) already hold `0001`–`0004`. On its first
+  run the runner checks that `0004` took effect (`namu_key_lookup_v2` exists), records those four as applied without
+  running them, then applies only what is new. If `0004` is missing it stops and says so.
+- **The gateway role's rights** live in `db/gateway-grants.sql`, applied on every run after the migrations, so they
+  hold even for a role created after its functions (a restored database). A migration that adds a function the
+  gateway calls adds its grant there.
+- **The gateway role's password** is set when the runner creates the role. It is never changed unasked (the running
+  gateway holds it), and `.env.local` is rewritten only for the same database, so a run against a Neon branch or a
+  scratch database cannot replace production's `GATEWAY_DATABASE_URL`. The runner warns instead;
+  `--rotate-gateway-password` sets a new password for this database and saves it (then `npm run modal:secrets` and
+  redeploy the gateway).
+
+Before the first run against production, run it on a Neon branch of production: `--dry-run` should list `0001`–`0004`
+as recorded and `0005` as pending; the real run should apply only `0005`; a second run should say "no migrations
+pending". Then check that `.env.local` still names production in `GATEWAY_DATABASE_URL` (the runner warns if not).
