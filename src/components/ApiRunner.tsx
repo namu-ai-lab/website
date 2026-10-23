@@ -64,15 +64,17 @@ export function Highlight({ code, lang }: { code: string; lang: CodeLang | "json
 }
 
 /* ---------------------------------------------------------------- audio: play, follow, draw */
+/* After unmount it plays nothing, and its AudioContext is closed with it. */
 function useAudio() {
   const el = useRef<HTMLAudioElement | null>(null), analyser = useRef<AnalyserNode | null>(null), url = useRef<string | null>(null);
+  const context = useRef<AudioContext | null>(null), disposed = useRef(false);
   const amp = useRef(0), [playing, setPlaying] = useState<string | null>(null), [progress, setProgress] = useState(0);
   const ensure = () => {
     if (el.current) return el.current;
     const a = new Audio();
     a.onended = a.onpause = () => { setPlaying(null); amp.current = 0; };
     try {
-      const ctx = new AudioContext(), node = ctx.createAnalyser(); node.fftSize = 512;
+      const ctx = (context.current = new AudioContext()), node = ctx.createAnalyser(); node.fftSize = 512;
       ctx.createMediaElementSource(a).connect(node); node.connect(ctx.destination);
       analyser.current = node; a.addEventListener("play", () => { void ctx.resume(); });
     } catch { /* no Web Audio: the sound still plays, the orb stays calm */ }
@@ -94,8 +96,17 @@ function useAudio() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [playing]);
-  useEffect(() => () => { el.current?.pause(); if (url.current) URL.revokeObjectURL(url.current); }, []);
+  useEffect(() => {
+    disposed.current = false;
+    return () => {
+      disposed.current = true;
+      el.current?.pause(); el.current = null; analyser.current = null;
+      if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
+      void context.current?.close().catch(() => {}); context.current = null;
+    };
+  }, []);
   const play = (id: string, src: Blob | string) => {
+    if (disposed.current) return;
     const a = ensure();
     if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
     a.src = typeof src === "string" ? src : (url.current = URL.createObjectURL(src));

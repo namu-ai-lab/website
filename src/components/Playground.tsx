@@ -91,12 +91,16 @@ function useWaking(busy: boolean, after = 4000) {
   return waking;
 }
 
-/* Plays a clip and writes its loudness into `amp` each frame, so the orb moves with the real voice. */
+/* Plays a clip and writes its loudness into `amp` each frame, so the orb moves with the real voice. Once its panel has
+   closed it plays nothing (a reply that arrives late stays silent), and its AudioContext is closed with it, so tab
+   switches do not pile contexts up. */
 function usePlayer(amp: { current: number }) {
   const audio = useRef<HTMLAudioElement | null>(null);
+  const context = useRef<AudioContext | null>(null);
   const analyser = useRef<AnalyserNode | null>(null);
   const buf = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const url = useRef<string | null>(null);
+  const disposed = useRef(false);
   const [playing, setPlaying] = useState(false);
   const ensure = () => {
     if (audio.current) return audio.current;
@@ -104,7 +108,7 @@ function usePlayer(amp: { current: number }) {
     a.onended = a.onpause = () => { setPlaying(false); amp.current = 0; };
     a.onplay = () => setPlaying(true);
     try {
-      const ctx = new AudioContext(), node = ctx.createAnalyser(); node.fftSize = 512;
+      const ctx = (context.current = new AudioContext()), node = ctx.createAnalyser(); node.fftSize = 512;
       ctx.createMediaElementSource(a).connect(node); node.connect(ctx.destination);
       analyser.current = node;
       a.addEventListener("play", () => { void ctx.resume(); });
@@ -120,13 +124,22 @@ function usePlayer(amp: { current: number }) {
     amp.current = Math.min(1, Math.sqrt(sum / buf.current.length) * 4);
   });
   const play = (blob: Blob) => {
+    if (disposed.current) return;
     const a = ensure();
     if (url.current) URL.revokeObjectURL(url.current);
     a.src = url.current = URL.createObjectURL(blob);
     void a.play();
   };
   const stop = () => { audio.current?.pause(); amp.current = 0; };
-  useEffect(() => () => { audio.current?.pause(); if (url.current) URL.revokeObjectURL(url.current); }, []);
+  useEffect(() => {
+    disposed.current = false;
+    return () => {
+      disposed.current = true;
+      audio.current?.pause(); audio.current = null; analyser.current = null;
+      if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
+      void context.current?.close().catch(() => {}); context.current = null;
+    };
+  }, []);
   return { play, stop, playing };
 }
 
