@@ -450,7 +450,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .ftr-base .parent { color: var(--ink); text-transform: none; letter-spacing: normal; }   /* the logo keeps its own lettering */
 .ftr-base .mark { display: block; height: 30px; width: auto; }
 .ftr-legal { display: flex; gap: 12px 40px; flex-wrap: wrap; margin-inline: auto; }
-.ftr-legal a { color: var(--ink); text-decoration: none; }
+.ftr-legal a { color: var(--ink); text-decoration: none; padding-block: 6px; margin-block: -6px; }   /* a 25 px tap target; the row keeps its height */
 .ftr-legal a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .ftr .lang-switch { flex: none; margin-left: 0; font-family: var(--sans); letter-spacing: 0; text-transform: none; background: rgba(21, 18, 15, .06); }
 .ftr-base small { color: var(--ink-3); font-size: 12px; }
@@ -467,10 +467,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
   .ftr-legal { gap: 14px 24px; }
 }
 
-/* ---- reveal on scroll (content is visible without JS) ---- */
-.js .reveal { opacity: 0; transform: translateY(calc(32px * var(--motion))); transition: opacity .9s var(--ease-out), transform 1.1s var(--ease-out); }
-.js .reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; } }
+/* ---- reveal on scroll (content is visible without JS) ----
+   <Reveal/> sets html.reveal-on after hydration, having first marked what is already on screen as .in, so only content
+   below the fold is ever hidden. Hiding is instant (it is off-screen); the transition lives on .in, for the fade in. */
+.reveal-on .reveal { opacity: 0; transform: translateY(calc(32px * var(--motion))); transition: none; }
+.reveal-on .reveal.in { opacity: 1; transform: none; transition: opacity .9s var(--ease-out), transform 1.1s var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .reveal-on .reveal { opacity: 1; transform: none; } }
 
 /* ======================= inner pages ======================= */
 .page-top { padding-top: 64px; }
@@ -728,7 +730,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .vr.duo .vr-arrow { display: none; }
 .vr.duo .vr-name { width: 190px; margin-left: -95px; }
 .vr.duo .vr-name span { white-space: normal; text-wrap: balance; }
-@media (max-width: 640px) { .vr.duo .vr-name { width: 42vw; margin-left: -21vw; } .vr.duo .vr-name span { font-size: 13px; } }
+/* on phones the orbs' centres are 1.1 orbs apart (VoiceReel's duoPlaces), so a caption one orb wide, or 36vw once the
+   orbs shrink to fit, always leaves a gap between the two notes; 42vw printed them over each other */
+@media (max-width: 640px) {
+  .vr.duo .vr-name { --vr-name-w: min(36vw, var(--disc)); width: var(--vr-name-w); margin-left: calc(var(--vr-name-w) / -2); }
+  .vr.duo .vr-name span { font-size: 13px; }
+}
 .vr.duo .vr-play { transition: opacity calc(.35s * var(--motion)) var(--ease), transform calc(.5s * var(--motion)) var(--ease-out), left calc(.5s * var(--motion)) var(--ease-out); }
 .vr-arrow.prev { left: calc(50% - 168px); }
 .vr-arrow.next { left: calc(50% + 136px); }
@@ -849,11 +856,12 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 }
 @media (max-width: 640px) {
   .pg { border-radius: 20px; }
-  .pg-tabs { padding: 4px; }
-  .pg-tabs button { height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
+  /* phones: the tabs wrap onto a second, centred row when they do not fit, rather than hide the last ones behind the fade */
+  .pg-tabs { padding: 4px; flex-wrap: wrap; justify-content: center; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .pg-tabs button { flex-grow: 0; height: 40px; padding: 0 13px; border-radius: 12px; font-size: 14.5px; }
   .pg-tabs .dot { display: none; }
   .pg-tts, .pg-listen { --disc: 136px; }
-  .pg-tts .vr-names { height: 80px; margin-top: 4px; }   /* room for a voice's note on two lines (French) */
+  .pg-tts .vr-names { height: 86px; margin-top: 0; }   /* room for a voice's note on three lines (French, one orb wide), in the panel's usual height */
   .pg-text { padding: 14px 16px 10px; }
   .pg-card-foot { flex-wrap: wrap; row-gap: 8px; }
   .pg-tag { flex: 1 0 100%; }
@@ -931,7 +939,7 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .docs-toc { position: sticky; top: 96px; }
 .docs-toc ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .docs-toc a { color: var(--ink-2); text-decoration: none; font-size: 15px; } .docs-toc a:hover { color: var(--ink); }
-.docs-body { max-width: 760px; }
+.docs-body { max-width: 760px; min-width: 0; }
 .docs-body section { padding-block: 32px; border-top: 1px solid var(--line); scroll-margin-top: 96px; }
 .docs-body section:first-child { border-top: 0; padding-top: 0; }
 .docs-body p, .docs-body li { color: var(--ink-2); }
@@ -946,7 +954,9 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .docs-params dt { font-weight: 500; } .docs-params dd { margin: 0; color: var(--ink-2); }
 .docs-warn { padding: 14px 18px; border-left: 3px solid var(--sahel-deep); background: var(--surface); border-radius: 0 12px 12px 0; }
 @media (max-width: 860px) {
-  .docs-grid { grid-template-columns: 1fr; gap: 24px; }
+  /* minmax(0, 1fr), not 1fr: a bare 1fr track grows to the longest code line, which made the page 780 px wide on a
+     390 px phone; this way code blocks scroll inside their own card */
+  .docs-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .docs-toc { position: static; }
   .docs-params div { grid-template-columns: 1fr; gap: 4px; }
 }

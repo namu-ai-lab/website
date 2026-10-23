@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "../Icon";
+import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -62,7 +63,6 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
     window.location.assign(lp(lang, "/login"));
   }
 
-  const date = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(since));
   return (
     <>
       <section className="cx-card cx-set">
@@ -94,7 +94,7 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
               <Icon name={copied ? "check" : "copy"} size={16} stroke={1.6} />
             </button></div>
         </div>
-        <div className="cx-set-row"><span>{t.since}</span><div className="cx-set-ctl"><span className="cx-set-val">{date}</span></div></div>
+        <div className="cx-set-row"><span>{t.since}</span><div className="cx-set-ctl"><span className="cx-set-val"><LocalTime iso={since} lang={lang} style="day" /></span></div></div>
         <div className="cx-set-row"><span>{t.plan}</span><div className="cx-set-ctl"><span className="cx-set-val">{t.planValue(String(Math.round(allowanceMin)))}</span></div></div>
       </section>
 

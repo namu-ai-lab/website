@@ -94,6 +94,3 @@ const swahili: Post = {
 
 export const posts: Post[] = [introducing, fleursNote, strictFolded, swahili];
 export const postBySlug = (slug: string) => posts.find(p => p.slug === slug);
-
-export const fmtDate = (iso: string) =>
-  new Date(iso + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });

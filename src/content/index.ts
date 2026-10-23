@@ -1,5 +1,6 @@
 import type { Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
+import { formatDate } from "@/i18n/format";
 import { programmes, type Programme } from "./programmes";
 import { programmesFr } from "./programmes.fr";
 import { posts, type Post } from "./posts";
@@ -25,8 +26,6 @@ export function getNews(lang: Lang): (NewsItem & { note?: string })[] {
   });
 }
 
-const intl = (lang: Lang) => (lang === "fr" ? "fr-FR" : "en-GB");
-export const fmtDate = (iso: string, lang: Lang) =>
-  new Date(iso + "T12:00:00Z").toLocaleDateString(intl(lang), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-export const monthYear = (iso: string, lang: Lang) =>
-  new Date(iso + "T12:00:00Z").toLocaleDateString(intl(lang), { month: "long", year: "numeric", timeZone: "UTC" });
+/* a post's or news item's date ("2026-10-15"): a calendar day, the same everywhere */
+export const fmtDate = (iso: string, lang: Lang) => formatDate(lang, iso + "T12:00:00Z", { style: "day" });
+export const monthYear = (iso: string, lang: Lang) => formatDate(lang, iso + "T12:00:00Z", { style: "monthYear" });

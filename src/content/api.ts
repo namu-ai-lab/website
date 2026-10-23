@@ -10,6 +10,7 @@
    real output, kept exactly as returned).
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
 import type { Lang } from "@/i18n/config";
+import { formatNumber } from "@/i18n/format";
 import { LIMITS } from "@/lib/limits";
 
 const n = " ";   // narrow no-break space before French high punctuation
@@ -70,7 +71,7 @@ const en: ApiCopy = {
   tryIt: "Try it", page: "Model page",
   models: [
     { task: "speech", name: "Tafiya", verb: "Speak", job: "Text to speech", endpoint: "POST /v1/speech", io: ["Text", "Speech"], langs: "Hausa, and a French reference voice",
-      limit: `Up to ${LIMITS.textChars.toLocaleString("en-US")} characters`, status: "In development", href: "https://www.namu-ai.org/models/tafiya" },
+      limit: `Up to ${formatNumber("en", LIMITS.textChars)} characters`, status: "In development", href: "https://www.namu-ai.org/models/tafiya" },
     { task: "transcribe", name: "Tatsuniya", verb: "Transcribe", job: "Speech to text", endpoint: "POST /v1/transcribe", io: ["Speech", "Text"], langs: "Hausa",
       limit: `Up to ${LIMITS.uploadMb} MB or ${LIMITS.audioMinutes} minutes of audio`, status: "In development", href: "https://www.namu-ai.org/models/tatsuniya" },
     { task: "translate", name: "Kora", verb: "Translate", job: "Speech translation", endpoint: "POST /v1/translate", io: ["Speech", "Text and speech"], langs: "Hausa ⇄ French",
@@ -148,7 +149,7 @@ play_to_caller(b64decode(ha["audio"]))` },
   limits: [
     [`${LIMITS.keyPerMin}`, "requests a minute, per key"],
     [`${LIMITS.uploadMb} MB`, `or ${LIMITS.audioMinutes} minutes per audio file`],
-    [LIMITS.textChars.toLocaleString("en-US"), "characters per speech request"],
+    [formatNumber("en", LIMITS.textChars), "characters per speech request"],
     ["10", "active keys per account"],
   ],
   more: "Need more? Write to us", pricing: "Pricing will be published with each model’s release.",

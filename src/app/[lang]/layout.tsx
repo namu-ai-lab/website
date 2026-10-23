@@ -32,9 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export const viewport: Viewport = { themeColor: [{ color: "#FFFFFF" }] };
 
-/* Runs before paint: marks JS as present, so scroll reveals hide content only when JS can show it. */
-const boot = `document.documentElement.classList.add('js')`;
-
 export default async function RootLayout({ children, params }: { children: React.ReactNode; params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
@@ -42,7 +39,6 @@ export default async function RootLayout({ children, params }: { children: React
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: boot }} />
         <link rel="preload" href="/fonts/dmsans-lab.woff2" as="font" type="font/woff2" crossOrigin="" />
         {/* For search engines: the Lab as an organisation with its logo (the Blossom, public/logo.png), and the site's
             name, so results read "Namu AI Lab" rather than the bare domain */}

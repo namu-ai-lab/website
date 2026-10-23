@@ -48,12 +48,13 @@ export default async function Organisations({ params }: { params: Promise<{ lang
         <p>{t.mission}</p>
       </header>
 
+      {/* first screen: no .reveal here, so the statement and the priority photo (the LCP) never wait for JavaScript */}
       <section className="ofd-intro wrap" aria-label={t.h1}>
-        <div className="ofd-intro-text reveal">
+        <div className="ofd-intro-text">
           <p className="ofd-statement">{t.statement}</p>
           <TallyLink className="ofd-btn" form="partner" lang={lang} source="lab-organisations-intro">{t.partner}</TallyLink>
         </div>
-        <div className="ofd-pic ofd-square reveal">
+        <div className="ofd-pic ofd-square">
           <Image src={ORG_PHOTOS.statement.src} alt={t.statementAlt} fill sizes="(max-width: 760px) 100vw, 50vw" priority />
         </div>
       </section>
