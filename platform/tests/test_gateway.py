@@ -292,6 +292,22 @@ def test_speech_validation(env):
     assert r.status_code == 413
 
 
+
+@pytest.mark.parametrize("body", [["Sannu"], "Sannu", 5, {"text": 5}, {"text": ["Sannu"]},
+                                  {"text": "Sannu", "voice": ["nadia"]}, {"text": "Sannu", "voice": 7}])
+def test_speech_refuses_json_that_is_not_an_object_of_strings(env, body):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json=body)
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_json"
+    assert up.calls == []
+
+
+def test_speech_refuses_a_body_that_is_not_json(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers={**auth(), "Content-Type": "application/json"}, content=b"{not json")
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_json"
+
+
 def test_translate_pair_and_optional_audio(env):
     c, *_ = env
     r = post_audio(c, "/v1/translate", target="fr")

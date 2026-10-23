@@ -456,6 +456,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         try:
             body = await request.json()
         except Exception:
+            body = None
+        # A list, a string, or a text or voice that is not a string would fail further down as a 500.
+        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str) for k in ("text", "voice")):
             return err(400, "invalid_json", 'Send JSON: {"text": "...", "voice": "nadia"}.')
         text = (body.get("text") or "").strip()
         if not text:
