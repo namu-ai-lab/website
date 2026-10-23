@@ -289,8 +289,10 @@ def clean_for_speech(text: str, max_sentences: int = MAX_SENTENCES,
     image=image,
     secrets=[modal.Secret.from_name("cohere-api-key"),
              modal.Secret.from_name("gemini-api-key"),
-             modal.Secret.from_name("openai-api-key")]
-            + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
+             modal.Secret.from_name("openai-api-key"),
+             # Always, locked or not: the token is what lets this service call
+             # namu-transcribe and namu-voice, which are locked on their own.
+             modal.Secret.from_name("namu-proxy-auth")],
     timeout=900,
     scaledown_window=600,
 )

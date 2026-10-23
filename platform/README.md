@@ -62,8 +62,9 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 - **Model services** do not answer the open internet (`REQUIRE_PROXY_AUTH = True` in each): Modal rejects requests
   without the proxy token at its edge, before a container (or a GPU) starts. Only Namu's own callers hold the token
   (the `namu-proxy-auth` Modal secret): the gateway, namu-agent and namu-interpret for the services they call, and
-  the website's server for the home conversation's text step. The gateway stays public; on it the same flag only
-  attaches the secret. The services send no CORS headers, because no browser may call them.
+  the website's server for the home conversation's text step. The gateway stays public. The three callers carry the
+  secret whatever their own lock says, so unlocking one never cuts it off from the services it calls. The services
+  send no CORS headers, because no browser may call them.
 - **The agent's /v1/chat** runs only the agent's own models (`CHAT_MODELS`: the default and its fallback) and takes
   at most 40 messages of 4,000 characters, so even a caller with the token cannot turn it into a general LLM proxy.
 - **Uploads** are measured with ffprobe only if their first bytes are WAV, MP3, M4A/MP4, AAC, OGG, WebM or FLAC, and
@@ -104,10 +105,10 @@ never printed by the scripts.
    Order matters: migrate first, then deploy the gateway, then the website.
 7. **Demo key**: in `/account/keys`, create a key named `website demo`, save it as `NAMU_DEMO_KEY` (in Vercel),
    then `npm run db:admin -- --demo`. Raise the admin account's monthly minutes if the demo is busy.
-8. **Lock the model services.** `REQUIRE_PROXY_AUTH = True` is already set in all five files under
-   `platform/modal/`. On the four model services it makes Modal refuse every request without the proxy token; on
-   the gateway it only attaches the token, so the gateway's own calls carry it. **Callers first**: a service
-   deployed locked before its callers hold the token breaks them.
+8. **Lock the model services.** `REQUIRE_PROXY_AUTH = True` is already set in the four model services under
+   `platform/modal/`: Modal refuses every request to them without the proxy token. The gateway, namu-agent and
+   namu-interpret always carry the token (the `namu-proxy-auth` secret), so their calls get through. **Callers
+   first**: a service deployed locked before its callers hold the token breaks them.
    1. Modal dashboard → Settings → Proxy auth tokens → create a token. It is shown once; keep it out of chat and
       tickets.
    2. Save it as a Modal secret without echoing it or leaving it in the shell's history (macOS/Linux shell):
@@ -132,7 +133,7 @@ never printed by the scripts.
       a key, and the home conversation works on a preview and then on production.
 
    **Rollback**: set `REQUIRE_PROXY_AUTH = False` in the one service that misbehaves and `modal deploy` that file
-   alone; the others stay locked. The gateway's flag can stay `True`: it only sends the token.
+   alone; the others stay locked, and its callers keep sending the token, which an unlocked service ignores.
 
    **Other callers**: anything else that calls the model URLs directly stops working, including the `namu-chat` web
    app and `namu_livekit.py` (both outside this repo). Point them at the gateway with a key, or have their *server*

@@ -121,7 +121,10 @@ PROMPTS = {
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("gemini-api-key")] + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
+    secrets=[modal.Secret.from_name("gemini-api-key"),
+             # Always, locked or not: the token is what lets this service call
+             # namu-transcribe and namu-voice, which are locked on their own.
+             modal.Secret.from_name("namu-proxy-auth")],
     timeout=900,
     scaledown_window=600,
 )

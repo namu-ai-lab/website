@@ -7,7 +7,8 @@ caller's beta status, the key's scopes, the monthly quota and a per-minute
 rate limit; measures the audio BEFORE any GPU is touched; forwards the call to
 the model service; and records how much was used. The model services behind it
 are locked with Modal proxy auth (REQUIRE_PROXY_AUTH in each service), so this
-file is the only way in.
+file is the only public way in. (The website's server also calls namu-agent's
+text step for the home demo, with the proxy token; see platform/README.md.)
 
     POST /v1/transcribe   Tatsuniya  speech -> text
     POST /v1/speech       Tafiya     text   -> speech (audio/wav)
@@ -45,12 +46,11 @@ import modal
 
 app = modal.App("namu-gateway")
 
-# The gateway itself stays public: its @modal.asgi_app() below takes no proxy
-# flag, on purpose. Here the flag only attaches the `namu-proxy-auth` secret,
-# so ModalUpstream sends Modal-Key / Modal-Secret to the four model services,
-# which refuse every request without them (REQUIRE_PROXY_AUTH in each). Deploy
-# this file first: a service locked before its callers hold the token fails.
-REQUIRE_PROXY_AUTH = True
+# The gateway itself is public: its @modal.asgi_app() below takes no proxy flag,
+# on purpose. It always carries the `namu-proxy-auth` secret, so ModalUpstream
+# sends Modal-Key / Modal-Secret to the four model services, which refuse every
+# request without them (REQUIRE_PROXY_AUTH in each). Deploy this file before
+# them: a service locked before its callers hold the token fails.
 
 UPSTREAM = {
     "transcribe": "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run",
@@ -627,8 +627,8 @@ image = (
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("namu-db"),
-             modal.Secret.from_name("namu-key-pepper")]
-    + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
+             modal.Secret.from_name("namu-key-pepper"),
+             modal.Secret.from_name("namu-proxy-auth")],
     min_containers=1,                          # the front door should never cold-start
     max_containers=4,
     timeout=900,
