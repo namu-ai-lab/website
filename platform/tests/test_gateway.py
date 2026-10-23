@@ -10,6 +10,8 @@ before it reaches the deployed API.
 
 import base64
 import io
+import shutil
+import subprocess
 import sys
 import wave
 from dataclasses import replace
@@ -377,3 +379,77 @@ def test_service_key_usage_is_per_account(env):
     assert c.get("/v1/usage", headers=auth(SERVICE)).json()["error"]["type"] == "account_required"
     r = c.get("/v1/usage", headers=as_account("full-1")).json()
     assert r == {"month_audio_seconds_used": 1800.0, "month_audio_seconds_limit": 1800.0}
+
+
+# ---------------------------------------------------------------- what ffprobe may parse
+HLS = b"#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:9/x.ts\n#EXT-X-ENDLIST\n"
+CONCAT = b"ffconcat version 1.0\nfile '/etc/passwd'\n"
+TEXT = b"hello, this is not audio"
+
+
+@pytest.mark.parametrize("head, demuxer", [
+    (b"RIFF\x24\x08\x00\x00WAVEfmt ", "wav"),
+    (b"ID3\x04\x00\x00\x00\x00\x00\x23TSS", "mp3"),
+    (b"\xff\xfb\x90\x64" + b"\x00" * 8, "mp3"),             # an MP3 frame with no ID3 tag
+    (b"\xff\xf1\x50\x40\x21\x3f\xfc\xde", "aac"),            # ADTS AAC
+    (b"OggS\x00\x02" + b"\x00" * 6, "ogg"),
+    (b"\x1a\x45\xdf\xa3\x9f\x42\x86\x81", "matroska"),       # WebM
+    (b"\x00\x00\x00\x1cftypM4A ", "mov"),
+    (b"\x00\x00\x00\x18ftyp3gp4", "mov"),
+    (b"fLaC\x00\x00\x00\x22", "flac"),
+])
+def test_allowed_containers_get_one_named_demuxer(head, demuxer):
+    assert gw.sniff_audio(head) == demuxer
+
+
+@pytest.mark.parametrize("data", [HLS, CONCAT, TEXT, b"", b"\x00" * 64])
+def test_other_input_never_reaches_ffprobe(data, monkeypatch):
+    def no_ffprobe(*a, **k):
+        raise AssertionError("ffprobe must not run on this input")
+    monkeypatch.setattr(gw.subprocess, "run", no_ffprobe)
+    assert gw.sniff_audio(data) is None
+    assert gw.probe_seconds(data) is None
+
+
+def test_ffprobe_is_pinned_to_the_file_and_the_demuxer(monkeypatch):
+    seen = {}
+
+    def fake_run(args, **kwargs):
+        seen["args"] = args
+        return type("Done", (), {"stdout": "1.5\n"})()
+    monkeypatch.setattr(gw.subprocess, "run", fake_run)
+    assert gw.probe_seconds(b"OggS" + b"\x00" * 60) == 1.5
+    args = seen["args"]
+    assert args[args.index("-protocol_whitelist") + 1] == "file"
+    assert args[args.index("-f") + 1] == "ogg"
+    assert args[-1].startswith("file:")
+
+
+def test_gateway_refuses_a_playlist_before_any_gpu():
+    store, up = FakeStore(), FakeUpstream()
+    c = TestClient(gw.create_app(store, up, FakeLimiter(), PEPPER, now=Clock()))     # the real probe_seconds
+    r = c.post("/v1/transcribe", headers=auth(), files={"file": ("a.m3u8", HLS, "audio/mpegurl")})
+    assert r.status_code == 415 and r.json()["error"]["type"] == "unsupported_audio"
+    assert up.calls == [] and store.usage == []
+
+
+FFMPEG = shutil.which("ffmpeg") and shutil.which("ffprobe")
+
+
+@pytest.mark.skipif(not FFMPEG, reason="needs ffmpeg and ffprobe on PATH")
+@pytest.mark.parametrize("name, codec", [
+    ("float.wav", ["-c:a", "pcm_f32le"]),      # not 16-bit PCM, so Python's wave module passes it to ffprobe
+    ("a.mp3", ["-c:a", "libmp3lame"]),
+    ("a.m4a", ["-c:a", "aac"]),
+    ("a.aac", ["-c:a", "aac", "-f", "adts"]),
+    ("a.ogg", ["-c:a", "libopus"]),
+    ("a.webm", ["-c:a", "libopus"]),
+    ("a.flac", ["-c:a", "flac"]),
+])
+def test_real_files_of_each_allowed_format_are_measured(name, codec, tmp_path):
+    out = tmp_path / name
+    made = subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+                           *codec, str(out)], capture_output=True)
+    if made.returncode != 0:
+        pytest.skip(f"this ffmpeg cannot encode {name}")
+    assert gw.probe_seconds(out.read_bytes()) == pytest.approx(1.0, abs=0.1)

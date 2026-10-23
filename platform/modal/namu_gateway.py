@@ -142,8 +142,37 @@ def wav_seconds(data: bytes) -> float:
         return w.getnframes() / float(w.getframerate())
 
 
+def sniff_audio(data: bytes) -> str | None:
+    """The ffprobe demuxer for an allowed audio container, from its first
+    bytes; None for anything else.
+
+    Uploads are untrusted and FFmpeg's demuxers have a long CVE record. Some
+    of them (HLS playlists, concat lists) even open other files or URLs, in
+    the process that holds the key pepper and the database login. So ffprobe
+    never guesses: it gets the one demuxer named here.
+    """
+    head = data[:12]
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":
+        return "wav"
+    if head[:4] == b"OggS":
+        return "ogg"
+    if head[:4] == b"fLaC":
+        return "flac"
+    if head[:4] == b"\x1a\x45\xdf\xa3":
+        return "matroska"                      # WebM is Matroska
+    if head[4:8] == b"ftyp":
+        return "mov"                           # MP4, M4A and 3GP share one demuxer
+    if head[:3] == b"ID3":
+        return "mp3"
+    if len(head) >= 2 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0:
+        # An MPEG audio frame. Layer bits 00 mean ADTS AAC; anything else is MP3.
+        return "aac" if head[1] & 0x06 == 0 else "mp3"
+    return None
+
+
 def probe_seconds(data: bytes) -> float | None:
-    """Duration of any audio container, read with ffprobe; None if unreadable.
+    """Duration of an allowed audio container, read with ffprobe; None if
+    the container is not allowed or cannot be read.
 
     Done before forwarding, so an oversized or garbage upload is refused
     without waking a GPU.
@@ -152,13 +181,19 @@ def probe_seconds(data: bytes) -> float | None:
         return wav_seconds(data)
     except Exception:
         pass
+    fmt = sniff_audio(data)
+    if fmt is None:
+        return None
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(data)
         path = f.name
     try:
+        # -f: that demuxer and no other. -protocol_whitelist file: the
+        # temporary file is the only thing it may open.
         r = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=nw=1:nk=1", path],
+            ["ffprobe", "-v", "error", "-protocol_whitelist", "file", "-f", fmt,
+             "-show_entries", "format=duration", "-of", "default=nw=1:nk=1",
+             f"file:{path}"],
             capture_output=True, text=True, timeout=20)
         return float(r.stdout.strip())
     except Exception:
@@ -284,7 +319,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         secs = await off_loop(audio_seconds, data)
         if secs is None:
             return None, None, None, err(415, "unsupported_audio",
-                                         "Could not read that audio. Send WAV, MP3, OGG, WebM or M4A.")
+                                         "Could not read that audio. Send WAV, MP3, M4A, AAC, OGG, WebM or FLAC.")
         limit = DEMO_MAX_AUDIO_SECONDS if rec.is_demo else MAX_AUDIO_SECONDS
         if secs > limit:
             return None, None, None, err(413, "audio_too_long",
@@ -568,7 +603,10 @@ class DictLimiter:
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg")                     # ffprobe: audio length before any GPU work
+    # ffprobe: audio length before any GPU work. It parses untrusted uploads, so
+    # rebuild the image now and then to take Debian's security fixes: Modal
+    # caches this layer until forced (MODAL_FORCE_BUILD=1, platform/README.md).
+    .apt_install("ffmpeg")
     .pip_install("fastapi[standard]", "httpx", "psycopg[binary]==3.2.13", "psycopg-pool==3.2.8")
 )
 
