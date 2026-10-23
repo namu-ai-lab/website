@@ -222,9 +222,14 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
     upstream: transcribe/speak/translate/converse(...)->UpstreamReply
     limiter: hit(bucket, limit, window_s)->(allowed, retry_after_s)
     """
+    import contextvars
+    import uuid
+
     from fastapi import BackgroundTasks, FastAPI, Request
+    from fastapi.exceptions import RequestValidationError
     from fastapi.responses import JSONResponse, Response
     from starlette.concurrency import run_in_threadpool as off_loop
+    from starlette.exceptions import HTTPException
     # The store and upstream clients are blocking (httpx.Client). Every call to them
     # goes through off_loop, so one slow GPU request never stalls the container.
 
@@ -232,10 +237,46 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                   description="Speech models for the languages of the Sahel.",
                   docs_url="/docs", redoc_url=None)
     cache: dict[str, tuple[float, KeyRecord]] = {}
+    request_id = contextvars.ContextVar("request_id", default="")
 
     def err(status: int, kind: str, message: str, headers: dict | None = None):
-        return JSONResponse({"error": {"type": kind, "message": message}},
-                            status_code=status, headers=headers)
+        body = {"type": kind, "message": message}
+        if request_id.get():
+            body["request_id"] = request_id.get()
+        return JSONResponse({"error": body}, status_code=status, headers=headers)
+
+    # ------------------------------------------------------------ one envelope for every answer
+    # Every response carries X-Request-Id, and every error repeats it, so a developer's report can be
+    # matched to the gateway's logs. The id is made here, never taken from the caller.
+    @web.middleware("http")
+    async def tag_request(request: Request, call_next):
+        rid = uuid.uuid4().hex
+        request_id.set(rid)
+        response = await call_next(request)
+        response.headers["X-Request-Id"] = rid
+        return response
+
+    # FastAPI's own 404, 405 and 422 answers, and anything unhandled, would otherwise
+    # bypass { error: { type, message } } and break SDK code that reads error.type.
+    @web.exception_handler(HTTPException)
+    async def http_error(request: Request, exc: HTTPException):
+        kind, message = {
+            404: ("not_found", "No such endpoint. The API is under /v1; see /docs."),
+            405: ("method_not_allowed", f"{request.method} is not allowed on {request.url.path}."),
+        }.get(exc.status_code, ("http_error", str(exc.detail)))
+        return err(exc.status_code, kind, message, getattr(exc, "headers", None))
+
+    @web.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, exc: RequestValidationError):
+        return err(400, "invalid_request", "The request does not have the shape this endpoint takes; see /docs.")
+
+    @web.exception_handler(Exception)
+    async def internal_error(request: Request, exc: Exception):
+        # Outside the middleware above, so the id goes on here; the details stay in the log.
+        print(f"unhandled {type(exc).__name__} on {request.method} {request.url.path} "
+              f"[{request_id.get()}]", flush=True)
+        return err(500, "internal_error", "Something went wrong on our side. Try again; if it persists, "
+                   "write to contact@namuai.org with the request id.", {"X-Request-Id": request_id.get()})
 
     def presented_key(request: Request) -> str | None:
         auth = request.headers.get("authorization", "")

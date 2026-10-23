@@ -381,6 +381,43 @@ def test_service_key_usage_is_per_account(env):
     assert r == {"month_audio_seconds_used": 1800.0, "month_audio_seconds_limit": 1800.0}
 
 
+
+# ---------------------------------------------------------------- one envelope, one request id
+def test_every_answer_carries_a_request_id(env):
+    c, *_ = env
+    a, b = c.get("/v1/health"), c.post("/v1/transcribe")
+    assert len(a.headers["x-request-id"]) == 32 and a.headers["x-request-id"] != b.headers["x-request-id"]
+    assert b.json()["error"]["request_id"] == b.headers["x-request-id"]
+
+
+def test_unknown_route_is_a_404_envelope(env):
+    c, *_ = env
+    r = c.get("/v2/speech")
+    assert r.status_code == 404 and r.json()["error"]["type"] == "not_found"
+    assert r.json()["error"]["request_id"] == r.headers["x-request-id"]
+
+
+def test_wrong_method_is_a_405_envelope(env):
+    c, *_ = env
+    r = c.get("/v1/speech")
+    assert r.status_code == 405 and r.json()["error"]["type"] == "method_not_allowed"
+    assert "POST" in r.headers["allow"]
+
+
+def test_an_unexpected_failure_is_a_500_envelope(env):
+    store, up = FakeStore(), FakeUpstream()
+
+    class BrokenLimiter:
+        def hit(self, *a):
+            raise RuntimeError("limiter down: secret detail")
+    c = TestClient(gw.create_app(store, up, BrokenLimiter(), PEPPER, audio_seconds=gw.wav_seconds),
+                   raise_server_exceptions=False)
+    r = post_audio(c, "/v1/transcribe")
+    assert r.status_code == 500 and r.json()["error"]["type"] == "internal_error"
+    assert r.json()["error"]["request_id"] == r.headers["x-request-id"]
+    assert "secret detail" not in r.text
+
+
 # ---------------------------------------------------------------- what ffprobe may parse
 HLS = b"#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:9/x.ts\n#EXT-X-ENDLIST\n"
 CONCAT = b"ffconcat version 1.0\nfile '/etc/passwd'\n"
