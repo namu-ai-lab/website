@@ -9,6 +9,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "test": "vitest run",
     "check-glyphs": "node scripts/check-glyphs.mjs",
     "env:init": "node scripts/env-init.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
@@ -34,7 +35,8 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
   },
   "engines": {
     "node": ">=20.9.0"
