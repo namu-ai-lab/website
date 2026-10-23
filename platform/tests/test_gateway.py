@@ -1,6 +1,6 @@
 """Security and contract tests for namu-gateway, with no Modal, Supabase or GPU.
 
-    cd platform && python -m pytest tests -q
+    python3 -m pytest platform/tests -q     (pip install -r platform/requirements-dev.txt first)
 
 Each rule the gateway claims (keys, revocation, beta approval, scopes, quota,
 rate limits, demo limits, input caps, session isolation, metering without

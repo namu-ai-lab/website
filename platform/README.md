@@ -30,7 +30,7 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 | `src/app/api/keys`, `src/app/api/demo/[model]`, `src/app/[lang]/account/*`, `src/app/[lang]/docs` | Dashboard, key minting, live demos, docs |
 | `platform/modal/namu_gateway.py` | The public API (`/v1/transcribe`, `/v1/speech`, `/v1/translate`, `/v1/converse`, `/v1/models`, `/v1/voices`, `/v1/usage`) |
 | `platform/modal/namu_{transcribe,voice,interpret,agent}.py` | The model services, with the proxy-auth switch |
-| `platform/tests/test_gateway.py` | Gateway tests with fakes: `cd platform && python -m pytest tests -q` |
+| `platform/tests/` | Gateway and service tests with fakes, no Modal needed: `pip install -r platform/requirements-dev.txt`, then `python3 -m pytest platform/tests -q` |
 
 ## Security model, in short
 
