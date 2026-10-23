@@ -330,8 +330,10 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return auth[7:].strip()
         return request.headers.get("x-namu-key")
 
-    async def authorize(request: Request, scope: str):
-        """-> (KeyRecord, None) or (None, error response)."""
+    async def identify(request: Request):
+        """The checks every keyed endpoint shares, /v1/usage included: a key is present, well formed,
+        known and not revoked; the service key names an account; the account is not paused.
+        -> (KeyRecord, None) or (None, error response)."""
         key = presented_key(request)
         if not key:
             return None, err(401, "missing_api_key",
@@ -353,7 +355,6 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             cache[h] = (now(), rec)
         if rec.revoked:
             return None, err(401, "key_revoked", "This API key has been revoked.")
-        bucket, limit = f"key:{rec.key_id}", rec.rate_limit_per_min
         if rec.is_service:
             # The website's console Playground: the site has already signed the developer in, and names
             # their account here. The request then runs as that account: its status, its allowance, its
@@ -371,16 +372,27 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                 return None, err(403, "unknown_account", "Unknown account.")
             rec = replace(rec, user_id=acct, beta_status=a[0], monthly_audio_seconds=float(a[1]),
                           used_audio_seconds=float(a[2]))
-            bucket, limit = f"acct:{acct}", SERVICE_PER_MIN
         if rec.beta_status != "approved":
             return None, err(403, "account_paused",
                              "This account is paused. Write to contact@namuai.org.")
+        return rec, None
+
+    async def authorize(request: Request, scope: str):
+        """identify(), then what calling a model needs: the scope, allowance left, the rate limits.
+        -> (KeyRecord, None) or (None, error response)."""
+        rec, e = await identify(request)
+        if e:
+            return None, e
         if scope not in rec.scopes:
             return None, err(403, "insufficient_scope",
                              f"This key is not allowed to call '{scope}'.")
         if rec.used_audio_seconds >= rec.monthly_audio_seconds:
             return None, err(429, "quota_exceeded",
                              "This account has used its monthly audio allowance.")
+        if rec.is_service:                     # the Playground: per account, not per key
+            bucket, limit = f"acct:{rec.user_id}", SERVICE_PER_MIN
+        else:
+            bucket, limit = f"key:{rec.key_id}", rec.rate_limit_per_min
         ok, retry = await off_loop(limiter.hit, bucket, limit, 60)
         if not ok:
             return None, err(429, "rate_limited", "Too many requests for this key.",
@@ -489,22 +501,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
 
     @web.get("/v1/usage")
     async def usage(request: Request):
-        key = presented_key(request)
-        if not key:
-            return err(401, "missing_api_key", "Send your API key.")
-        try:
-            rec = await off_loop(store.lookup, hash_key(key, pepper))
-        except Exception as e:
-            print(f"key lookup failed: {type(e).__name__}", flush=True)
-            return err(503, "auth_unavailable", "Key verification is temporarily unavailable.")
-        if rec is None or rec.revoked:
-            return err(401, "invalid_api_key", "Unknown or revoked API key.")
-        if rec.is_service:                     # as everywhere: the service key speaks only for a named account
-            acct = (request.headers.get("x-namu-account") or "").strip()
-            a = await off_loop(store.account, acct) if acct and len(acct) <= 64 else None
-            if a is None:
-                return err(403, "account_required", "This key acts only for a signed-in account.")
-            return {"month_audio_seconds_used": round(float(a[2]), 1), "month_audio_seconds_limit": float(a[1])}
+        rec, e = await identify(request)
+        if e:
+            return e
         return {"month_audio_seconds_used": round(rec.used_audio_seconds, 1),
                 "month_audio_seconds_limit": rec.monthly_audio_seconds}
 

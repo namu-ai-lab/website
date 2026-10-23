@@ -743,3 +743,38 @@ def test_real_files_of_each_allowed_format_are_measured(name, codec, tmp_path):
     if made.returncode != 0:
         pytest.skip(f"this ffmpeg cannot encode {name}")
     assert gw.probe_seconds(out.read_bytes()) == pytest.approx(1.0, abs=0.1)
+
+
+# ---------------------------------------------------------------- /v1/usage takes the same key checks
+def test_usage_reports_the_month(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].used_audio_seconds = 61.26
+    assert c.get("/v1/usage", headers=auth()).json() == {"month_audio_seconds_used": 61.3,
+                                                          "month_audio_seconds_limit": 1800}
+
+
+def test_usage_checks_the_key_shape_before_any_lookup(env):
+    c, store, *_ = env
+    r = c.get("/v1/usage", headers=auth("sk-not-ours"))
+    assert r.status_code == 401 and r.json()["error"]["type"] == "invalid_api_key"
+    assert store.lookups == 0
+
+
+def test_usage_refuses_a_paused_account(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].beta_status = "denied"
+    r = c.get("/v1/usage", headers=auth())
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
+    r = c.get("/v1/usage", headers=as_account("paused-1"))
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
+
+
+def test_usage_refuses_a_revoked_key(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].revoked = True
+    assert c.get("/v1/usage", headers=auth()).json()["error"]["type"] == "key_revoked"
+
+
+def test_usage_answers_even_when_the_allowance_is_used(env):
+    c, *_ = env
+    assert c.get("/v1/usage", headers=as_account("full-1")).status_code == 200
