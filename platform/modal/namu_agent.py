@@ -134,6 +134,11 @@ MAX_SENTENCES = 4
 # slower and more expensive turn by turn. A session_id is scoped to ONE call
 # (the browser page mints a new one each time a call starts and drops it on
 # hangup); this does not remember a caller across separate calls or days.
+#
+# Sessions are read and written only inside a turn (/v1/chat, /v1/speech).
+# There is no endpoint that reads or clears one by id: the gateway namespaces
+# ids per account (user_id:session_id), and such an endpoint would step
+# around that.
 SESSIONS_DICT = "namu-agent-sessions"
 MAX_HISTORY_MESSAGES = 12   # 6 user/assistant exchanges
 
@@ -421,7 +426,6 @@ def api():
                 "default_persona": DEFAULT_PERSONA,
                 "memory": {"enabled": True, "scope": "per session_id, one call",
                           "max_history_messages": MAX_HISTORY_MESSAGES},
-                "transcribe": TRANSCRIBE_URL, "voice": VOICE_URL,
                 "key_configured": bool(KEY)}
 
     @web.get("/v1/models")
@@ -487,22 +491,6 @@ def api():
         if body.get("debug"):
             out["debug"] = meta
         return out
-
-    @web.post("/v1/session/reset")
-    async def session_reset(request: Request):
-        """Clear a session's stored history without ending the call."""
-        body = await request.json() if await request.body() else {}
-        session_id = body.get("session_id")
-        if not session_id:
-            return JSONResponse({"error": "session_id required"}, status_code=400)
-        sessions.pop(session_id, None)
-        return {"status": "reset", "session_id": session_id}
-
-    @web.get("/v1/session/{session_id}")
-    def session_get(session_id: str):
-        """Inspect what a session currently remembers — for testing and debugging."""
-        history = sessions.get(session_id) or []
-        return {"session_id": session_id, "turns": len(history), "history": history}
 
     @web.post("/v1/speech")
     async def speech(request: Request, persona: str = DEFAULT_PERSONA,

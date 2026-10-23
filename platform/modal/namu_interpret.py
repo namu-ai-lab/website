@@ -200,8 +200,7 @@ def api():
                 "pairs": ["ha->fr", "fr->ha"],
                 "asr": {"ha": "Namu-Transcribe", "fr": FR_STT_MODEL},
                 "translation_model": TEXT_MODEL,
-                "tts": "Namu-Voice",
-                "transcribe": TRANSCRIBE_URL, "voice": VOICE_URL}
+                "tts": "Namu-Voice"}
 
     @web.post("/v1/translate")
     async def translate(request: Request):
