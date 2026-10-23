@@ -1,3 +1,4 @@
+import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { hasAccounts } from "@/lib/env";

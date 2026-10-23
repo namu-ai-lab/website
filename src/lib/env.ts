@@ -1,17 +1,27 @@
-/* Which parts of the developer platform are configured. The site builds and serves its public pages
-   without any of these; account pages and the live demos say so instead of failing. */
+import "server-only";
+import type { ServerSetting } from "./env-check";
 
-/** Accounts need the Neon database and Neon Auth (its URL and the secret that signs this site's cookies). Server-only. */
-export const hasAccounts = () => Boolean(process.env.DATABASE_URL && process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET);
+/* The server's settings: every secret and switch the site reads is read here, by a name lib/env-check lists and
+   checks when Next starts. The site builds and serves its public pages without any of them; account pages and the
+   live demos say so instead of failing. Browser-safe settings live in lib/public-config. */
+
+/** A setting's value, or undefined when it is unset or empty. Read at call time, never cached. */
+export const setting = (name: ServerSetting): string | undefined => process.env[name] || undefined;
+
+/** A setting the caller cannot work without: its value, or an error that names it. */
+export function required(name: ServerSetting): string {
+  const value = setting(name);
+  if (!value) throw new Error(`${name} is not set (see .env.example)`);
+  return value;
+}
+
+/** Accounts need the Neon database and Neon Auth (its URL and the secret that signs this site's cookies). */
+export const hasAccounts = () => Boolean(setting("DATABASE_URL") && setting("NEON_AUTH_BASE_URL") && setting("NEON_AUTH_COOKIE_SECRET"));
 
 export type Provider = "google" | "github";
 
 /** The social sign-in buttons to show: NEON_AUTH_PROVIDERS ("google,github" when unset), which should match the
- *  providers switched on in the Neon Console. Server-only. */
+ *  providers switched on in the Neon Console. Set and empty means none, so this reads the raw value. */
 export const providers = (): Provider[] =>
   [...new Set((process.env.NEON_AUTH_PROVIDERS ?? "google,github").split(",").map(p => p.trim().toLowerCase()))]
     .filter((p): p is Provider => p === "google" || p === "github");
-
-/** The public API base developers call: the gateway on Namu's own Modal workspace (namu-ai-lab), until
- *  api.namu-ai.org points at it. NEXT_PUBLIC_NAMU_API_BASE overrides it. */
-export const apiBase = (process.env.NEXT_PUBLIC_NAMU_API_BASE || "https://namu-ai-lab--namu-gateway-api.modal.run").replace(/\/+$/, "");
