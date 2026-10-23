@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { accountCopy } from "@/content/account";
-import type { Lang } from "@/i18n/config";
+import { lp, type Lang } from "@/i18n/config";
 import type { ConsoleUser } from "./ConsoleShell";
 
 /* The signed-in account at the foot of the console's sidebar, after platform.openai.com: the initial in a circle with the
@@ -31,7 +31,7 @@ export function AccountMenu({ lang, user, label, settings }: { lang: Lang; user:
         <div className="cx-menu" id="cx-account-menu">
           <p className="cx-menu-who"><span>{label}</span><em>{user.email}</em></p>
           {settings && <a href={settings.href}>{settings.label}</a>}
-          <button type="button" onClick={async () => { await authClient.signOut(); window.location.href = "/"; }}>{accountCopy[lang].nav.signOut}</button>
+          <button type="button" onClick={async () => { await authClient.signOut(); window.location.href = lp(lang, "/"); }}>{accountCopy[lang].nav.signOut}</button>
         </div>
       )}
     </div>
