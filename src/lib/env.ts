@@ -1,3 +1,5 @@
+import "server-only";
+
 /* Which parts of the developer platform are configured. The site builds and serves its public pages
    without any of these; account pages and the live demos say so instead of failing. */
 
@@ -11,7 +13,3 @@ export type Provider = "google" | "github";
 export const providers = (): Provider[] =>
   [...new Set((process.env.NEON_AUTH_PROVIDERS ?? "google,github").split(",").map(p => p.trim().toLowerCase()))]
     .filter((p): p is Provider => p === "google" || p === "github");
-
-/** The public API base developers call: the gateway on Namu's own Modal workspace (namu-ai-lab), until
- *  api.namu-ai.org points at it. NEXT_PUBLIC_NAMU_API_BASE overrides it. */
-export const apiBase = (process.env.NEXT_PUBLIC_NAMU_API_BASE || "https://namu-ai-lab--namu-gateway-api.modal.run").replace(/\/+$/, "");

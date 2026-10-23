@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiBase } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { clientIp, fail, sameOrigin } from "@/lib/http";
 
 /* The home page console's live demos. The browser never sees an API key: this route adds the server-held

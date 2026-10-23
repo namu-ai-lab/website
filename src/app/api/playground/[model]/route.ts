@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { apiBase } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { fail, signedIn } from "@/lib/http";
 
 /* The console Playground: a signed-in developer tries a model as themselves, as on platform.openai.com. The browser

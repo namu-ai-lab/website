@@ -1,5 +1,5 @@
 import { after, type NextRequest } from "next/server";
-import { apiBase } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { clientIp, fail, sameOrigin } from "@/lib/http";
 
 /* The home page's live conversation with Aïr. Aïr is a chain, not one speech-to-speech model: Tatsuniya writes down
