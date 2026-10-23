@@ -37,12 +37,22 @@ VOICE_URL = "https://namu-ai-lab--namu-voice-voice-api.modal.run"
 # Gemini's weakness is orthography — it used the fewest hooked consonants of
 # the top group — which the SYSTEM prompt's ɓ ɗ ƙ ƴ block is there to offset.
 #
-# Any model may be named per request; the provider is inferred from the id,
-# because OpenRouter ids are namespaced ("google/…") and Cohere's are not.
-# That makes an A/B one request rather than one redeploy.
+# A request may name one of CHAT_MODELS, so the default and its fallback can
+# be compared in one request rather than one redeploy. The provider is inferred
+# from the id, because OpenRouter ids are namespaced ("google/…") and Cohere's
+# are not. Trying another model means adding it to CHAT_MODELS and redeploying:
+# an open `model` field made this service a free proxy to every model on
+# Namu's OpenRouter, OpenAI and Cohere keys.
 MODEL = "google/gemini-3.5-flash-lite"
 FALLBACK_MODEL = "qwen/qwen3.6-flash"
+CHAT_MODELS = (MODEL, FALLBACK_MODEL)
 OR_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Every message is sent to a paid model, so what one /v1/chat request may carry
+# is capped before any provider is called. A voice turn is a sentence or two;
+# a LiveKit context that outgrows this should send its most recent messages.
+MAX_CHAT_MESSAGES = 40
+MAX_MESSAGE_CHARS = 4000
 
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
@@ -69,6 +79,42 @@ def openai_payload(model: str, msgs: list[dict]) -> dict:
         p["max_tokens"] = 500
         p["temperature"] = 0.3
     return p
+
+
+def chat_request(body) -> tuple[list[dict], str, str | None]:
+    """The messages and model a /v1/chat body asks for, or why it is refused.
+
+    -> (messages, model, None), or ([], "", reason) for a 400. Only role and
+    content are kept (LiveKit chat contexts carry more), and empty messages
+    are dropped.
+    """
+    if not isinstance(body, dict):
+        return [], "", "send a JSON object"
+    model = body.get("model") or MODEL
+    if model not in CHAT_MODELS:
+        return [], "", f"unknown model; use one of: {', '.join(CHAT_MODELS)}"
+    messages = body.get("messages")
+    if not messages:
+        text = body.get("text") or ""
+        messages = [{"role": "user", "content": text.strip() if isinstance(text, str) else text}]
+    if not isinstance(messages, list) or not all(isinstance(m, dict) for m in messages):
+        return [], "", "messages must be a list of {role, content}"
+    if len(messages) > MAX_CHAT_MESSAGES:
+        return [], "", f"at most {MAX_CHAT_MESSAGES} messages"
+    kept = []
+    for m in messages:
+        content = m.get("content") or ""
+        if not isinstance(content, str):
+            return [], "", "content must be text"
+        if len(content) > MAX_MESSAGE_CHARS:
+            return [], "", f"at most {MAX_MESSAGE_CHARS} characters per message"
+        if content.strip():
+            kept.append({"role": "assistant" if m.get("role") == "assistant" else "user",
+                         "content": content})
+    if not kept:
+        return [], "", "no text"
+    return kept, model, None
+
 
 MAX_WORDS = 55
 MAX_SENTENCES = 4
@@ -404,23 +450,22 @@ def api():
         how a LiveKit session, which already resends its own full ChatContext
         every turn, stays unaffected: it never sends a session_id, so nothing
         here merges with it.
-        """
-        body = await request.json() if await request.body() else {}
-        session_id = body.get("session_id")
-        messages = body.get("messages")
-        if not messages:
-            text = (body.get("text") or "").strip()
-            if not text:
-                return JSONResponse({"error": "no text"}, status_code=400)
-            messages = [{"role": "user", "content": text}]
-        # Keep only the fields the API accepts; LiveKit chat contexts carry more.
-        messages = [{"role": "assistant" if m.get("role") == "assistant" else "user",
-                     "content": m.get("content") or ""}
-                    for m in messages if (m.get("content") or "").strip()]
 
+        `model` must be one of CHAT_MODELS, and the request may carry at most
+        MAX_CHAT_MESSAGES messages of MAX_MESSAGE_CHARS each; anything else is
+        a 400 before any provider is called.
+        """
+        try:
+            body = await request.json() if await request.body() else {}
+        except ValueError:
+            return JSONResponse({"error": "the body is not JSON"}, status_code=400)
+        messages, model, problem = chat_request(body)
+        if problem:
+            return JSONResponse({"error": problem}, status_code=400)
+
+        session_id = body.get("session_id")
         history = _load_session(session_id)
         persona = body.get("persona") or DEFAULT_PERSONA
-        model = body.get("model") or MODEL
         meta: dict = {}
         try:
             reply, raw, secs = _chat(history + messages, persona, model, meta)
