@@ -1,0 +1,8 @@
+# What platform/tests needs to run: the gateway's web stack and the test runner, pinned.
+# Modal is not needed; tests/conftest.py stands in for it. Python 3.11, as in the gateway's image.
+#   python -m pip install -r platform/requirements-dev.txt
+#   python -m pytest platform/tests -q
+fastapi==0.161.1
+httpx==0.28.1
+python-multipart==0.0.32
+pytest==9.1.1
