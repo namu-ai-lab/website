@@ -29,6 +29,15 @@ type T = (typeof consoleCopy)["en"]["playground"];
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const newSession = () => `pg-${Math.random().toString(36).slice(2, 10)}`;
 
+/* What a clip sends to /api/playground, which takes LIMITS.playgroundUploadMb (Vercel refuses larger bodies before the
+   route runs): the 16 kHz WAV while it fits, about the first two minutes (every model reads it, and the gateway
+   measures it exactly); past that, the clip as it was recorded or chosen (Opus, AAC, MP3...), which is several times
+   smaller: five minutes of a recording is about 2.3 MB. The WAV comes first because some WebM recordings from older
+   Chromium carry no duration, which the gateway's ffprobe cannot measure. Too large in both forms: null, and the clip
+   is refused when it is chosen, before anything is sent. */
+const UPLOAD_MAX = LIMITS.playgroundUploadMb * 1024 * 1024;
+const uploadOf = (c: Clip): Blob | null => (c.wav.size <= UPLOAD_MAX ? c.wav : c.source.size <= UPLOAD_MAX ? c.source : null);
+
 async function call(mode: Mode, body: BodyInit, type: string, query = ""): Promise<Out & { json?: Record<string, unknown> }> {
   const t0 = performance.now();
   try {
@@ -36,7 +45,8 @@ async function call(mode: Mode, body: BodyInit, type: string, query = ""): Promi
     const latencyMs = Number(res.headers.get("x-namu-latency-ms")) || Math.round(performance.now() - t0);
     if (!res.ok) {
       const j = await res.json().catch(() => null) as { error?: { message?: string } } | null;
-      return { stats: { status: res.status, latencyMs }, error: j?.error?.message ?? `HTTP ${res.status}` };
+      /* a 413 that is not ours is Vercel refusing the body before the route ran: say so in the reader's words */
+      return { stats: { status: res.status, latencyMs }, error: j?.error?.message ?? (res.status === 413 ? "too_large" : `HTTP ${res.status}`) };
     }
     if ((res.headers.get("content-type") ?? "").startsWith("audio")) {
       return { stats: { status: res.status, latencyMs, audioS: Number(res.headers.get("x-audio-seconds")) || undefined }, audio: await res.blob() };
@@ -129,6 +139,7 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
     try {
       const c = await toClip(blob, name);
       if (c.seconds > LIMITS.audioMinutes * 60) { setErr(t.errors.long(LIMITS.audioMinutes)); return; }
+      if (!uploadOf(c)) { setErr(t.errors.big(LIMITS.playgroundUploadMb)); return; }
       onClip(c);
     } catch { setErr(t.errors.decode); } finally { setReading(false); }
   };
@@ -173,7 +184,7 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
             onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void take(f, f.name); }} />
         </div>
       )}
-      <p className={err ? "cx-error" : "cx-muted cx-small"} role={err ? "alert" : undefined}>{err ?? t.maxRec(LIMITS.audioMinutes)}</p>
+      <p className={err ? "cx-error" : "cx-muted cx-small"} role={err ? "alert" : undefined}>{err ?? t.maxRec(LIMITS.audioMinutes, LIMITS.playgroundUploadMb)}</p>
     </div>
   );
 }
@@ -242,27 +253,36 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
 
   async function run(m: Mode = mode) {
     if (busy) return;
+    if (m === "speech") {
+      const body = text.trim();
+      if (!body) return;
+      setBusy(m);
+      try {
+        const r = await call("speech", JSON.stringify({ text: body, voice }), "application/json");
+        record(m, body.slice(0, 80), { ...r, stats: { ...r.stats, chars: body.length } });
+      } finally { setBusy(null); }
+      return;
+    }
     const clip = clips[m];
-    if (m === "speech" ? !text.trim() : !clip) return;
+    const audio = clip && uploadOf(clip);
+    if (!clip || !audio) return;                                // too large clips are refused when chosen
+    const type = audio.type || "application/octet-stream", audioS = clip.seconds;
     setBusy(m);
     try {
-      if (m === "speech") {
-        const r = await call("speech", JSON.stringify({ text: text.trim(), voice }), "application/json");
-        record(m, text.trim().slice(0, 80), { ...r, stats: { ...r.stats, chars: text.trim().length } });
-      } else if (m === "transcribe") {
-        const r = await call("transcribe", clip!.wav, "audio/wav");
-        record(m, clip!.name, { ...r, text: r.json?.text as string | undefined, stats: { ...r.stats, audioS: clip!.seconds } });
+      if (m === "transcribe") {
+        const r = await call("transcribe", audio, type);
+        record(m, clip.name, { ...r, text: r.json?.text as string | undefined, stats: { ...r.stats, audioS } });
       } else if (m === "translate") {
-        const r = await call("translate", clip!.wav, "audio/wav", `?target=${target}`);
+        const r = await call("translate", audio, type, `?target=${target}`);
         const a = r.json?.audio as string | undefined;
-        record(m, clip!.name, { ...r, source: r.json?.source_text as string | undefined, text: r.json?.text as string | undefined,
-          audio: a ? b64ToBlob(a) : undefined, stats: { ...r.stats, audioS: clip!.seconds } });
+        record(m, clip.name, { ...r, source: r.json?.source_text as string | undefined, text: r.json?.text as string | undefined,
+          audio: a ? b64ToBlob(a) : undefined, stats: { ...r.stats, audioS } });
       } else {
-        const r = await call("converse", clip!.wav, "audio/wav", `?persona=${persona}&session_id=${session}`);
+        const r = await call("converse", audio, type, `?persona=${persona}&session_id=${session}`);
         const a = r.json?.audio as string | undefined;
         const turn: Turn | null = r.json ? { heard: String(r.json.heard ?? ""), reply: String(r.json.reply ?? ""), audio: a ? b64ToBlob(a) : undefined } : null;
         const prev = outs.converse?.turns ?? [];
-        record(m, turn?.heard || clip!.name, { ...r, turns: turn ? [...prev, turn] : prev, stats: { ...r.stats, audioS: clip!.seconds } });
+        record(m, turn?.heard || clip.name, { ...r, turns: turn ? [...prev, turn] : prev, stats: { ...r.stats, audioS } });
         if (turn) setClips(c => ({ ...c, converse: null }));     // ready for the next question
       }
     } finally { setBusy(null); }
@@ -277,7 +297,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
     : [{ label: t.samples.ha, src: m === "converse" ? "/usecases/translation-ha.m4a" : "/usecases/education.m4a" }];
 
   let output: ReactNode = <p className="cx-pg-empty">{t.empty[mode]}</p>;
-  if (out?.error) output = <p className="cx-error" role="alert">{out.error === "network" ? t.errors.generic : out.error}</p>;
+  if (out?.error) output = <p className="cx-error" role="alert">{out.error === "network" ? t.errors.generic : out.error === "too_large" ? t.errors.big(LIMITS.playgroundUploadMb) : out.error}</p>;
   else if (out && mode === "speech" && out.audio) output = <Player blob={out.audio} t={t} name={`tafiya-${voice}.wav`} />;
   else if (out && mode === "transcribe") output = (
     <div className="cx-pg-text">

@@ -43,7 +43,7 @@ export type ConsoleCopy = {
     settings: string; model: string; voice: string; voices: Record<"nadia" | "salim" | "fr", [string, string]>;
     textLabel: string; textPh: string; generate: string; generating: string;
     input: string; record: string; stopRec: string; upload: string; sample: string; samples: { ha: string; fr: string };
-    recording: (t: string) => string; remove: string; maxRec: (m: number) => string;
+    recording: (t: string) => string; remove: string; maxRec: (m: number, mb: number) => string;
     transcribe: string; transcribing: string; translate: string; translating: string; send: string; sending: string;
     language: string; hausa: string; direction: string; haFr: string; frHa: string;
     persona: string; session: string; newSession: string; sessionNote: string;
@@ -52,7 +52,7 @@ export type ConsoleCopy = {
     stats: { status: string; latency: string; audio: string; chars: string };
     download: string; copy: string; copied: string; play: string; pause: string;
     code: string; codeH: string; codeLede: string; close: string; wake: string; runsOn: string; history: string; noHistory: string;
-    errors: { mic: string; decode: string; long: (m: number) => string; generic: string };
+    errors: { mic: string; decode: string; long: (m: number) => string; big: (mb: number) => string; generic: string };
   };
   logs: {
     meta: [string, string]; lede: string; privacy: string;
@@ -156,7 +156,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       textLabel: "Text", textPh: "Write something in Hausa to hear it spoken…", generate: "Generate", generating: "Generating…",
       input: "Audio", record: "Record", stopRec: "Stop", upload: "Upload a file", sample: "Use a sample",
       samples: { ha: "Hausa sample", fr: "French sample" },
-      recording: s => `Recording · ${s}`, remove: "Remove", maxRec: m => `Up to ${m} minutes, any common audio format.`,
+      recording: s => `Recording · ${s}`, remove: "Remove", maxRec: (m, mb) => `Up to ${m} minutes (files up to ${mb} MB), any common audio format.`,
       transcribe: "Transcribe", transcribing: "Transcribing…", translate: "Translate", translating: "Translating…", send: "Send", sending: "Aïr is answering…",
       language: "Language", hausa: "Hausa", direction: "Direction", haFr: "Hausa → French", frHa: "French → Hausa",
       persona: "Persona", session: "Conversation", newSession: "New conversation", sessionNote: "Aïr remembers this conversation until you start a new one.",
@@ -172,7 +172,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       code: "View code", codeH: "Use this request in your code", codeLede: "The same request as here, with your key read from NAMU_API_KEY.", close: "Close",
       wake: "The first request wakes the model: it can take about twenty seconds.", runsOn: "Runs on your account",
       history: "History", noHistory: "What you try here is listed in this tab until you leave the page.",
-      errors: { mic: "Allow the microphone to record.", decode: "This file could not be read as audio.", long: m => `Keep it under ${m} minutes.`, generic: "Something went wrong. Try again." },
+      errors: { mic: "Allow the microphone to record.", decode: "This file could not be read as audio.", long: m => `Keep it under ${m} minutes.`,
+        big: mb => `This clip is too large for the Playground (${mb} MB at most). Larger files go through the API.`, generic: "Something went wrong. Try again." },
     },
     logs: {
       meta: ["Logs", "Every request to the Namu API from your keys and the Playground."],
@@ -287,7 +288,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       textLabel: "Texte", textPh: "Écrivez quelque chose en haoussa pour l’entendre…", generate: "Générer", generating: "Génération…",
       input: "Audio", record: "Enregistrer", stopRec: "Arrêter", upload: "Importer un fichier", sample: "Utiliser un exemple",
       samples: { ha: "Exemple en haoussa", fr: "Exemple en français" },
-      recording: s => `Enregistrement · ${s}`, remove: "Retirer", maxRec: m => `Jusqu’à ${m} minutes, dans tout format audio courant.`,
+      recording: s => `Enregistrement · ${s}`, remove: "Retirer", maxRec: (m, mb) => `Jusqu’à ${m} minutes (fichiers de ${mb} Mo au plus), dans tout format audio courant.`,
       transcribe: "Transcrire", transcribing: "Transcription…", translate: "Traduire", translating: "Traduction…", send: "Envoyer", sending: "Aïr répond…",
       language: "Langue", hausa: "Haoussa", direction: "Sens", haFr: "Haoussa → français", frHa: "Français → haoussa",
       persona: "Personnage", session: "Conversation", newSession: "Nouvelle conversation", sessionNote: "Aïr se souvient de cette conversation jusqu’à ce que vous en commenciez une autre.",
@@ -303,7 +304,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       code: "Voir le code", codeH: "Utiliser cette requête dans votre code", codeLede: "La même requête qu’ici, avec votre clé lue dans NAMU_API_KEY.", close: "Fermer",
       wake: "La première requête réveille le modèle : cela peut prendre une vingtaine de secondes.".replace(" :", `${n}:`), runsOn: "Sur votre compte",
       history: "Historique", noHistory: "Ce que vous essayez ici s’affiche dans cet onglet jusqu’à ce que vous quittiez la page.",
-      errors: { mic: "Autorisez le micro pour enregistrer.", decode: "Ce fichier n’a pas pu être lu comme de l’audio.", long: k => `Restez sous ${k} minutes.`, generic: "Une erreur s’est produite. Réessayez." },
+      errors: { mic: "Autorisez le micro pour enregistrer.", decode: "Ce fichier n’a pas pu être lu comme de l’audio.", long: k => `Restez sous ${k} minutes.`,
+        big: mb => `Ce clip est trop lourd pour le bac à sable (${mb} Mo au plus). Les fichiers plus lourds passent par l’API.`, generic: "Une erreur s’est produite. Réessayez." },
     },
     logs: {
       meta: ["Journaux", "Chaque requête à l’API Namu, depuis vos clés et le bac à sable."],
