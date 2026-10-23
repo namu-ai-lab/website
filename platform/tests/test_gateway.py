@@ -17,6 +17,7 @@ import wave
 from dataclasses import replace
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -71,27 +72,32 @@ class FakeStore:
 class FakeUpstream:
     def __init__(self):
         self.calls = []
+        self.budgets = []
         self.fail = False
 
     def _ok(self, payload):
         return gw.UpstreamReply(200, __import__("json").dumps(payload).encode())
 
-    def transcribe(self, data, language):
+    def transcribe(self, data, language, timeout):
         self.calls.append(("transcribe", language))
+        self.budgets.append(timeout)
         if self.fail:
             return gw.UpstreamReply(500, b"boom")
         return self._ok({"text": "sannu da zuwa"})
 
-    def speak(self, text, language, voice):
+    def speak(self, text, language, voice, timeout):
         self.calls.append(("speak", language, voice))
+        self.budgets.append(timeout)
         return gw.UpstreamReply(200, wav(2.0, 24000), "audio/wav")
 
-    def translate(self, data, source, target):
+    def translate(self, data, source, target, timeout):
         self.calls.append(("translate", source, target))
+        self.budgets.append(timeout)
         return self._ok({"source_text": "sannu", "target_text": "bonjour", "audio": "QUJD"})
 
-    def converse(self, data, persona, session_id):
+    def converse(self, data, persona, session_id, timeout):
         self.calls.append(("converse", persona, session_id))
+        self.budgets.append(timeout)
         return self._ok({"question": "wane sunana?", "reply": "Sunanka Musa.",
                          "audio": base64.b64encode(wav(1.5, 24000)).decode()})
 
@@ -219,6 +225,30 @@ def test_audio_too_long_rejected_before_gpu(env):
     assert up.calls == []
 
 
+
+def test_a_declared_oversize_upload_is_refused_before_it_is_read(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/transcribe", headers={**auth(), "Content-Length": str(10**9)}, content=wav())
+    assert r.status_code == 413 and r.json()["error"]["type"] == "payload_too_large"
+    assert up.calls == []
+
+
+def test_a_raw_body_is_cut_off_at_the_cap(env, monkeypatch):
+    c, store, up, *_ = env
+    monkeypatch.setattr(gw, "MAX_UPLOAD_BYTES", 1000)
+    monkeypatch.setattr(gw, "MULTIPART_SLACK_BYTES", 0)
+    body = (b"\x00" * 500 for _ in range(10))            # chunked: no Content-Length to go by
+    r = c.post("/v1/transcribe", headers=auth(), content=body)
+    assert r.status_code == 413 and up.calls == []
+
+
+def test_a_multipart_file_over_the_cap_is_refused(env, monkeypatch):
+    c, store, up, *_ = env
+    monkeypatch.setattr(gw, "MAX_UPLOAD_BYTES", 1000)       # the 1 MB slack still lets the request in
+    r = post_audio(c, "/v1/transcribe")                     # one second of WAV: 32 KB
+    assert r.status_code == 413 and up.calls == []
+
+
 def test_demo_key_has_short_audio_cap(env):
     c, store, up, *_ = env
     r = post_audio(c, "/v1/transcribe", key=DEMO, seconds=gw.DEMO_MAX_AUDIO_SECONDS + 1)
@@ -275,6 +305,284 @@ def test_upstream_failure_is_502_and_recorded(env):
     assert "boom" not in r.text            # internal errors are not leaked
 
 
+
+
+# ---------------------------------------------------------------- when a model service fails
+AUDIO_CALLS = [("/v1/transcribe", "transcribe"), ("/v1/translate", "translate"), ("/v1/converse", "converse")]
+
+
+def call_audio_endpoint(c, path):
+    return post_audio(c, path, seconds=10.0)
+
+
+def call_speech(c):
+    return c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "nadia"})
+
+
+def raising(exc):
+    def call(*a, **k):
+        raise exc
+    return call
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+def test_a_network_error_is_a_502_envelope_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, raising(httpx.ConnectError("connection refused")))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    u = store.usage[-1]
+    assert (u.endpoint, u.status, u.audio_seconds) == (call, 502, 0.0)
+
+
+def test_speech_network_error_is_a_502_envelope(env):
+    c, store, up, *_ = env
+    up.speak = raising(httpx.ConnectError("connection refused"))
+    r = call_speech(c)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+def test_running_out_of_time_is_a_504_envelope_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, raising(TimeoutError("read timed out")))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 504 and r.json()["error"]["type"] == "upstream_timeout"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (504, 0.0)
+
+
+@pytest.mark.parametrize("path, call", [("/v1/translate", "translate"), ("/v1/converse", "converse")])
+def test_silence_is_a_422_nothing_heard_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(422, b'{"error": "nothing was heard"}'))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 422 and r.json()["error"]["type"] == "nothing_heard"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (422, 0.0)
+
+
+def test_a_transcribe_422_is_its_own_failure_not_silence(env):
+    # namu-transcribe answers 422 for anything that breaks while decoding, GPU errors included
+    c, store, up, *_ = env
+    up.transcribe = lambda *a, **k: gw.UpstreamReply(422, b'{"error": "CUDA error"}')
+    r = call_audio_endpoint(c, "/v1/transcribe")
+    assert r.status_code == 502 and "CUDA" not in r.text
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+@pytest.mark.parametrize("content", [b"<html>gateway timeout</html>", b'["not", "an", "object"]', b""])
+def test_an_answer_that_is_not_a_json_object_is_a_502(env, path, call, content):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(200, content, "text/html"))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+def test_speech_that_is_not_audio_is_a_502(env):
+    c, store, up, *_ = env
+    up.speak = lambda *a, **k: gw.UpstreamReply(200, b'{"status": "warm"}', "application/json")
+    assert call_speech(c).status_code == 502
+
+
+
+def test_the_wait_fits_who_is_asking(env):
+    c, store, up, *_ = env
+    post_audio(c, "/v1/transcribe", key=DEMO)
+    post_audio(c, "/v1/transcribe")
+    c.post("/v1/transcribe", headers=as_account("dev-1"), files={"file": ("a.wav", wav(), "audio/wav")})
+    assert up.budgets == [gw.UPSTREAM_TIMEOUT_S["demo"], gw.UPSTREAM_TIMEOUT_S["api"],
+                          gw.UPSTREAM_TIMEOUT_S["playground"]]
+
+
+# ---------------------------------------------------------------- the real HTTP client, against a fake Modal
+URLS = {name: f"https://{name}.modal.test" for name in ("transcribe", "voice", "interpret", "agent")}
+
+
+def modal_upstream(handler):
+    return gw.ModalUpstream(URLS, "wk-test", "ws-test", transport=httpx.MockTransport(handler))
+
+
+@pytest.fixture
+def no_jitter(monkeypatch):
+    monkeypatch.setattr(gw.random, "uniform", lambda a, b: 0.0)
+
+
+def test_a_long_call_follows_modals_303_to_the_result():
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.params.get("__result"), request.headers.get("modal-key")))
+        if "__result" not in request.url.params:
+            return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+        return httpx.Response(200, json={"source_text": "sannu", "target_text": "bonjour"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 200 and reply.json()["target_text"] == "bonjour"
+    assert seen == [("POST", None, "wk-test"), ("GET", "1", "wk-test")]
+
+
+def test_a_redirect_to_another_host_is_not_followed():
+    hosts = []
+
+    def handler(request):
+        hosts.append(request.url.host)
+        return httpx.Response(303, headers={"location": "https://elsewhere.example/steal"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 303 and hosts == ["interpret.modal.test"]      # the token never left
+
+
+
+@pytest.mark.parametrize("location", ["http://interpret.modal.test/v1/speech?__result=1",
+                                      "https://interpret.modal.test:8443/v1/speech?__result=1"])
+def test_a_redirect_that_changes_scheme_or_port_is_not_followed(location):
+    seen = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(303, headers={"location": location})
+    assert modal_upstream(handler).translate(wav(), "ha", "fr", 60).status == 303 and len(seen) == 1
+
+
+class FakeMonotonic:
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        return self.t
+
+
+def test_the_budget_covers_every_hop_together():
+    clock, hops = FakeMonotonic(), []
+
+    def handler(request):
+        hops.append(request.method)
+        clock.t += 100                                 # each hop waits 100 s before its 303
+        return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+    up = gw.ModalUpstream(URLS, "wk", "ws", transport=httpx.MockTransport(handler), clock=clock)
+    with pytest.raises(gw.UpstreamTimeout):
+        up.translate(wav(), "ha", "fr", 250)
+    assert hops == ["POST", "GET", "GET"]              # 300 s spent; a fourth hop would pass 250
+
+
+def test_a_chain_of_redirects_stops_at_modals_limit():
+    hops = []
+
+    def handler(request):
+        hops.append(1)
+        return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+    reply = modal_upstream(handler).translate(wav(), "ha", "fr", 60)
+    assert reply.status == 303 and len(hops) == 1 + gw.ModalUpstream.MAX_HOPS
+
+
+def test_the_budget_runs_from_the_requests_arrival():
+    store, up, clock = FakeStore(), FakeUpstream(), Clock()
+
+    def slow_probe(data):
+        clock.t += 30                                  # thirty seconds spent before the model is called
+        return gw.wav_seconds(data)
+    c = TestClient(gw.create_app(store, up, FakeLimiter(), PEPPER, audio_seconds=slow_probe, now=clock))
+    post_audio(c, "/v1/transcribe")
+    assert up.budgets == [gw.UPSTREAM_TIMEOUT_S["api"] - 30]
+
+
+def test_a_read_timeout_is_an_upstream_timeout():
+    def handler(request):
+        raise httpx.ReadTimeout("read timed out", request=request)
+    with pytest.raises(gw.UpstreamTimeout):
+        modal_upstream(handler).transcribe(wav(), "ha", 60)
+
+
+def test_no_time_left_is_an_upstream_timeout():
+    with pytest.raises(gw.UpstreamTimeout):
+        modal_upstream(lambda request: httpx.Response(200, json={})).transcribe(wav(), "ha", 0)
+
+
+def test_a_failed_connection_is_retried_once(no_jitter):
+    attempts = []
+
+    def handler(request):
+        attempts.append(request.method)
+        if len(attempts) == 1:
+            raise httpx.ConnectError("connection refused", request=request)
+        return httpx.Response(200, json={"text": "sannu"})
+    assert modal_upstream(handler).transcribe(wav(), "ha", 60).json() == {"text": "sannu"}
+    assert attempts == ["POST", "POST"]
+
+
+def test_other_failures_are_not_retried():
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        raise httpx.RemoteProtocolError("server hung up", request=request)    # the model may have started
+    with pytest.raises(httpx.RemoteProtocolError):
+        modal_upstream(handler).transcribe(wav(), "ha", 60)
+    assert len(attempts) == 1
+
+
+def gateway_with(handler):
+    store = FakeStore()
+    app = gw.create_app(store, modal_upstream(handler), FakeLimiter(), PEPPER, audio_seconds=gw.wav_seconds)
+    return TestClient(app), store
+
+
+def test_end_to_end_connect_error_is_a_502_envelope_with_a_zero_second_row(no_jitter):
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/transcribe", seconds=5.0)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+def test_end_to_end_read_timeout_is_a_504_envelope_with_a_zero_second_row():
+    def handler(request):
+        raise httpx.ReadTimeout("read timed out", request=request)
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/translate", seconds=5.0)
+    assert r.status_code == 504 and r.json()["error"]["type"] == "upstream_timeout"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (504, 0.0)
+
+
+def test_end_to_end_a_303_is_followed_and_charged_once():
+    def handler(request):
+        if "__result" not in request.url.params:
+            return httpx.Response(303, headers={"location": "/v1/speech?__result=1"})
+        return httpx.Response(200, json={"source_text": "sannu", "target_text": "bonjour"})
+    c, store = gateway_with(handler)
+    r = post_audio(c, "/v1/translate", seconds=5.0)
+    assert r.status_code == 200 and r.json()["text"] == "bonjour"
+    assert [(u.status, u.audio_seconds) for u in store.usage] == [(200, 5.0)]
+
+
+# ---------------------------------------------------------------- what counts against the allowance
+@pytest.mark.parametrize("endpoint, expected", [
+    ("transcribe", 3.0), ("speech", 2.0), ("translate", 3.0), ("converse", 5.0)])
+def test_a_success_counts_by_the_one_rule(endpoint, expected):
+    assert gw.billable_seconds(endpoint, 200, sent_s=3.0, returned_s=2.0) == expected
+
+
+@pytest.mark.parametrize("endpoint", ["transcribe", "speech", "translate", "converse"])
+@pytest.mark.parametrize("status", [400, 422, 429, 500, 502, 504])
+def test_a_failure_counts_nothing(endpoint, status):
+    assert gw.billable_seconds(endpoint, status, sent_s=3.0, returned_s=2.0) == 0.0
+
+
+
+def test_a_negative_length_never_becomes_a_credit():
+    assert gw.billable_seconds("transcribe", 200, sent_s=-5000.0) == 0.0
+    assert gw.billable_seconds("converse", 200, sent_s=-5000.0, returned_s=2.0) == 0.0
+
+@pytest.mark.parametrize("path, call", [("/v1/translate", "translate"), ("/v1/converse", "converse")])
+def test_failed_translate_and_converse_are_recorded_at_zero_seconds(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(500, b"boom"))
+    r = post_audio(c, path, seconds=30.0)
+    assert r.status_code == 502
+    u = store.usage[-1]
+    assert (u.endpoint, u.status, u.audio_seconds) == (call, 502, 0.0)
+
+
 def test_speech_returns_wav_and_counts_characters(env):
     c, store, up, *_ = env
     r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu da zuwa.", "voice": "warm"})
@@ -290,6 +598,22 @@ def test_speech_validation(env):
     assert c.post("/v1/speech", headers=auth(), json={"text": "x", "voice": "nobody"}).status_code == 400
     r = c.post("/v1/speech", headers=auth(), json={"text": "x" * (gw.MAX_TEXT_CHARS + 1)})
     assert r.status_code == 413
+
+
+
+@pytest.mark.parametrize("body", [["Sannu"], "Sannu", 5, {"text": 5}, {"text": ["Sannu"]},
+                                  {"text": "Sannu", "voice": ["nadia"]}, {"text": "Sannu", "voice": 7}])
+def test_speech_refuses_json_that_is_not_an_object_of_strings(env, body):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json=body)
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_json"
+    assert up.calls == []
+
+
+def test_speech_refuses_a_body_that_is_not_json(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers={**auth(), "Content-Type": "application/json"}, content=b"{not json")
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_json"
 
 
 def test_translate_pair_and_optional_audio(env):
@@ -381,6 +705,52 @@ def test_service_key_usage_is_per_account(env):
     assert r == {"month_audio_seconds_used": 1800.0, "month_audio_seconds_limit": 1800.0}
 
 
+
+# ---------------------------------------------------------------- one envelope, one request id
+def test_every_answer_carries_a_request_id(env):
+    c, *_ = env
+    a, b = c.get("/v1/health"), c.post("/v1/transcribe")
+    assert len(a.headers["x-request-id"]) == 32 and a.headers["x-request-id"] != b.headers["x-request-id"]
+    assert b.json()["error"]["request_id"] == b.headers["x-request-id"]
+
+
+def test_unknown_route_is_a_404_envelope(env):
+    c, *_ = env
+    r = c.get("/v2/speech")
+    assert r.status_code == 404 and r.json()["error"]["type"] == "not_found"
+    assert r.json()["error"]["request_id"] == r.headers["x-request-id"]
+
+
+def test_wrong_method_is_a_405_envelope(env):
+    c, *_ = env
+    r = c.get("/v1/speech")
+    assert r.status_code == 405 and r.json()["error"]["type"] == "method_not_allowed"
+    assert "POST" in r.headers["allow"]
+
+
+
+def test_a_multipart_body_that_cannot_be_parsed_is_a_400_envelope(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/transcribe", content=b"--xyz\r\nnot a part",
+               headers={**auth(), "Content-Type": "multipart/form-data; boundary=xyz"})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_request"
+    assert up.calls == []
+
+
+def test_an_unexpected_failure_is_a_500_envelope(env):
+    store, up = FakeStore(), FakeUpstream()
+
+    class BrokenLimiter:
+        def hit(self, *a):
+            raise RuntimeError("limiter down: secret detail")
+    c = TestClient(gw.create_app(store, up, BrokenLimiter(), PEPPER, audio_seconds=gw.wav_seconds),
+                   raise_server_exceptions=False)
+    r = post_audio(c, "/v1/transcribe")
+    assert r.status_code == 500 and r.json()["error"]["type"] == "internal_error"
+    assert r.json()["error"]["request_id"] == r.headers["x-request-id"]
+    assert "secret detail" not in r.text
+
+
 # ---------------------------------------------------------------- what ffprobe may parse
 HLS = b"#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:9/x.ts\n#EXT-X-ENDLIST\n"
 CONCAT = b"ffconcat version 1.0\nfile '/etc/passwd'\n"
@@ -465,3 +835,107 @@ def test_real_files_of_each_allowed_format_are_measured(name, codec, tmp_path):
     if made.returncode != 0:
         pytest.skip(f"this ffmpeg cannot encode {name}")
     assert gw.probe_seconds(out.read_bytes()) == pytest.approx(1.0, abs=0.1)
+
+
+# ---------------------------------------------------------------- /v1/usage takes the same key checks
+def test_usage_reports_the_month(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].used_audio_seconds = 61.26
+    assert c.get("/v1/usage", headers=auth()).json() == {"month_audio_seconds_used": 61.3,
+                                                          "month_audio_seconds_limit": 1800}
+
+
+def test_usage_checks_the_key_shape_before_any_lookup(env):
+    c, store, *_ = env
+    r = c.get("/v1/usage", headers=auth("sk-not-ours"))
+    assert r.status_code == 401 and r.json()["error"]["type"] == "invalid_api_key"
+    assert store.lookups == 0
+
+
+def test_usage_refuses_a_paused_account(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].beta_status = "denied"
+    r = c.get("/v1/usage", headers=auth())
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
+    r = c.get("/v1/usage", headers=as_account("paused-1"))
+    assert r.status_code == 403 and r.json()["error"]["type"] == "account_paused"
+
+
+def test_usage_refuses_a_revoked_key(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].revoked = True
+    assert c.get("/v1/usage", headers=auth()).json()["error"]["type"] == "key_revoked"
+
+
+def test_usage_answers_even_when_the_allowance_is_used(env):
+    c, *_ = env
+    assert c.get("/v1/usage", headers=as_account("full-1")).status_code == 200
+
+
+# ---------------------------------------------------------------- made-up keys
+def unknown_key(i: int) -> str:
+    return "namu_sk_" + f"{i:043d}"
+
+
+def test_an_unknown_key_is_remembered_for_the_cache_ttl(env):
+    c, store, up, lim, clock = env
+    for _ in range(3):
+        assert post_audio(c, "/v1/transcribe", key=unknown_key(1)).status_code == 401
+    assert store.lookups == 1
+    clock.t += gw.KEY_CACHE_TTL + 1
+    post_audio(c, "/v1/transcribe", key=unknown_key(1))
+    assert store.lookups == 2
+
+
+def test_a_key_created_after_a_miss_works_once_the_miss_expires(env):
+    c, store, up, lim, clock = env
+    new = unknown_key(7)
+    assert post_audio(c, "/v1/transcribe", key=new).status_code == 401
+    store.keys[gw.hash_key(new, PEPPER)] = replace(BASE, key_id="k7")
+    clock.t += gw.KEY_CACHE_TTL + 1
+    assert post_audio(c, "/v1/transcribe", key=new).status_code == 200
+
+
+def test_made_up_keys_hit_a_per_address_limit_before_the_database(env):
+    c, store, up, lim, clock = env
+    assert post_audio(c, "/v1/transcribe").status_code == 200              # a real key, now cached
+    n = gw.KEY_LOOKUPS_PER_ADDRESS_PER_MIN
+    for i in range(n - 1):
+        assert c.get("/v1/usage", headers=auth(unknown_key(i))).status_code == 401
+    r = c.get("/v1/usage", headers=auth(unknown_key(n)))
+    assert r.status_code == 429 and r.json()["error"]["type"] == "rate_limited"
+    assert "retry-after" in r.headers and store.lookups == n
+    assert post_audio(c, "/v1/transcribe").status_code == 200              # cached keys need no lookup
+    other = TestClient(c.app, client=("198.51.100.9", 50000))
+    assert other.get("/v1/usage", headers=auth(unknown_key(n + 1))).status_code == 401
+    clock.t += 60
+    assert c.get("/v1/usage", headers=auth(unknown_key(n + 2))).status_code == 401   # a new minute
+
+
+def test_the_memory_of_unknown_keys_is_bounded(env, monkeypatch):
+    c, store, up, lim, clock = env
+    monkeypatch.setattr(gw, "UNKNOWN_KEYS_REMEMBERED", 3)
+    for i in range(5):
+        post_audio(c, "/v1/transcribe", key=unknown_key(100 + i))
+    post_audio(c, "/v1/transcribe", key=unknown_key(100))                  # forgotten, so looked up again
+    assert store.lookups == 6
+
+
+def test_ipv6_callers_are_counted_by_their_64():
+    assert gw.address_bucket("2001:db8:1:2::1") == gw.address_bucket("2001:db8:1:2:ffff::9")
+    assert gw.address_bucket("2001:db8:1:2::1") != gw.address_bucket("2001:db8:1:3::1")
+    assert gw.address_bucket("203.0.113.7") == "203.0.113.7"
+    assert gw.address_bucket("::ffff:203.0.113.7") == "203.0.113.7"          # not one bucket for every IPv4 caller
+    assert gw.address_bucket("::ffff:203.0.113.7") != gw.address_bucket("::ffff:198.51.100.9")
+    assert gw.address_bucket(None) == "unknown"
+
+
+def test_the_window_counter_resets_each_window_and_stays_bounded():
+    clock = Clock()
+    w = gw.WindowCounter(clock, max_buckets=2)
+    assert [w.hit("a", 2, 60)[0] for _ in range(3)] == [True, True, False]
+    clock.t += 60
+    assert w.hit("a", 2, 60)[0]
+    w.hit("b", 2, 60)
+    w.hit("c", 2, 60)
+    assert len(w.counts) <= 2
