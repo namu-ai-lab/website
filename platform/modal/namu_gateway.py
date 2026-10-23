@@ -406,9 +406,43 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                                         round(seconds, 3), chars, status,
                                         int((now() - t0) * 1000)))
 
-    def upstream_failed(reply: UpstreamReply):
+    def upstream_failed():
         return err(502, "upstream_error",
                    "The model service did not answer. Try again in a moment.")
+
+    async def call_upstream(call, *args, expect: str = "json", silence_is_422: bool = False):
+        """One call to a model service, with every way it can fail mapped to the API's envelope.
+
+        -> (result, 200, None) or (None, status, error response). The result is the reply's JSON
+        object, or for expect="audio" the reply itself. A network error, an answer that is not
+        what was expected, or any other status is 502; running out of time is 504
+        (UpstreamTimeout). silence_is_422: this service answers 422 only when it heard nothing
+        (namu-interpret and namu-agent; namu-transcribe also uses 422 for its own failures).
+        """
+        try:
+            reply = await off_loop(call, *args)
+        except TimeoutError:
+            return None, 504, err(504, "upstream_timeout", "The model took too long to answer. "
+                                  "Try again: the first request after a quiet spell wakes it.")
+        except Exception as e:
+            print(f"upstream call failed: {type(e).__name__} [{request_id.get()}]", flush=True)
+            return None, 502, upstream_failed()
+        if reply.status == 422 and silence_is_422:
+            return None, 422, err(422, "nothing_heard", "No speech was heard in the audio.")
+        if reply.status != 200:
+            print(f"upstream answered {reply.status} [{request_id.get()}]", flush=True)
+            return None, 502, upstream_failed()
+        if expect == "audio":
+            if reply.content_type.startswith("audio"):
+                return reply, 200, None
+            return None, 502, upstream_failed()
+        try:
+            out = reply.json()
+        except ValueError:
+            out = None
+        if not isinstance(out, dict):
+            return None, 502, upstream_failed()
+        return out, 200, None
 
     # ------------------------------------------------------------ endpoints
     @web.get("/v1/health")
@@ -457,12 +491,10 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         language = fields.get("language", "ha")
         if language != "ha":
             return err(400, "unsupported_language", "Tatsuniya transcribes Hausa ('ha').")
-        reply = await off_loop(upstream.transcribe, data, language)
-        if reply.status != 200:
-            record(bg, rec, "transcribe", "tatsuniya", t0, 502)
-            return upstream_failed(reply)
-        out = reply.json()
-        record(bg, rec, "transcribe", "tatsuniya", t0, 200, sent_s=secs)
+        out, status, e = await call_upstream(upstream.transcribe, data, language)
+        record(bg, rec, "transcribe", "tatsuniya", t0, status, sent_s=secs)
+        if e:
+            return e
         return {"model": "tatsuniya", "text": out.get("text", ""),
                 "language": language, "audio_seconds": round(secs, 2)}
 
@@ -489,10 +521,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if voice not in VOICES:
             return err(400, "unknown_voice", f"Unknown voice. Try one of: {', '.join(VOICES)}.")
         v = VOICES[voice]
-        reply = await off_loop(upstream.speak, text, v["language"], v["upstream"])
-        if reply.status != 200 or not reply.content_type.startswith("audio"):
-            record(bg, rec, "speech", "tafiya", t0, 502, chars=len(text))
-            return upstream_failed(reply)
+        reply, status, e = await call_upstream(upstream.speak, text, v["language"], v["upstream"],
+                                               expect="audio")
+        if e:
+            record(bg, rec, "speech", "tafiya", t0, status, chars=len(text))
+            return e
         try:
             secs = wav_seconds(reply.content)
         except Exception:
@@ -517,12 +550,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         source = fields.get("source") or ("ha" if target == "fr" else "fr")
         if {source, target} != {"ha", "fr"}:
             return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
-        reply = await off_loop(upstream.translate, data, source, target)
-        if reply.status != 200:
-            record(bg, rec, "translate", "kora", t0, 502, sent_s=secs)
-            return upstream_failed(reply)
-        out = reply.json()
-        record(bg, rec, "translate", "kora", t0, 200, sent_s=secs)
+        out, status, e = await call_upstream(upstream.translate, data, source, target,
+                                             silence_is_422=True)
+        record(bg, rec, "translate", "kora", t0, status, sent_s=secs)
+        if e:
+            return e
         res = {"model": "kora", "source": source, "target": target,
                "source_text": out.get("source_text", ""), "text": out.get("target_text", ""),
                "audio_seconds": round(secs, 2)}
@@ -546,11 +578,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         # Namespaced by account: one developer can never read or extend
         # another developer's conversation by guessing a session id.
         sid = f"{rec.user_id}:{client_sid}" if client_sid else None
-        reply = await off_loop(upstream.converse, data, persona, sid)
-        if reply.status != 200:
-            record(bg, rec, "converse", "air", t0, 502, sent_s=secs)
-            return upstream_failed(reply)
-        out = reply.json()
+        out, status, e = await call_upstream(upstream.converse, data, persona, sid,
+                                             silence_is_422=True)
+        if e:
+            record(bg, rec, "converse", "air", t0, status, sent_s=secs)
+            return e
         try:
             out_secs = wav_seconds(base64.b64decode(out.get("audio") or ""))
         except Exception:

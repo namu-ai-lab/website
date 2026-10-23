@@ -17,6 +17,7 @@ import wave
 from dataclasses import replace
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -274,6 +275,85 @@ def test_upstream_failure_is_502_and_recorded(env):
     assert store.usage[-1].status == 502
     assert "boom" not in r.text            # internal errors are not leaked
 
+
+
+
+# ---------------------------------------------------------------- when a model service fails
+AUDIO_CALLS = [("/v1/transcribe", "transcribe"), ("/v1/translate", "translate"), ("/v1/converse", "converse")]
+
+
+def call_audio_endpoint(c, path):
+    return post_audio(c, path, seconds=10.0)
+
+
+def call_speech(c):
+    return c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "nadia"})
+
+
+def raising(exc):
+    def call(*a, **k):
+        raise exc
+    return call
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+def test_a_network_error_is_a_502_envelope_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, raising(httpx.ConnectError("connection refused")))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    u = store.usage[-1]
+    assert (u.endpoint, u.status, u.audio_seconds) == (call, 502, 0.0)
+
+
+def test_speech_network_error_is_a_502_envelope(env):
+    c, store, up, *_ = env
+    up.speak = raising(httpx.ConnectError("connection refused"))
+    r = call_speech(c)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+def test_running_out_of_time_is_a_504_envelope_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, raising(TimeoutError("read timed out")))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 504 and r.json()["error"]["type"] == "upstream_timeout"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (504, 0.0)
+
+
+@pytest.mark.parametrize("path, call", [("/v1/translate", "translate"), ("/v1/converse", "converse")])
+def test_silence_is_a_422_nothing_heard_counted_at_zero(env, path, call):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(422, b'{"error": "nothing was heard"}'))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 422 and r.json()["error"]["type"] == "nothing_heard"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (422, 0.0)
+
+
+def test_a_transcribe_422_is_its_own_failure_not_silence(env):
+    # namu-transcribe answers 422 for anything that breaks while decoding, GPU errors included
+    c, store, up, *_ = env
+    up.transcribe = lambda *a, **k: gw.UpstreamReply(422, b'{"error": "CUDA error"}')
+    r = call_audio_endpoint(c, "/v1/transcribe")
+    assert r.status_code == 502 and "CUDA" not in r.text
+
+
+@pytest.mark.parametrize("path, call", AUDIO_CALLS)
+@pytest.mark.parametrize("content", [b"<html>gateway timeout</html>", b'["not", "an", "object"]', b""])
+def test_an_answer_that_is_not_a_json_object_is_a_502(env, path, call, content):
+    c, store, up, *_ = env
+    setattr(up, call, lambda *a, **k: gw.UpstreamReply(200, content, "text/html"))
+    r = call_audio_endpoint(c, path)
+    assert r.status_code == 502 and r.json()["error"]["type"] == "upstream_error"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (502, 0.0)
+
+
+def test_speech_that_is_not_audio_is_a_502(env):
+    c, store, up, *_ = env
+    up.speak = lambda *a, **k: gw.UpstreamReply(200, b'{"status": "warm"}', "application/json")
+    assert call_speech(c).status_code == 502
 
 
 # ---------------------------------------------------------------- what counts against the allowance
