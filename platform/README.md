@@ -46,11 +46,21 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   Namu's tables; the browser only ever talks to this site (`/api/auth/*`), and the session is a signed, httpOnly
   cookie on the site's own domain. A developer's profile (status and allowance) is created on their first visit.
 - **Open beta**: anyone who signs up can create keys at once, within a free monthly allowance (30 minutes of
-  audio by default). An admin can raise an account's allowance or pause it at `/account/admin`; pausing stops its
-  keys at the gateway at once (the gateway checks the owner's status on every lookup).
+  audio by default). An admin can raise an account's allowance or pause it at `/account/admin`; pausing or revoking
+  stops its keys at the gateway within 30 seconds (each gateway container keeps a key's record, the owner's status
+  included, for 30 s), as the console's revoke note says.
 - **Gateway checks**, in order: key present → known → not revoked → owner active (not paused) → scope → monthly audio
   quota → per-key rate limit (60/min by default) → size and duration caps (25 MB, 5 min, 2,000 characters),
-  measured with ffprobe *before* any GPU is called.
+  measured with ffprobe *before* any GPU is called. `/v1/usage` takes the same checks up to "owner active".
+  An unknown key is remembered for 30 s too, and keys that need a database lookup are limited to 60 a minute per
+  caller address (per container; IPv6 by /64), so a flood of made-up keys never reaches Postgres.
+- **Capacity**: each gateway container serves 32 requests at once (`@modal.concurrent`, `MAX_INPUTS`), up to four
+  containers. More in flight widens the quota race (the allowance is checked, then recorded) until it is reserved
+  atomically (review batch 13).
+- **Long calls**: Modal ends one HTTP request at 150 s and answers a 303 to a URL that waits for the result. The
+  gateway follows these from the model services; developers whose call passes 150 s get the same 303 from the
+  gateway, so their client must follow redirects (`curl -L`; httpx `follow_redirects=True`; `requests` and `fetch`
+  follow by default).
 - **Console Playground**: the website holds one key marked `is_service` (NAMU_SERVICE_KEY). It is refused unless the
   request names an account (`X-Namu-Account`), which the website sets only after checking the developer's session;
   the gateway then applies that account's status, allowance and a per-account limit (20/min), and meters the request
