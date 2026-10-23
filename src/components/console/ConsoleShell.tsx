@@ -6,6 +6,7 @@ import { AccountMenu } from "./AccountMenu";
 import { ConsoleDrawer } from "./ConsoleDrawer";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
+import { copy } from "@/i18n/copy";
 
 export type ConsoleUser = { name?: string | null; email: string; image?: string | null };
 export type Access = "approved" | "pending" | "denied";
@@ -67,7 +68,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
 }
 
 /* The frame for the console's doors (sign-in, and the notice when accounts are switched off): a slim bar with the
-   mark and the way back, the page centred under it. */
+   mark, the way back and the EN/FR switch, the page centred under it. */
 export function AuthFrame({ lang, children }: { lang: Lang; children: ReactNode }) {
   const t = consoleCopy[lang], L = (p: string) => lp(lang, p);
   return (
@@ -75,6 +76,7 @@ export function AuthFrame({ lang, children }: { lang: Lang; children: ReactNode 
       <header className="cx-top">
         <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx-auth" /><span className="cx-api">{t.api}</span></a>
         <nav className="cx-links" aria-label={t.nav.build}><a href={L("/docs")}>{t.nav.docs}</a><a href={L("/")}>Namu AI Lab</a></nav>
+        <LangSwitch lang={lang} label={copy[lang].nav.language} />
       </header>
       <div className="cx-auth-body">{children}</div>
     </div>
