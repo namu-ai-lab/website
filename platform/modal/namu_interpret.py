@@ -134,14 +134,13 @@ def api():
 
     import requests
     from fastapi import FastAPI, Request
-    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
     from openai import OpenAI
 
     web = FastAPI(title="Namu-Interpret", version="1.0",
                   description="Hausa <-> French speech translation.")
-    web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                       allow_methods=["*"], allow_headers=["*"])
+    # No CORS on purpose: only Namu's servers call this service, with the proxy
+    # token, and that token must never reach a browser.
     # OpenRouter speaks the OpenAI API; the secret is the one Namu-Agent uses.
     client = OpenAI(api_key=os.environ.get("OPENROUTER_API_KEY") or os.environ["GEMINI_API_KEY"],
                     base_url=OR_BASE)

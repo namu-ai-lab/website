@@ -197,13 +197,12 @@ class Voice:
     @modal.asgi_app(requires_proxy_auth=REQUIRE_PROXY_AUTH)
     def api(self):
         from fastapi import FastAPI
-        from fastapi.middleware.cors import CORSMiddleware
         from fastapi.responses import JSONResponse, Response
 
         web = FastAPI(title="Namu-Voice", version="1.0",
                       description="Hausa and French speech synthesis.")
-        web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                           allow_methods=["*"], allow_headers=["*"])
+        # No CORS on purpose: only Namu's servers call this service, with the proxy
+        # token, and that token must never reach a browser.
 
         @web.get("/v1/health")
         def health():

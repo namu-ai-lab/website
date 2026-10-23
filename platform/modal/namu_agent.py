@@ -252,13 +252,12 @@ def api():
     import cohere
     import requests
     from fastapi import FastAPI, Request
-    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
 
     web = FastAPI(title="Namu-Agent", version="1.0",
                   description="Hausa conversational agent.")
-    web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                       allow_methods=["*"], allow_headers=["*"])
+    # No CORS on purpose: only Namu's servers call this service, with the proxy
+    # token, and that token must never reach a browser.
     KEY = os.environ.get("COHERE_API_KEY")
     OR_KEY = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
     OA_KEY = os.environ.get("OPENAI_API_KEY")

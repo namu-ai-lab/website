@@ -182,12 +182,11 @@ class Transcribe:
         import os
 
         from fastapi import FastAPI
-        from fastapi.middleware.cors import CORSMiddleware
 
         web = FastAPI(title="Namu-Transcribe", version="1.0",
                       description="Hausa speech recognition.")
-        web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                           allow_methods=["*"], allow_headers=["*"])
+        # No CORS on purpose: only Namu's servers call this service, with the proxy
+        # token, and that token must never reach a browser.
 
         @web.get("/v1/health")
         def health():
