@@ -142,3 +142,9 @@ them: both Hugging Face tokens (the `huggingface-token` Modal secret), and the O
 - **The gateway role's rights** live in `db/gateway-grants.sql`, applied on every run after the migrations, so they
   hold even for a role created after its functions (a restored database). A migration that adds a function the
   gateway calls adds its grant there.
+- **The gateway role's password** is set when the runner creates the role. It is never changed unasked (the running
+  gateway holds it), and `.env.local` is rewritten only for the same database, so a run against a Neon branch or a
+  scratch database cannot replace production's `GATEWAY_DATABASE_URL`. The runner warns instead;
+  `--rotate-gateway-password` sets a new password for this database and saves it (then `npm run modal:secrets` and
+  redeploy the gateway).
+

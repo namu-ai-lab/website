@@ -3,8 +3,9 @@
 //   2. db/migrations/*.sql in order, each one once. A file runs inside a transaction, so it applies whole or not at
 //      all, and is recorded in public.schema_migrations with a checksum of its text. A recorded file never runs
 //      again, and one whose text has changed since is refused before anything is written: fix forward, in a new file.
-//   3. the gateway's login role, namu_gateway, with a generated password (saved to .env.local as
-//      GATEWAY_DATABASE_URL, never printed)
+//   3. the gateway's login role, namu_gateway: created with a generated password (saved to .env.local as
+//      GATEWAY_DATABASE_URL, never printed) when it does not exist. An existing role's password, or a
+//      GATEWAY_DATABASE_URL for another database, changes only with --rotate-gateway-password.
 //   4. db/gateway-grants.sql, on every run: what namu_gateway may do.
 // npm run db:migrate -- --dry-run   says what would happen, and changes nothing.
 import { createHash, randomBytes } from "node:crypto";
@@ -21,6 +22,7 @@ const LOCK = "select pg_advisory_xact_lock(4851923)";
 
 // `npm run db:migrate --dry-run` (without the `--`) hands the flag to npm, not to this script: honour both.
 const dryRun = process.argv.includes("--dry-run") || process.env.npm_config_dry_run === "true";
+const rotate = process.argv.includes("--rotate-gateway-password");
 loadEnv();
 const url = process.env.DATABASE_URL;
 if (!url) { console.error("DATABASE_URL is missing (put it in .env.local)"); process.exit(1); }
@@ -76,17 +78,35 @@ async function apply(db, f) {
 }
 
 async function gatewayRole(db) {
-  const role = await db.query("select 1 from pg_roles where rolname = 'namu_gateway'");
-  if (role.rowCount && readEnv().GATEWAY_DATABASE_URL) return;
-  if (dryRun) { console.log("would set up the namu_gateway role and save GATEWAY_DATABASE_URL"); return; }
+  const exists = (await db.query("select 1 from pg_roles where rolname = 'namu_gateway'")).rowCount > 0;
+  const saved = readEnv().GATEWAY_DATABASE_URL;
+  const where = u => { const x = new URL(u); return x.host + x.pathname; };
+  if (!rotate) {
+    // .env.local is rewritten only for this same database: a run against a Neon branch or a scratch database must
+    // not replace production's GATEWAY_DATABASE_URL, which modal:secrets would then ship to the gateway.
+    if (saved && where(saved) !== where(url)) {
+      console.warn("GATEWAY_DATABASE_URL in .env.local is for another database than DATABASE_URL, so it is kept and "
+        + "namu_gateway is left as it is here. Before npm run modal:secrets, make sure it names the gateway's database; "
+        + "--rotate-gateway-password sets the role up for this database and saves its address instead.");
+      return;
+    }
+    // The running gateway holds an existing role's password: changing it would lock the gateway out until
+    // `npm run modal:secrets` and a redeploy.
+    if (exists) {
+      if (!saved) console.warn("namu_gateway exists but .env.local has no GATEWAY_DATABASE_URL. To give it a new password: "
+        + "npm run db:migrate -- --rotate-gateway-password, then npm run modal:secrets and redeploy the gateway.");
+      return;
+    }
+  }
+  if (dryRun) { console.log(exists ? "would give namu_gateway a new password" : "would create the namu_gateway role"); return; }
   const password = randomBytes(32).toString("base64url");          // [A-Za-z0-9_-] only: safe inline
-  await db.query(role.rowCount
+  await db.query(exists
     ? `alter role namu_gateway with login password '${password}'`
     : `create role namu_gateway with login password '${password}'`);
   const g = new URL(url);
   g.username = "namu_gateway"; g.password = password;
   writeEnv({ GATEWAY_DATABASE_URL: g.toString() });
-  console.log("gateway role ready; GATEWAY_DATABASE_URL saved to .env.local");
+  console.log(`gateway role ${exists ? "has a new password" : "created"}; GATEWAY_DATABASE_URL saved to .env.local`);
 }
 
 const db = await pool.connect();
