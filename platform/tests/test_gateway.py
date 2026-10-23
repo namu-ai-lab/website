@@ -778,3 +778,70 @@ def test_usage_refuses_a_revoked_key(env):
 def test_usage_answers_even_when_the_allowance_is_used(env):
     c, *_ = env
     assert c.get("/v1/usage", headers=as_account("full-1")).status_code == 200
+
+
+# ---------------------------------------------------------------- made-up keys
+def unknown_key(i: int) -> str:
+    return "namu_sk_" + f"{i:043d}"
+
+
+def test_an_unknown_key_is_remembered_for_the_cache_ttl(env):
+    c, store, up, lim, clock = env
+    for _ in range(3):
+        assert post_audio(c, "/v1/transcribe", key=unknown_key(1)).status_code == 401
+    assert store.lookups == 1
+    clock.t += gw.KEY_CACHE_TTL + 1
+    post_audio(c, "/v1/transcribe", key=unknown_key(1))
+    assert store.lookups == 2
+
+
+def test_a_key_created_after_a_miss_works_once_the_miss_expires(env):
+    c, store, up, lim, clock = env
+    new = unknown_key(7)
+    assert post_audio(c, "/v1/transcribe", key=new).status_code == 401
+    store.keys[gw.hash_key(new, PEPPER)] = replace(BASE, key_id="k7")
+    clock.t += gw.KEY_CACHE_TTL + 1
+    assert post_audio(c, "/v1/transcribe", key=new).status_code == 200
+
+
+def test_made_up_keys_hit_a_per_address_limit_before_the_database(env):
+    c, store, up, lim, clock = env
+    assert post_audio(c, "/v1/transcribe").status_code == 200              # a real key, now cached
+    n = gw.KEY_LOOKUPS_PER_ADDRESS_PER_MIN
+    for i in range(n - 1):
+        assert c.get("/v1/usage", headers=auth(unknown_key(i))).status_code == 401
+    r = c.get("/v1/usage", headers=auth(unknown_key(n)))
+    assert r.status_code == 429 and r.json()["error"]["type"] == "rate_limited"
+    assert "retry-after" in r.headers and store.lookups == n
+    assert post_audio(c, "/v1/transcribe").status_code == 200              # cached keys need no lookup
+    other = TestClient(c.app, client=("198.51.100.9", 50000))
+    assert other.get("/v1/usage", headers=auth(unknown_key(n + 1))).status_code == 401
+    clock.t += 60
+    assert c.get("/v1/usage", headers=auth(unknown_key(n + 2))).status_code == 401   # a new minute
+
+
+def test_the_memory_of_unknown_keys_is_bounded(env, monkeypatch):
+    c, store, up, lim, clock = env
+    monkeypatch.setattr(gw, "UNKNOWN_KEYS_REMEMBERED", 3)
+    for i in range(5):
+        post_audio(c, "/v1/transcribe", key=unknown_key(100 + i))
+    post_audio(c, "/v1/transcribe", key=unknown_key(100))                  # forgotten, so looked up again
+    assert store.lookups == 6
+
+
+def test_ipv6_callers_are_counted_by_their_64():
+    assert gw.address_bucket("2001:db8:1:2::1") == gw.address_bucket("2001:db8:1:2:ffff::9")
+    assert gw.address_bucket("2001:db8:1:2::1") != gw.address_bucket("2001:db8:1:3::1")
+    assert gw.address_bucket("203.0.113.7") == "203.0.113.7"
+    assert gw.address_bucket(None) == "unknown"
+
+
+def test_the_window_counter_resets_each_window_and_stays_bounded():
+    clock = Clock()
+    w = gw.WindowCounter(clock, max_buckets=2)
+    assert [w.hit("a", 2, 60)[0] for _ in range(3)] == [True, True, False]
+    clock.t += 60
+    assert w.hit("a", 2, 60)[0]
+    w.hit("b", 2, 60)
+    w.hit("c", 2, 60)
+    assert len(w.counts) <= 2

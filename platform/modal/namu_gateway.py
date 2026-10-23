@@ -33,6 +33,7 @@ import base64
 import hashlib
 import hmac
 import io
+import ipaddress
 import json
 import math
 import os
@@ -91,6 +92,11 @@ DEMO_MAX_TEXT_CHARS = 300
 DEMO_IP_PER_HOUR = 30
 SERVICE_PER_MIN = 20          # the console Playground, per account
 KEY_CACHE_TTL = 30.0          # a revoked key stops working within this many seconds
+# Keys that are not in the cache cost a database lookup. A caller address may cause this many a
+# minute (per container), and an unknown key is remembered for KEY_CACHE_TTL like a known one, so
+# a flood of made-up keys is answered from memory instead of from Postgres.
+KEY_LOOKUPS_PER_ADDRESS_PER_MIN = 60
+UNKNOWN_KEYS_REMEMBERED = 10_000  # bounds that memory: past it, the list is forgotten and refilled
 
 # How long the gateway waits for a model, in total, by who is asking. The website's demo and
 # Playground routes give up after 100-110 s and 290 s (src/app/api/demo, src/app/api/playground);
@@ -170,6 +176,40 @@ class UpstreamReply:
 
 class UpstreamTimeout(TimeoutError):
     """A model service did not answer within the caller's budget (UPSTREAM_TIMEOUT_S): a 504."""
+
+
+def address_bucket(host: str | None) -> str:
+    """Who a per-address limit counts: the IPv4 address, or the IPv6 /64, which one customer
+    usually holds whole (a limit per IPv6 address would be no limit)."""
+    try:
+        ip = ipaddress.ip_address(host or "")
+    except ValueError:
+        return host or "unknown"
+    if ip.version == 6:
+        return str(ipaddress.ip_network(f"{ip}/64", strict=False))
+    return str(ip)
+
+
+class WindowCounter:
+    """Fixed-window counters in this container's memory, for limits where answering without a
+    network call matters more than counting exactly across containers. Same hit() as DictLimiter.
+    Bounded: when it holds too many buckets it forgets them all, which at worst lets a few
+    requests through."""
+
+    def __init__(self, now=time.time, max_buckets: int = 10_000):
+        self.now, self.max_buckets = now, max_buckets
+        self.counts: dict[tuple[str, int], int] = {}
+
+    def hit(self, bucket: str, limit: int, window_s: int) -> tuple[bool, int]:
+        t = int(self.now())
+        win = t // window_s
+        if len(self.counts) >= self.max_buckets:
+            self.counts.clear()
+        n = self.counts.get((bucket, win), 0) + 1
+        self.counts[(bucket, win)] = n
+        if n > limit:
+            return False, (win + 1) * window_s - t
+        return True, 0
 
 
 def upstream_budget(rec: KeyRecord) -> float:
@@ -283,6 +323,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                   description="Speech models for the languages of the Sahel.",
                   docs_url="/docs", redoc_url=None)
     cache: dict[str, tuple[float, KeyRecord]] = {}
+    unknown: dict[str, float] = {}             # key hashes the database did not know, and when
+    lookups = WindowCounter(now)               # database key lookups per caller address
     request_id = contextvars.ContextVar("request_id", default="")
 
     def err(status: int, kind: str, message: str, headers: dict | None = None):
@@ -330,6 +372,34 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return auth[7:].strip()
         return request.headers.get("x-namu-key")
 
+    async def known_key(request: Request, h: str):
+        """The record for a key hash: from memory when it was looked up in the last KEY_CACHE_TTL
+        seconds, known or not; otherwise from the database, within the caller address's lookups.
+        -> (KeyRecord, None) or (None, error response)."""
+        hit = cache.get(h)
+        if hit and now() - hit[0] < KEY_CACHE_TTL:
+            return hit[1], None
+        if now() - unknown.get(h, float("-inf")) < KEY_CACHE_TTL:
+            return None, err(401, "invalid_api_key", "Unknown API key.")
+        ok, retry = lookups.hit(f"lookup:{address_bucket(request.client.host if request.client else None)}",
+                                KEY_LOOKUPS_PER_ADDRESS_PER_MIN, 60)
+        if not ok:
+            return None, err(429, "rate_limited", "Too many unknown keys from this address. Wait, then "
+                             "check the key.", {"Retry-After": str(retry)})
+        try:
+            rec = await off_loop(store.lookup, h)
+        except Exception as e:
+            print(f"key lookup failed: {type(e).__name__}", flush=True)
+            return None, err(503, "auth_unavailable",
+                             "Key verification is temporarily unavailable. Try again shortly.")
+        if rec is None:
+            if len(unknown) >= UNKNOWN_KEYS_REMEMBERED:
+                unknown.clear()
+            unknown[h] = now()
+            return None, err(401, "invalid_api_key", "Unknown API key.")
+        cache[h] = (now(), rec)
+        return rec, None
+
     async def identify(request: Request):
         """The checks every keyed endpoint shares, /v1/usage included: a key is present, well formed,
         known and not revoked; the service key names an account; the account is not paused.
@@ -340,19 +410,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                              "Send your key as 'Authorization: Bearer namu_sk_...'.")
         if not key.startswith(KEY_PREFIX) or len(key) > 128:
             return None, err(401, "invalid_api_key", "That is not a Namu API key.")
-        h = hash_key(key, pepper)
-        hit = cache.get(h)
-        rec = hit[1] if hit and now() - hit[0] < KEY_CACHE_TTL else None
-        if rec is None:
-            try:
-                rec = await off_loop(store.lookup, h)
-            except Exception as e:
-                print(f"key lookup failed: {type(e).__name__}", flush=True)
-                return None, err(503, "auth_unavailable",
-                                 "Key verification is temporarily unavailable. Try again shortly.")
-            if rec is None:
-                return None, err(401, "invalid_api_key", "Unknown API key.")
-            cache[h] = (now(), rec)
+        rec, e = await known_key(request, hash_key(key, pepper))
+        if e:
+            return None, e
         if rec.revoked:
             return None, err(401, "key_revoked", "This API key has been revoked.")
         if rec.is_service:
