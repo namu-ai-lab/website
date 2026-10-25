@@ -5,7 +5,8 @@ import { PlaygroundConsole, type Mode } from "@/components/console/PlaygroundCon
 import { consoleCopy } from "@/content/console";
 import { isLang, type Lang } from "@/i18n/config";
 import { requireAccount } from "@/lib/account";
-import { apiBase, hasAccounts } from "@/lib/env";
+import { hasAccounts } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 
 export const dynamic = "force-dynamic";
 
