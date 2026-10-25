@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
     "check-glyphs": "node scripts/check-glyphs.mjs",
     "env:init": "node scripts/env-init.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
@@ -19,7 +21,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "matter-js": "0.20.0",
-    "next": "16.4.0",
+    "next": "16.4.2",
     "pg": "8.23.1",
     "poly-decomp": "0.3.0",
     "react": "19.3.0",
@@ -31,7 +33,10 @@
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "typescript": "5.9.3"
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
   },
   "engines": {
     "node": ">=20.9.0"

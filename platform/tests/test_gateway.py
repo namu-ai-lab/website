@@ -1,6 +1,6 @@
 """Security and contract tests for namu-gateway, with no Modal, Supabase or GPU.
 
-    cd platform && python -m pytest tests -q
+    python3 -m pytest platform/tests -q     (pip install -r platform/requirements-dev.txt first)
 
 Each rule the gateway claims (keys, revocation, beta approval, scopes, quota,
 rate limits, demo limits, input caps, session isolation, metering without
@@ -184,11 +184,12 @@ def test_store_outage_is_503_not_500(env):
 
 
 def test_key_hash_matches_website_vector():
-    # The same vector is asserted on the Node side (src/lib/keys.ts).
-    # Computed independently with Node's crypto.createHmac; the two must agree
-    # or every key the website issues would be rejected here.
-    assert gw.hash_key("namu_sk_test", "pepper") == (
-        "80ceafbaa25f6536d8fea1300f7f497ad6a2a6ac66b4f9f31302bcc376275bdc"
+    # src/lib/keys.test.ts asserts the same vector against the website's hashKey
+    # (Node's crypto.createHmac). The two must agree, or every key the website
+    # issues would be rejected here. The pepper is 32 characters, the shortest
+    # hashKey accepts.
+    assert gw.hash_key("namu_sk_" + "A" * 43, "0123456789abcdef0123456789abcdef") == (
+        "9c07945d58ba81849eb9033b10c0b75f7b82d676e715d4763e5089231ff94e5d"
     )
 
 
