@@ -8,7 +8,7 @@ browser ──► Vercel (this Next.js site)      ──► Neon Postgres
                relayed through /api/auth/*                         kept by Neon)
              /account/* dashboard                   profiles, api_keys, usage_events
              /api/keys  create / revoke                     ▲
-             /api/demo/*  server-held demo key              │ namu_gateway role: two functions only
+             /api/demo/*  server-held demo key              │ namu_gateway role: calls functions only
                     │                                       │
 developer app ──────┴──► namu-gateway (Modal, CPU, the only public API)
                            auth · scopes · account active · quota · rate limit · size caps
@@ -21,12 +21,15 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 
 | Path | What it is |
 | --- | --- |
-| `db/migrations/0001_namu_api.sql` | Namu's tables and the two functions the gateway calls |
+| `db/migrations/0001_namu_api.sql` | Namu's tables and the gateway's first two functions, `namu_key_lookup` and `namu_record_usage` |
 | `db/migrations/0002_neon_auth.sql` | The move from Better Auth's tables to Neon Auth's (`neon_auth."user"`) |
+| `db/migrations/0003_open_access.sql` | Open access: new accounts start active (`beta_status` `approved`); an admin can still pause one (`denied`) |
+| `db/migrations/0004_service_key.sql` | The console Playground's service key (`api_keys.is_service`) and two more gateway functions: `namu_key_lookup_v2` (the lookup plus `is_service`) and `namu_account_lookup` (an account's status, allowance and audio used this month) |
 | `scripts/db-migrate.mjs` | Checks that Neon Auth is on, creates the `namu_gateway` role, then applies `db/migrations/` |
 | `scripts/env-init.mjs`, `db-admin.mjs`, `modal-secrets.mjs` | Generate local secrets, make an admin / mark the demo key, copy secrets to Modal |
 | `src/lib/auth.ts`, `src/app/api/auth/[...path]`, `src/proxy.ts` | Sign-in: Neon Auth, relayed through the site; the proxy finishes the Google and GitHub return trip |
 | `src/components/account/AuthFlow.tsx`, `src/app/[lang]/{login,signup,reset-password}` | The doors: log in, sign up (with a 6-digit code), reset a password |
+| `src/lib/keys.ts`, `src/lib/usage.ts`, `src/lib/limits.ts` | Key minting and hashing; the console's usage figures, counted by UTC month like the allowance; the gateway's limits, as the console shows them |
 | `src/app/api/keys`, `src/app/api/demo/[model]`, `src/app/[lang]/account/*`, `src/app/[lang]/docs` | Dashboard, key minting, live demos, docs |
 | `platform/modal/namu_gateway.py` | The public API (`/v1/transcribe`, `/v1/speech`, `/v1/translate`, `/v1/converse`, `/v1/models`, `/v1/voices`, `/v1/usage`) |
 | `platform/modal/namu_{transcribe,voice,interpret,agent}.py` | The model services, with the proxy-auth switch |
@@ -39,15 +42,17 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   prefix, so a copy of the database alone does not reveal usable keys.
 - **The database is never reached from the browser.** The website's server connects with `DATABASE_URL` and
   every query that touches a developer's data filters on the signed-in user's id. The gateway connects as
-  `namu_gateway`, a role that can only call `namu_key_lookup` and `namu_record_usage`: it cannot read or change
-  a table directly, so a leak of the gateway's secret exposes no account data.
+  `namu_gateway`, a role that can only call four functions: `namu_key_lookup_v2` and `namu_account_lookup` (0004),
+  `namu_record_usage`, and `namu_key_lookup` (0001; the gateway now calls v2 instead). It cannot read or change a
+  table directly, so a leak of the gateway's secret exposes no account data.
 - **Sign-in** is Neon Auth (Neon's managed Better Auth): email and password, with a 6-digit code to verify the
   address, or Google and GitHub. Passwords and sessions are held by Neon Auth in its own `neon_auth` schema, not in
   Namu's tables; the browser only ever talks to this site (`/api/auth/*`), and the session is a signed, httpOnly
   cookie on the site's own domain. A developer's profile (status and allowance) is created on their first visit.
 - **Open beta**: anyone who signs up can create keys at once, within a free monthly allowance (30 minutes of
-  audio by default). An admin can raise an account's allowance or pause it at `/account/admin`; pausing stops its
-  keys at the gateway at once (the gateway checks the owner's status on every lookup).
+  audio by default). An admin can raise an account's allowance or pause it at `/account/admin`; pausing or revoking
+  stops its keys at the gateway within 30 seconds (each gateway container keeps a key's record, the owner's status
+  included, for 30 s), as the console's revoke note says.
 - **Gateway checks**, in order: key present → known → not revoked → owner active (not paused) → scope → monthly audio
   quota → per-key rate limit (60/min by default) → size and duration caps (25 MB, 5 min, 2,000 characters),
   measured with ffprobe *before* any GPU is called.
