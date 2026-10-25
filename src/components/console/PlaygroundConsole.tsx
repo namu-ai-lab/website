@@ -6,6 +6,7 @@ import { Icon } from "../Icon";
 import { MODEL_ORB } from "./colours";
 import { consoleCopy } from "@/content/console";
 import type { Lang } from "@/i18n/config";
+import { formatNumber, formatSeconds, numberFormat } from "@/i18n/format";
 import { b64ToBlob, peaksOfBlob, Recorder, toClip, type Clip } from "@/lib/audio";
 import { LIMITS } from "@/lib/limits";
 
@@ -26,7 +27,6 @@ type Out = { stats: Stats; error?: string; audio?: Blob; text?: string; source?:
 type Run = { id: number; mode: Mode; label: string; out: Out };
 type T = (typeof consoleCopy)["en"]["playground"];
 
-const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const newSession = () => `pg-${Math.random().toString(36).slice(2, 10)}`;
 
 async function call(mode: Mode, body: BodyInit, type: string, query = ""): Promise<Out & { json?: Record<string, unknown> }> {
@@ -104,7 +104,7 @@ function Player({ blob, peaks, t, name }: { blob: Blob; peaks?: number[]; t: T; 
           <i key={i} className={i / a.length < share ? "on" : undefined} style={{ height: `${Math.max(6, b * 100)}%` }} />
         ))}
       </div>
-      <span className="cx-time">{fmtTime(pos)} / {fmtTime(dur)}</span>
+      <span className="cx-time">{formatSeconds(pos)} / {formatSeconds(dur)}</span>
       <a className="cx-icon-btn" href={url} download={name} aria-label={t.download} title={t.download}><Icon name="download" size={17} stroke={1.6} /></a>
     </div>
   );
@@ -146,7 +146,7 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
   if (clip && !recording) return (
     <div className="cx-clip">
       <Player blob={clip.wav} peaks={clip.peaks} t={t} name={clip.name} />
-      <div className="cx-clip-meta"><span>{clip.name} · {fmtTime(clip.seconds)}</span>
+      <div className="cx-clip-meta"><span>{clip.name} · {formatSeconds(clip.seconds)}</span>
         <button type="button" className="cx-link" onClick={() => onClip(null)} disabled={busy}>{t.remove}</button></div>
     </div>
   );
@@ -155,7 +155,7 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
       {recording ? (
         <div className="cx-recording" role="status">
           <span className="cx-rec-dot" aria-hidden="true" />
-          <span>{t.recording(fmtTime(elapsed))}</span>
+          <span>{t.recording(formatSeconds(elapsed))}</span>
           <span className="cx-level" aria-hidden="true">{[0.5, 0.8, 1, 0.8, 0.5].map((k, i) => <i key={i} style={{ transform: `scaleY(${0.15 + Math.min(1, level * k * 1.6)})` }} />)}</span>
           <button type="button" className="cx-btn primary" onClick={() => void stop()}><Icon name="stop" size={14} stroke={1.6} />{t.stopRec}</button>
         </div>
@@ -179,7 +179,7 @@ function ClipInput({ clip, onClip, t, samples, busy }: { clip: Clip | null; onCl
 }
 
 function StatsRow({ s, t, lang }: { s: Stats; t: T; lang: Lang }) {
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   return (
     <dl className="cx-stats">
       <div><dt>{t.stats.status}</dt><dd><span className={`cx-status s${String(s.status)[0]}`}>{s.status || "–"}</span></dd></div>
@@ -325,7 +325,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
                 <textarea className="cx-pg-textarea" lang="ha" value={text} maxLength={LIMITS.textChars} placeholder={t.textPh} rows={7}
                   onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void run(); } }} />
                 <div className="cx-pg-foot">
-                  <span className="cx-muted cx-small">{text.length.toLocaleString()} / {LIMITS.textChars.toLocaleString()}</span>
+                  <span className="cx-muted cx-small">{formatNumber(lang, text.length)} / {formatNumber(lang, LIMITS.textChars)}</span>
                   <button type="button" className="cx-btn primary" disabled={!ready || busy !== null} onClick={() => void run()}>{busy === mode ? action[1] : action[0]}<kbd>⌘ ↵</kbd></button>
                 </div>
               </>

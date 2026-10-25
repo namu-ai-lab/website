@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "./Icon";
 
 /** Sticky section tabs with scroll-spy (the SIMA 2 pattern). Keyboard: native links. */
 export function SectionTabs({ sections }: { sections: { id: string; title: string }[] }) {
@@ -60,9 +61,7 @@ export function Share({ title, label = "Share", copiedLabel = "Link copied" }: {
   };
   return (
     <button type="button" className="share" onClick={onClick} aria-live="polite">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M12 15V3.5" /><path d="M7.5 8L12 3.5 16.5 8" /><path d="M5 12.5v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
-      </svg>
+      <Icon name="share" size={16} stroke={1.4} />
       {copied ? copiedLabel : label}
     </button>
   );

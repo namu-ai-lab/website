@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { LocalTime } from "@/components/console/LocalTime";
 import { accountCopy } from "@/content/account";
 import type { Profile } from "@/lib/account";
 import type { Lang } from "@/i18n/config";
-
-const fmt = (lang: Lang, iso: string) =>
-  new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "short" }).format(new Date(iso));
 
 /* Every account, newest first: its status, what it is building, and its monthly audio allowance. Pause stops an
    account's keys at the gateway; Resume turns them back on; Save keeps a new allowance without changing the status. */
@@ -37,7 +35,7 @@ export function AdminBeta({ lang, initial, me }: { lang: Lang; initial: Profile[
               <td className="c-main">{p.email}</td>
               <td className="wrap c-wide" data-label={t.th.useCase}>{p.use_case ?? <span className="cx-muted">–</span>}</td>
               <td className="c-corner"><span className={`cx-pill${p.beta_status === "approved" ? " good" : ""}`}>{t.status[p.beta_status]}</span></td>
-              <td data-label={t.th.joined}>{fmt(lang, p.created_at)}</td>
+              <td data-label={t.th.joined}><LocalTime iso={p.created_at} lang={lang} style="dayMonthShort" /></td>
               <td data-label={t.th.allowance}><input className="cx-input cx-min" type="number" min={0} max={100000} value={minutes[p.user_id] ?? 0} aria-label={t.th.allowance}
                 onChange={e => setMinutes(m => ({ ...m, [p.user_id]: Number(e.target.value) }))} /> {t.minutes}</td>
               <td className="cx-acts c-wide"><div className="cx-row-acts">
