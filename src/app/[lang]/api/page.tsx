@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { NightArt } from "@/components/Art";
-import { ApiCompose } from "@/components/ApiCompose";
-import { ApiConsoleTour } from "@/components/ApiConsoleTour";
-import { ApiRunner, Highlight } from "@/components/ApiRunner";
+import Image from "next/image";
+import { ApiModels } from "@/components/api/ApiModels";
+import { CareArt, StepArt } from "@/components/api/ApiArt";
+import { ApiShowcase, RestingOrb } from "@/components/api/ApiShowcase";
+import type { CodeLang } from "@/components/CodeTabs";
 import { Icon } from "@/components/Icon";
-import { ModelArt } from "@/components/ModelArt";
 import { Reveal } from "@/components/Interactive";
-import { API_DEMO, apiCopy } from "@/content/api";
+import { apiCopy, type ApiTask } from "@/content/api";
+import { samples } from "@/content/docs";
+import { voices } from "@/content/playground";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { alternates } from "@/i18n/seo";
 import { apiBase } from "@/lib/public-config";
@@ -18,232 +19,144 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title, description, alternates: alternates(l, "/api") };
 }
 
+/* a hyphenated word in a heading stays on one line ("sign-up", not "sign- / up") */
+const whole = (s: string) => s.split(/(\S+-\S+)/).map((p, i) => (i % 2 ? <span key={i} className="ax-nw">{p}</span> : p));
+
 const MAIL = `mailto:contact@namuai.org?subject=${encodeURIComponent("Namu API")}`;
 
-/* The anatomy of a request: a real call and Tatsuniya's real answer, then the error every client should handle.
-   `n` ties a line to the note of the same number. */
-function anatomy(base: string, err: string): { text: string; n?: number; gap?: boolean; resp?: boolean }[] {
-  const r = API_DEMO.real;
-  return [
-    { text: `curl ${base}/v1/transcribe \\` },
-    { text: `  -H "Authorization: Bearer $NAMU_API_KEY" \\`, n: 1 },
-    { text: `  -F file=@storyteller.m4a`, n: 2 },
-    { text: "", gap: true },
-    { text: "HTTP/1.1 200 OK", resp: true },
-    { text: "{", resp: true },
-    { text: `  "model": "${r.model}",`, resp: true },
-    { text: `  "text": "${r.text}",`, n: 3, resp: true },
-    { text: `  "language": "${r.language}",`, resp: true },
-    { text: `  "audio_seconds": ${r.audio_seconds}`, n: 4, resp: true },
-    { text: "}", resp: true },
-    { text: "", gap: true },
-    { text: err },
-    { text: "HTTP/1.1 429 Too Many Requests", n: 5, resp: true },
-    { text: "Retry-After: 18", resp: true },
-    { text: `{"error": {"type": "rate_limited", "message": "Too many requests for this key."}}`, resp: true },
-  ];
-}
-
-/* the hooked letter in Tatsuniya's transcript, marked where it appears */
-const markHooked = (s: string): ReactNode => s.split(/([ɓɗƙƴƁƊƘƳ])/).map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : p));
-
-/* /api, rebuilt around a live request: try it first, then the models, the way in, the request itself, products made
-   of the models, the console, the beta's terms, the Lab's commitments and the questions developers ask. */
+/* /api, after elevenlabs.io: one framed column with hairline rules; the promise and a showcase of every model's real
+   output; the models as API rows with their code; the way in; the console; the beta's terms; the Lab's commitments;
+   questions; and the way in once more. */
 export default async function Api({ params }: { params: Promise<{ lang: string }> }) {
   const lang = (await params).lang as Lang;
   const a = apiCopy[lang];
-  const L = (p: string) => (p.startsWith("http") ? p : lp(lang, p));
+  const L = (p: string) => lp(lang, p);
   const signup = `${L("/signup")}?next=${encodeURIComponent(L("/account/keys?create=1"))}`;
+  const code = samples(apiBase) as Record<ApiTask, Record<CodeLang, string>>;
+  const more = (label: string, href: string) => <a className="ax-link" href={href}>{label}<Icon name="arrow-long" size={15} stroke={1.6} /></a>;
 
   return (
-    <div className="page-top apx">
+    <div className="page-top ax">
       <Reveal />
+      <div className="ax-frame">
 
-      {/* 1. Hero: the promise, and a real request to run */}
-      <section className="apx-hero">
-        <div className="pg-haze" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><span className="grain" /></div>
-        <div className="wrap">
-          <div className="apx-hero-head">
+        {/* 1. The promise, and every model's real output */}
+        <section className="ax-hero" aria-labelledby="h-api">
+          <div className="ax-hero-head">
             <div>
-              <p className="api-status"><i aria-hidden="true" />{a.status}</p>
-              <h1 className="apx-display">{a.h1}</h1>
+              <p className="ax-eyebrow"><i aria-hidden="true" />{a.eyebrow}</p>
+              <h1 id="h-api" className="ax-display">{a.h1}</h1>
             </div>
-            <div className="apx-hero-side">
-              <p className="lede">{a.lede}</p>
-              <div className="apx-acts">
+            <div className="ax-hero-side">
+              <p className="ax-lede">{a.lede}</p>
+              <div className="ax-acts">
                 <a className="pill lg dark" href={signup}>{a.start}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
-                <a className="pill lg frost" href={L("/docs")}>{a.docs}</a>
+                <a className="pill lg" href={L("/docs")}>{a.docs}</a>
               </div>
-              <ul className="apx-facts">{a.facts.map(f => <li key={f}><Icon name="check" size={15} stroke={1.8} />{f}</li>)}</ul>
             </div>
           </div>
-          <ApiRunner lang={lang} base={apiBase} />
-        </div>
-      </section>
+          <ApiShowcase lang={lang} signup={signup} liveHref={`${L("/")}#try`} />
+          <p className="ax-cap"><i aria-hidden="true" />{a.show.recorded}</p>
+        </section>
 
-      {/* 2. The models in the API, each a night piece of its own (after openai.com/api's starfields), then all models */}
-      <section className="section apx-night" id="models" aria-labelledby="h-models">
-        <div className="wrap">
-          <header className="apx-head apx-night-head reveal">
-            <h2 id="h-models" className="h1">{a.modelsH}</h2>
-            <p className="lede">{a.modelsSub}</p>
-          </header>
-          <div className="apx-mcards">
-            {a.models.filter(m => !m.research).map(m => (
-              <a key={m.task} className="apx-mcard reveal" href={`#run-${m.task}`} aria-label={`${m.name}, ${m.job}. ${a.tryIt}`}>
-                <div className="apx-mcard-art"><ModelArt model={m.task as "speech" | "transcribe" | "translate"} /></div>
-                <span className="apx-mcard-status">{m.status}</span>
-                <div className="apx-mcard-body">
-                  <h3>{m.name}</h3>
-                  <p className="apx-mcard-job">{m.job}</p>
-                  <dl>
-                    <div><dt>{a.labels.endpoint}</dt><dd><code>{m.endpoint}</code></dd></div>
-                    <div><dt>{a.labels.langs}</dt><dd>{m.langs}</dd></div>
-                    <div><dt>{a.labels.limit}</dt><dd>{m.limit}</dd></div>
-                  </dl>
-                  <span className="apx-mcard-try">{a.tryIt}<Icon name="arrow-long" size={16} stroke={1.6} /></span>
-                </div>
-              </a>
-            ))}
-          </div>
-          <div className="apx-mcards-more reveal">
-            <a className="pill lg on-dark" href={L("/#models")}>{a.allModels}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
-            <p>{a.allModelsNote}</p>
-          </div>
-        </div>
-      </section>
+        <ul className="ax-proof" aria-label={a.eyebrow}>
+          {a.proof.map(([v, l]) => <li key={l}><strong>{v}</strong><span>{l}</span></li>)}
+        </ul>
 
-      {/* 3. Sign-up to first sound */}
-      <section className="section apx-sec" aria-labelledby="h-steps">
-        <div className="wrap">
-          <header className="apx-head reveal">
-            <h2 id="h-steps" className="h1">{a.stepsH}</h2>
-            <p className="lede">{a.stepsSub}</p>
+        {/* 2. The models, each with its request */}
+        <section className="ax-sec" id="models" aria-labelledby="h-models">
+          <header className="ax-head reveal">
+            <div><p className="ax-kick">{a.modelsEyebrow}</p><h2 id="h-models" className="ax-h2">{whole(a.modelsH)}</h2></div>
+            <div><p className="ax-sub">{a.modelsSub}</p>{more(a.modelsCta, L("/docs"))}</div>
           </header>
-          <ol className="apx-steps">
+          <div className="reveal">
+            <ApiModels copy={a} code={code} docs={{ speech: L("/docs#speech"), transcribe: L("/docs#transcribe"), translate: L("/docs#translate"), converse: L("/docs#converse") }} />
+          </div>
+        </section>
+
+        {/* 3. Sign-up to first sound */}
+        <section className="ax-sec" aria-labelledby="h-steps">
+          <header className="ax-head reveal">
+            <div><p className="ax-kick">{a.stepsEyebrow}</p><h2 id="h-steps" className="ax-h2">{whole(a.stepsH)}</h2></div>
+            <div><p className="ax-sub">{a.stepsSub}</p></div>
+          </header>
+          <ol className="ax-grid ax-steps">
             {a.steps.map((s, i) => (
-              <li key={s.t} className="apx-step reveal">
-                <div className="apx-step-pic" aria-hidden="true">
-                  {i === 0 && (
-                    <div className="apx-door">
-                      <span className="apx-door-btn"><b className="g">G</b>{a.mock.google}</span>
-                      <span className="apx-door-btn"><b className="gh" />{a.mock.github}</span>
-                      <span className="apx-door-or" />
-                      <span className="apx-door-field">{a.mock.email}</span>
-                    </div>
-                  )}
-                  {i === 1 && (
-                    <div className="apx-keybox">
-                      <strong>{a.mock.save}</strong>
-                      <span className="apx-keyfield"><code>namu_sk_k7Qm••••••••••••••••</code><span className="apx-keycopy"><Icon name="copy" size={14} stroke={1.6} /></span></span>
-                      <em>{a.mock.saveNote}</em>
-                      <span className="apx-keydone">{a.mock.done}</span>
-                    </div>
-                  )}
-                  {i === 2 && (
-                    <pre className="apx-term"><code>
-                      <span className="hl-c">$</span> export NAMU_API_KEY=namu_sk_k7Qm…{"\n"}
-                      <span className="hl-c">$</span> <span className="hl-w">curl</span> …/v1/speech \{"\n"}
-                      {"    "}-d <span className="hl-s">{"'{\"text\": \"Sannu!\"}'"}</span> -o speech.wav{"\n"}
-                      <span className="apx-ok"><Icon name="check" size={13} stroke={2} />{a.mock.ok}</span>
-                    </code></pre>
-                  )}
-                </div>
-                <span className="apx-step-n">{i + 1}</span>
-                <h3>{s.t}</h3>
-                <p>{s.d}</p>
+              <li key={s.t} className="ax-card reveal">
+                <div className="ax-card-pic" aria-hidden="true"><StepArt step={i} mock={a.mock} /></div>
+                <div className="ax-card-text"><span className="ax-n">{i + 1}</span><h3>{s.t}</h3><p>{s.d}</p></div>
               </li>
             ))}
           </ol>
-        </div>
-      </section>
+        </section>
 
-      {/* 4. Anatomy of a request */}
-      <section className="section apx-sec" aria-labelledby="h-anatomy">
-        <div className="wrap">
-          <header className="apx-head reveal">
-            <h2 id="h-anatomy" className="h1">{a.anatomyH}</h2>
-            <p className="lede">{a.anatomySub}</p>
+        {/* 4. The console */}
+        <section className="ax-sec" aria-labelledby="h-console">
+          <header className="ax-head reveal">
+            <div><p className="ax-kick">{a.consoleEyebrow}</p><h2 id="h-console" className="ax-h2">{whole(a.consoleH)}</h2></div>
+            <div><p className="ax-sub">{a.consoleSub}</p>{more(a.consoleCta, L("/account"))}</div>
           </header>
-          <div className="apx-anat reveal">
-            <figure className="apx-anat-code">
-              <pre tabIndex={0}><code>
-                {anatomy(apiBase, a.anatomyErr).map((l, i) => (
-                  <span key={i} className={`ln${l.resp ? " resp" : ""}${l.gap ? " gap" : ""}${l.n ? ` m${l.n}` : ""}`}>
-                    {l.n === 3 ? <><Highlight code={l.text.slice(0, l.text.indexOf(": ") + 2)} lang="json" /><span className="hl-s">{markHooked(l.text.slice(l.text.indexOf(": ") + 2, -1))}</span>,</>
-                      : <Highlight code={l.text} lang={l.resp ? "json" : "cURL"} />}
-                    {l.n && <b className="apx-pin">{l.n}</b>}{"\n"}
-                  </span>
-                ))}
-              </code></pre>
-              <figcaption><span className="apx-live-dot" aria-hidden="true" />{a.anatomyReal}</figcaption>
-            </figure>
-            <ol className="apx-notes">
-              {a.notes.map((x, i) => <li key={x.t} className={`n${i + 1}`}><b className="apx-pin">{i + 1}</b><div><h3>{x.t}</h3><p>{x.d}</p></div></li>)}
-            </ol>
+          <div className="ax-grid ax-console">
+            {(["home", "usage"] as const).map(id => (
+              <figure key={id} className={`ax-card ax-shot ${id} reveal`}>
+                <Image src={`/api/console-${id}.jpg`} alt={a.consoleShots[id]} width={2160} height={1350}
+                  sizes={id === "home" ? "(max-width: 900px) 100vw, 800px" : "(max-width: 900px) 100vw, 480px"} />
+              </figure>
+            ))}
+            {a.consoleCards.map(c => (
+              <div key={c.t} className="ax-card ax-feat reveal">
+                <span className="ax-feat-ic" aria-hidden="true"><Icon name={c.icon} size={20} stroke={1.5} /></span>
+                <h3>{c.t}</h3><p>{c.d}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+          <p className="ax-note">{a.consoleNote}</p>
+        </section>
 
-      {/* 5. Products made of the models */}
-      <section className="section apx-sec" aria-labelledby="h-compose">
-        <div className="wrap">
-          <header className="apx-head reveal">
-            <h2 id="h-compose" className="h1">{a.composeH}</h2>
-            <p className="lede">{a.composeSub}</p>
+        {/* 5. The beta's terms */}
+        <section className="ax-sec" aria-labelledby="h-free">
+          <header className="ax-head reveal">
+            <div><p className="ax-kick">{a.betaEyebrow}</p><h2 id="h-free" className="ax-h2">{whole(a.freeH)}</h2></div>
+            <div><p className="ax-sub">{a.freeSub}</p></div>
           </header>
-          <div className="reveal"><ApiCompose lang={lang} /></div>
-        </div>
-      </section>
-
-      {/* 6. The console */}
-      <section className="section apx-sec apx-console" aria-labelledby="h-console">
-        <div className="wrap">
-          <header className="apx-head split reveal">
-            <div>
-              <h2 id="h-console" className="h1">{a.consoleH}</h2>
-              <p className="lede">{a.consoleSub}</p>
+          <div className="ax-price reveal">
+            <div className="ax-allow">
+              <div className="pg-haze" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><span className="grain" /></div>
+              <p className="ax-allow-big"><strong>{a.allowance[0]}</strong><span>{a.allowance[1]}</span></p>
+              <p className="ax-allow-note">{a.allowance[2]}</p>
+              <div className="ax-acts">
+                <a className="pill lg dark" href={signup}>{a.start}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
+                <a className="pill lg frost" href={MAIL}>{a.more}</a>
+              </div>
             </div>
-            <ul className="apx-points">{a.consolePoints.map(p => <li key={p}><Icon name="check" size={15} stroke={1.8} />{p}</li>)}</ul>
-          </header>
-          <div className="reveal"><ApiConsoleTour lang={lang} /></div>
-        </div>
-      </section>
-
-      {/* 7. The beta's terms, and what stands behind every endpoint */}
-      <section className="section apx-sec" aria-labelledby="h-free">
-        <div className="wrap apx-free">
-          <div className="apx-allow reveal">
-            <div className="pg-haze" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><span className="grain" /></div>
-            <h2 id="h-free" className="h2">{a.freeH}</h2>
-            <p className="apx-allow-sub">{a.freeSub}</p>
-            <p className="apx-allow-big"><strong>{a.allowance[0]}</strong><span>{a.allowance[1]}</span></p>
-            <p className="apx-allow-note">{a.allowance[2]}</p>
-            <ul className="apx-limits">{a.limits.map(([v, l]) => <li key={l}><strong>{v}</strong><span>{l}</span></li>)}</ul>
-            <div className="apx-acts">
-              <a className="pill lg dark" href={signup}>{a.start}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
-              <a className="pill lg frost" href={MAIL}>{a.more}</a>
-            </div>
-            <p className="apx-allow-note">{a.pricing}</p>
+            <ul className="ax-limits">{a.limits.map(([v, l]) => <li key={l}><strong>{v}</strong><span>{l}</span></li>)}</ul>
           </div>
-          <div className="apx-promises">
-            <h2 className="h2 reveal">{a.promiseH}</h2>
-            {a.promises.map((p, i) => (
-              <a key={p.t} className="apx-promise reveal" href={L(p.href)}>
-                <span className="apx-promise-ic" aria-hidden="true"><Icon name={i ? "consent" : "check"} size={20} stroke={1.4} /></span>
-                <h3>{p.t}</h3><p>{p.d}</p>
-                <span className="apx-link">{p.cta}<Icon name="arrow-long" size={14} stroke={1.6} /></span>
+          <p className="ax-note">{a.pricing}</p>
+        </section>
+
+        {/* 6. What stands behind every endpoint */}
+        <section className="ax-sec" aria-labelledby="h-care">
+          <header className="ax-head reveal">
+            <div><p className="ax-kick">{a.careEyebrow}</p><h2 id="h-care" className="ax-h2">{whole(a.careH)}</h2></div>
+            <div><p className="ax-sub">{a.careSub}</p></div>
+          </header>
+          <div className="ax-grid ax-care">
+            {a.care.map((c, i) => (
+              <a key={c.t} className="ax-card ax-care-card reveal" href={L(c.href)}>
+                <div className="ax-card-pic"><CareArt i={i} /></div>
+                <div className="ax-card-text"><h3>{c.t}</h3><p>{c.d}</p><span className="ax-link">{c.cta}<Icon name="arrow-long" size={15} stroke={1.6} /></span></div>
               </a>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 8. Questions */}
-      <section className="section apx-sec" aria-labelledby="h-faq">
-        <div className="wrap apx-faq">
-          <h2 id="h-faq" className="h1 reveal">{a.faqH}</h2>
-          <div className="apx-faq-list reveal">
+        {/* 7. Questions */}
+        <section className="ax-sec ax-faq" aria-labelledby="h-faq">
+          <div className="ax-faq-head reveal">
+            <h2 id="h-faq" className="ax-h2">{whole(a.faqH)}</h2>
+            {more(a.more, MAIL)}
+          </div>
+          <div className="ax-faq-list reveal">
             {a.faq.map(([q, ans]) => (
               <details key={q}>
                 <summary>{q}<Icon name="plus" size={18} stroke={1.5} /></summary>
@@ -251,21 +164,19 @@ export default async function Api({ params }: { params: Promise<{ lang: string }
               </details>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 9. The way in, once more */}
-      <section className="apx-end" aria-labelledby="h-end">
-        <div className="apx-end-art" aria-hidden="true"><NightArt seed="api-end" ratio="wide" tone="rose" /></div>
-        <div className="wrap apx-end-in">
-          <h2 id="h-end" className="h1">{a.endH}</h2>
-          <p className="lede">{a.endSub}</p>
-          <div className="apx-acts">
-            <a className="pill lg light" href={signup}>{a.start}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
-            <a className="pill lg on-dark" href={L("/docs")}>{a.docs}</a>
+        {/* 8. The way in, once more */}
+        <section className="ax-sec ax-end" aria-labelledby="h-end">
+          <div className="ax-end-orb" aria-hidden="true"><RestingOrb palette={voices[lang][0].palette} /></div>
+          <h2 id="h-end" className="ax-display">{a.endH}</h2>
+          <p className="ax-lede">{a.endSub}</p>
+          <div className="ax-acts">
+            <a className="pill lg dark" href={signup}>{a.start}<Icon name="arrow-long" size={18} stroke={1.6} /></a>
+            <a className="pill lg" href={L("/docs")}>{a.docs}</a>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
