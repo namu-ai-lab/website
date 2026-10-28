@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiBase } from "@/lib/env";
+import { setting } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { clientIp, fail, sameOrigin } from "@/lib/http";
 
 /* The home page console's live demos. The browser never sees an API key: this route adds the server-held
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   const { model } = await params;
   if (!Object.hasOwn(MODELS, model)) return fail(404, "unknown_model", "Unknown demo.");
   if (!sameOrigin(req)) return fail(403, "bad_origin", "The demo runs from the Namu site only.");
-  const key = process.env.NAMU_DEMO_KEY;
+  const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
 
   const headers: Record<string, string> = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": clientIp(req) };

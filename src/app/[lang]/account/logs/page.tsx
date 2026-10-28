@@ -7,6 +7,7 @@ import { LocalTime } from "@/components/console/LocalTime";
 import { Icon } from "@/components/Icon";
 import { consoleCopy } from "@/content/console";
 import { isLang, lp, type Lang } from "@/i18n/config";
+import { numberFormat } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { hasAccounts } from "@/lib/env";
@@ -65,7 +66,7 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
   const last = page[page.length - 1];
   const keep = new URLSearchParams(Object.entries({ range: range === "7d" ? "" : range, model, status, key }).filter(([, v]) => v) as [string, string][]);
   const olderHref = last ? `?${new URLSearchParams([...keep, ["before", last.id]])}` : "";
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   const keyLabel = (r: Row) => (r.is_service ? t.playground : r.key_name ?? t.deletedKey);
 
   return (

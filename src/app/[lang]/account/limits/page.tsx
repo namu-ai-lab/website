@@ -3,6 +3,7 @@ import { NotConfigured } from "@/components/account/AccountShell";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { consoleCopy } from "@/content/console";
 import { isLang, type Lang } from "@/i18n/config";
+import { formatDate, numberFormat } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { hasAccounts } from "@/lib/env";
@@ -25,7 +26,7 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
   const { user, profile } = await requireAccount(lang, "/account/limits");
   const t = consoleCopy[lang].limits;
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   const [usage] = await sql<{ audio_seconds: string }>(`select coalesce(sum(audio_seconds), 0) as audio_seconds from public.usage_events
     where user_id = $1 and created_at >= date_trunc('month', now())`, [user.id]);
   const keys = await sql<{ name: string; prefix: string; rate_limit_per_min: number }>(`select name, prefix, rate_limit_per_min from public.api_keys
@@ -33,7 +34,7 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
   const usedMin = Number(usage?.audio_seconds ?? 0) / 60, limitMin = profile.monthly_audio_seconds / 60;
   const pct = limitMin > 0 ? Math.min(100, (usedMin / limitMin) * 100) : 0;
   const now = new Date(), next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const resets = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "long", timeZone: "UTC" }).format(next);
+  const resets = formatDate(lang, next, { style: "dayMonth" });
 
   return (
     <ConsoleShell lang={lang} page="limits" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={consoleCopy[lang].nav.limits} lede={t.lede}>

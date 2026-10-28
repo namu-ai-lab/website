@@ -33,16 +33,37 @@ REFS = f"{VOL}/refs"
 SAMPLE_RATE = 24000     # OmniVoice output rate
 MIN_CONTAINERS = 0
 
+# A caller may set num_step, and GPU time grows with it: one request asking for
+# a million steps would hold an A10 until the timeout. The defaults (32 for
+# French, the model card's recommendation for Hausa) are used as they are; a
+# requested value is pulled into this range, which bounds the cost.
+NUM_STEP_RANGE = (4, 64)
+
+
+def clamp_num_step(requested, default: int) -> int:
+    """The step count to run: the default when none (or nonsense) is asked
+    for, otherwise the request pulled into NUM_STEP_RANGE."""
+    if not requested:
+        return default
+    try:
+        steps = int(requested)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    low, high = NUM_STEP_RANGE
+    return max(low, min(high, steps))
+
 app = modal.App("namu-voice")
 
 # --- lockdown ---------------------------------------------------------------
-# When True, Modal itself rejects any request that lacks valid Modal-Key /
-# Modal-Secret headers, at its edge and BEFORE a container boots, so a stranger
-# who finds this URL can neither use the model nor make us pay for a GPU cold
-# start. Only namu-gateway (and the internal services below) hold the token.
-# Flip to True after the `namu-proxy-auth` Modal secret exists (Modal dashboard
-# -> Settings -> Proxy auth tokens), then redeploy. See platform/README.md.
-REQUIRE_PROXY_AUTH = False
+# Modal itself rejects any request that lacks valid Modal-Key / Modal-Secret
+# headers, at its edge and BEFORE a container boots, so a stranger who finds
+# this URL can neither use the model nor make us pay for a GPU cold start.
+# Only Namu's own callers hold the token (the `namu-proxy-auth` Modal secret):
+# namu-gateway; namu-agent and namu-interpret, for the services they call; and
+# the website's server, for the agent's text step (MODAL_PROXY_KEY/SECRET).
+# Callers are deployed before the services they call (platform/README.md,
+# step 8). To roll back one service, set this to False and redeploy it alone.
+REQUIRE_PROXY_AUTH = True
 
 
 def _download():
@@ -164,11 +185,11 @@ class Voice:
                 raise RuntimeError("French synthesis is not available on this container")
             ref_wav, ref_text = self.fr_voices.get(voice or "fr",
                                                    self.fr_voices["fr"])
-            model, steps = self.base, int(num_step or 32)
+            model, steps = self.base, clamp_num_step(num_step, 32)
         else:
             ref_wav, ref_text = self.ha_voices.get(
                 voice or self.ha_default, self.ha_voices[self.ha_default])
-            model, steps = self.kura, int(num_step or self.ha_steps)
+            model, steps = self.kura, clamp_num_step(num_step, self.ha_steps)
 
         t = time.time()
         a = model.generate(text=text, ref_audio=ref_wav, ref_text=ref_text,
@@ -195,13 +216,12 @@ class Voice:
     @modal.asgi_app(requires_proxy_auth=REQUIRE_PROXY_AUTH)
     def api(self):
         from fastapi import FastAPI
-        from fastapi.middleware.cors import CORSMiddleware
         from fastapi.responses import JSONResponse, Response
 
         web = FastAPI(title="Namu-Voice", version="1.0",
                       description="Hausa and French speech synthesis.")
-        web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                           allow_methods=["*"], allow_headers=["*"])
+        # No CORS on purpose: only Namu's servers call this service, with the proxy
+        # token, and that token must never reach a browser.
 
         @web.get("/v1/health")
         def health():

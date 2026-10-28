@@ -1,3 +1,4 @@
+import "server-only";
 import { redirect } from "next/navigation";
 import { lp, type Lang } from "@/i18n/config";
 import { currentUser } from "@/lib/auth";

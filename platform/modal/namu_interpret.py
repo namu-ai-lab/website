@@ -36,13 +36,15 @@ FR_STT_MODEL = TEXT_MODEL                     # not a Namu model: French ASR onl
 app = modal.App("namu-interpret")
 
 # --- lockdown ---------------------------------------------------------------
-# When True, Modal itself rejects any request that lacks valid Modal-Key /
-# Modal-Secret headers, at its edge and BEFORE a container boots, so a stranger
-# who finds this URL can neither use the model nor make us pay for a GPU cold
-# start. Only namu-gateway (and the internal services below) hold the token.
-# Flip to True after the `namu-proxy-auth` Modal secret exists (Modal dashboard
-# -> Settings -> Proxy auth tokens), then redeploy. See platform/README.md.
-REQUIRE_PROXY_AUTH = False
+# Modal itself rejects any request that lacks valid Modal-Key / Modal-Secret
+# headers, at its edge and BEFORE a container boots, so a stranger who finds
+# this URL can neither use the model nor make us pay for a GPU cold start.
+# Only Namu's own callers hold the token (the `namu-proxy-auth` Modal secret):
+# namu-gateway; namu-agent and namu-interpret, for the services they call; and
+# the website's server, for the agent's text step (MODAL_PROXY_KEY/SECRET).
+# Callers are deployed before the services they call (platform/README.md,
+# step 8). To roll back one service, set this to False and redeploy it alone.
+REQUIRE_PROXY_AUTH = True
 
 
 def _internal_headers(extra: dict | None = None) -> dict:
@@ -119,7 +121,10 @@ PROMPTS = {
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("gemini-api-key")] + ([modal.Secret.from_name("namu-proxy-auth")] if REQUIRE_PROXY_AUTH else []),
+    secrets=[modal.Secret.from_name("gemini-api-key"),
+             # Always, locked or not: the token is what lets this service call
+             # namu-transcribe and namu-voice, which are locked on their own.
+             modal.Secret.from_name("namu-proxy-auth")],
     timeout=900,
     scaledown_window=600,
 )
@@ -132,14 +137,13 @@ def api():
 
     import requests
     from fastapi import FastAPI, Request
-    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
     from openai import OpenAI
 
     web = FastAPI(title="Namu-Interpret", version="1.0",
                   description="Hausa <-> French speech translation.")
-    web.add_middleware(CORSMiddleware, allow_origins=["*"],
-                       allow_methods=["*"], allow_headers=["*"])
+    # No CORS on purpose: only Namu's servers call this service, with the proxy
+    # token, and that token must never reach a browser.
     # OpenRouter speaks the OpenAI API; the secret is the one Namu-Agent uses.
     client = OpenAI(api_key=os.environ.get("OPENROUTER_API_KEY") or os.environ["GEMINI_API_KEY"],
                     base_url=OR_BASE)
@@ -199,8 +203,7 @@ def api():
                 "pairs": ["ha->fr", "fr->ha"],
                 "asr": {"ha": "Namu-Transcribe", "fr": FR_STT_MODEL},
                 "translation_model": TEXT_MODEL,
-                "tts": "Namu-Voice",
-                "transcribe": TRANSCRIBE_URL, "voice": VOICE_URL}
+                "tts": "Namu-Voice"}
 
     @web.post("/v1/translate")
     async def translate(request: Request):

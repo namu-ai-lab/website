@@ -65,12 +65,21 @@ export function Explorer({ items, stages }: { items: { title: string; note: stri
   );
 }
 
-/** Adds .in to every .reveal element as it enters the viewport. Content stays visible without JS. */
+/** Adds .in to every .reveal element as it enters the viewport.
+    Nothing is hidden until this has run, so the page as served shows everything: without JS, if the bundle fails, and
+    while a slow phone is still hydrating (the first screen, often the LCP element, must not wait for JavaScript). The
+    first time it runs, whatever is already on screen (or scrolled past) is kept as it is; only what is still below the
+    fold is hidden (html.reveal-on), to fade in on the way down. Later client navigations reveal their pages as before. */
 export function Reveal() {
   useEffect(() => {
+    const root = document.documentElement;
     const els = [...document.querySelectorAll<HTMLElement>(".reveal:not(.in)")];
+    if (!root.classList.contains("reveal-on")) {
+      for (const el of els) if (el.getBoundingClientRect().top < innerHeight) el.classList.add("in");
+      root.classList.add("reveal-on");
+    }
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
-    els.forEach(el => io.observe(el));
+    els.forEach(el => { if (!el.classList.contains("in")) io.observe(el); });
     return () => io.disconnect();
   });
   return null;

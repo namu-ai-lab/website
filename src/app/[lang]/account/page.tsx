@@ -5,6 +5,7 @@ import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Overview, type HomeRange, type Point, type Recent } from "@/components/console/Overview";
 import { consoleCopy } from "@/content/console";
 import { isLang, type Lang } from "@/i18n/config";
+import { formatDate } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { hasAccounts } from "@/lib/env";
@@ -48,7 +49,7 @@ export default async function Account({ params, searchParams }: { params: Promis
   ]);
   const series: Point[] = buckets.map(b => ({ requests: b.requests, errors: b.errors, audioMin: Number(b.audio) / 60, chars: b.chars, latencyMs: b.latency === null ? null : Number(b.latency) }));
   const now = new Date(), next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const resets = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "long", timeZone: "UTC" }).format(next);
+  const resets = formatDate(lang, next, { style: "dayMonth" });
   const first = (user.name ?? "").trim().split(/\s+/)[0] ?? "";
   return (
     <ConsoleShell lang={lang} page="overview" admin={profile.role === "admin"} user={user} access={profile.beta_status}

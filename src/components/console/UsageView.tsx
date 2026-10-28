@@ -4,6 +4,7 @@
 import { MODEL_COLOUR } from "./colours";
 import { consoleCopy } from "@/content/console";
 import type { Lang } from "@/i18n/config";
+import { formatDate, numberFormat } from "@/i18n/format";
 import type { UsageData } from "@/lib/usage";
 
 /* keys take Namu's palette in turn; the Playground is always ink, a deleted key always grey */
@@ -11,7 +12,7 @@ const KEY_COLOURS = ["#e8935a", "#6b3e1e", "#c9a27e", "#b4552a", "#8a6a52", "#e7
 
 export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data: UsageData; by: "model" | "key"; monthLimitMin: number | null }) {
   const t = consoleCopy[lang].usage, m = consoleCopy[lang].keys.models;
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   const colour = (id: string, i: number) => by === "model" ? MODEL_COLOUR[id as keyof typeof MODEL_COLOUR]
     : id === "playground" ? "#1c1410" : id === "deleted" ? "#b8b0a8" : KEY_COLOURS[i % KEY_COLOURS.length];
   const label = (g: UsageData["groups"][number]) => (g.scope ? m[g.scope].name : g.label);
@@ -32,7 +33,7 @@ export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data:
   const yOf = (v: number) => padT + (H - padB - padT) * (1 - v / top);
   const every = data.days.length <= 8 ? 1 : 5;
   const dayLabel = (iso: string) => data.days.length <= 8
-    ? new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { weekday: "short", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`))
+    ? formatDate(lang, `${iso}T00:00:00Z`, { style: "weekday" })
     : String(Number(iso.slice(8)));
 
   return (

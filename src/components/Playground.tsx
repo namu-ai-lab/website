@@ -17,7 +17,7 @@ import { CopyButton } from "./ui/CopyButton";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
 import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
-import { apiBase } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { AirCall, TAP, wav16k, type CallState, type Persona } from "@/lib/call";
 import { track, type DemoMode } from "@/lib/analytics";
 import { useWakeOnFirstTouch } from "@/lib/wake";

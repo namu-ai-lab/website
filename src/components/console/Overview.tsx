@@ -11,6 +11,8 @@ import { Filters } from "./Filters";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
+import { numberFormat } from "@/i18n/format";
+import type { IconName } from "@/lib/icons";
 import { SCOPES, type Scope } from "@/lib/key-shape";
 
 export type Recent = { id: string; created_at: Date; endpoint: Scope; status: number; latency_ms: number; key_name: string | null; is_service: boolean | null };
@@ -43,13 +45,13 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
   { lang: Lang; range: HomeRange; series: Point[]; steps: [boolean, boolean, boolean]; notice?: ReactNode;
     usedMin: number; limitMin: number; resets: string; recent: Recent[] }) {
   const t = consoleCopy[lang].overview, m = consoleCopy[lang].keys.models, L = (p: string) => lp(lang, p);
-  const nf = new Intl.NumberFormat(lang === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 });
+  const nf = numberFormat(lang);
   const sum = (k: "requests" | "errors" | "audioMin" | "chars") => series.reduce((s, p) => s + p[k], 0);
   const requests = sum("requests"), errors = sum("errors");
   const ok = series.reduce((s, p) => s + (p.latencyMs === null ? 0 : p.requests - p.errors), 0);
   const latency = ok ? series.reduce((s, p) => s + (p.latencyMs ?? 0) * (p.requests - p.errors), 0) / ok : null;
   const pct = limitMin > 0 ? Math.min(100, (usedMin / limitMin) * 100) : 0;
-  const icons = ["key", "waveform", "code"], hrefs = [`${L("/account/keys")}?create=1`, L("/account/playground"), L("/docs")];
+  const icons: IconName[] = ["key", "waveform", "code"], hrefs = [`${L("/account/keys")}?create=1`, L("/account/playground"), L("/docs")];
   const usage = L(`/account/usage${range === "24h" || range === "7d" ? "?range=7d" : "?range=30d"}`);
   const cell = (label: string, value: ReactNode, line: ReactNode) => (
     <a className="cx-metric" href={usage}><p>{label}<Icon name="chevron" size={14} stroke={1.6} className="rot-90" /></p><strong>{value}</strong>{line}</a>

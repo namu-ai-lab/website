@@ -1,4 +1,6 @@
+import "server-only";
 import { createNeonAuth } from "@neondatabase/auth/next/server";
+import { required } from "@/lib/env";
 
 /* Sign-in for the developer console: Neon Auth, the managed Better Auth that lives beside the database. Users and
    sessions are kept by Neon in the neon_auth schema; the browser talks to it through this site's /api/auth/*, and the
@@ -9,8 +11,8 @@ let instance: ReturnType<typeof create> | null = null;
 
 function create() {
   return createNeonAuth({
-    baseUrl: process.env.NEON_AUTH_BASE_URL!,
-    cookies: { secret: process.env.NEON_AUTH_COOKIE_SECRET! },    // 32 characters or more
+    baseUrl: required("NEON_AUTH_BASE_URL"),
+    cookies: { secret: required("NEON_AUTH_COOKIE_SECRET") },    // 32 characters or more
   });
 }
 

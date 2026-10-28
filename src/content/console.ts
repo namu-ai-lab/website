@@ -204,14 +204,14 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
     limits: {
       meta: ["Limits", "Your Namu API allowance, rate limits and request limits."],
       lede: "What your account may use, and what the API answers when a limit is reached.",
-      allowanceH: "Monthly audio", allowanceLede: "Free during the beta. Audio sent and audio returned both count.",
+      allowanceH: "Monthly audio", allowanceLede: "Free during the beta. Transcription and translation count the audio you send, speech counts the audio it returns, and a conversation counts both. A request that fails counts nothing.",
       used: (u, l) => `${u} of ${l} minutes used`, resets: d => `Resets on ${d} (UTC)`, more: "Need more? Write to us",
       rateH: "Rate limits", rateLede: "Requests per minute, counted per key. The Playground has its own limit.",
       th: { what: "Applies to", limit: "Limit" }, perMin: n => `${n} requests / minute`, playground: "Playground", noKeys: "No active keys yet.",
       requestH: "Request limits", requestLede: "Checked before a model runs, so a request that is too big costs nothing.",
       upload: "Audio file size", audio: "Audio length", text: "Text for speech", keys: "Active keys",
       mb: n => `${n} MB`, minutes: n => `${n} minutes`, chars: n => `${n} characters`,
-      errorsH: "When you reach a limit", errorsLede: "Every error has the same shape: {\"error\": {\"type\", \"message\"}}.",
+      errorsH: "When you reach a limit", errorsLede: "Every error has the same shape: {\"error\": {\"type\", \"message\", \"request_id\"}}, and none of them counts against your allowance.",
       eth: { status: "Status", code: "Type", meaning: "What to do" },
       errors: [
         ["429", "rate_limited", "Too many requests for this key. Wait for the number of seconds in Retry-After."],
@@ -337,14 +337,14 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
     limits: {
       meta: ["Limites", "Votre allocation, vos limites de débit et de requête sur l’API Namu."],
       lede: "Ce que votre compte peut utiliser, et ce que l’API répond quand une limite est atteinte.",
-      allowanceH: "Audio mensuel", allowanceLede: "Gratuit pendant la bêta. L’audio envoyé et l’audio renvoyé comptent tous les deux.",
+      allowanceH: "Audio mensuel", allowanceLede: "Gratuit pendant la bêta. La transcription et la traduction comptent l’audio envoyé, la synthèse compte l’audio renvoyé, et une conversation compte les deux. Une requête qui échoue ne compte pas.",
       used: (u, l) => `${u} sur ${l} minutes utilisées`, resets: d => `Remise à zéro le ${d} (UTC)`, more: `Besoin de plus${n}? Écrivez-nous`,
       rateH: "Limites de débit", rateLede: "Requêtes par minute, comptées par clé. Le bac à sable a sa propre limite.",
       th: { what: "S’applique à", limit: "Limite" }, perMin: k => `${k} requêtes / minute`, playground: "Bac à sable", noKeys: "Aucune clé active pour l’instant.",
       requestH: "Limites de requête", requestLede: "Vérifiées avant qu’un modèle ne tourne : une requête trop grosse ne coûte rien.".replace(" :", `${n}:`),
       upload: "Taille du fichier audio", audio: "Durée de l’audio", text: "Texte à lire", keys: "Clés actives",
       mb: k => `${k} Mo`, minutes: k => `${k} minutes`, chars: k => `${k} caractères`,
-      errorsH: "Quand une limite est atteinte", errorsLede: `Chaque erreur a la même forme${n}: {"error": {"type", "message"}}.`,
+      errorsH: "Quand une limite est atteinte", errorsLede: `Chaque erreur a la même forme${n}: {"error": {"type", "message", "request_id"}}, et aucune ne compte dans votre allocation.`,
       eth: { status: "Statut", code: "Type", meaning: "Que faire" },
       errors: [
         ["429", "rate_limited", "Trop de requêtes pour cette clé. Attendez le nombre de secondes indiqué par Retry-After."],

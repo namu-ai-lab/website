@@ -4,7 +4,7 @@ import { accountCopy } from "@/content/account";
 import { docsCopy, samples } from "@/content/docs";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { alternates } from "@/i18n/seo";
-import { apiBase } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params; const l: Lang = isLang(lang) ? lang : "en";

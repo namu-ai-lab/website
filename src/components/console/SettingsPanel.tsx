@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
+import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 
@@ -63,7 +64,6 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
     window.location.assign(lp(lang, "/login"));
   }
 
-  const date = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(since));
   return (
     <>
       <section className="cx-card cx-set">
@@ -92,7 +92,7 @@ export function SettingsPanel({ lang, me, since, allowanceMin }: { lang: Lang; m
           <div className="cx-set-ctl"><code className="cx-secret" ref={idEl}>{me.id}</code>
             <CopyButton text={me.id} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={idEl} className="cx-icon-btn" iconOnly /></div>
         </div>
-        <div className="cx-set-row"><span>{t.since}</span><div className="cx-set-ctl"><span className="cx-set-val">{date}</span></div></div>
+        <div className="cx-set-row"><span>{t.since}</span><div className="cx-set-ctl"><span className="cx-set-val"><LocalTime iso={since} lang={lang} style="day" /></span></div></div>
         <div className="cx-set-row"><span>{t.plan}</span><div className="cx-set-ctl"><span className="cx-set-val">{t.planValue(String(Math.round(allowanceMin)))}</span></div></div>
       </section>
 
