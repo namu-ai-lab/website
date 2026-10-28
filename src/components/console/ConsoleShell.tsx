@@ -6,14 +6,15 @@ import { AccountMenu } from "./AccountMenu";
 import { ConsoleDrawer } from "./ConsoleDrawer";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
+import { copy } from "@/i18n/copy";
 import type { IconName } from "@/lib/icons";
 
 export type ConsoleUser = { name?: string | null; email: string; image?: string | null };
 export type Access = "approved" | "pending" | "denied";
 export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limits" | "settings" | "admin";
 
-/* The developer console's frame, after platform.openai.com: no top bar; a sidebar with the Namu mark and the Beta pill
-   at the top, one flat list of pages (Home, Playground, API keys, Usage, Logs, Limits, Settings, and Accounts for an
+/* The developer console's frame, after platform.openai.com: no top bar; a sidebar with the Namu mark (it leads to the
+   console's Home, as the logo does on platform.openai.com) and the Beta pill at the top, one flat list of pages (Home, Playground, API keys, Usage, Logs, Limits, Settings, and Accounts for an
    admin), the docs and the signed-in account at the foot; then the page under its title. In the Lab's own type
    (Lab Sans, sentence case, no monospace outside code) and colours. On a phone the same sidebar opens as a drawer
    from a slim bar (ConsoleDrawer). */
@@ -34,11 +35,11 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
   return (
     <div className="cx">
       <ConsoleDrawer labels={{ open: t.openMenu, close: t.closeMenu, menu: t.menu }} bar={<>
-        <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx-bar" /><span className="cx-api">{t.api}</span></a>
+        <a className="cx-brand" href={L("/account")} aria-label="Namu API"><Logo className="mark" id="lg-cx-bar" /><span className="cx-api">{t.api}</span></a>
         <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
       </>}>
         <div className="cx-side-top">
-          <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx" /><span className="cx-api">{t.api}</span></a>
+          <a className="cx-brand" href={L("/account")} aria-label="Namu API"><Logo className="mark" id="lg-cx" /><span className="cx-api">{t.api}</span></a>
           <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
         </div>
         <nav className="cx-nav" aria-label={t.menu}>
@@ -68,7 +69,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
 }
 
 /* The frame for the console's doors (sign-in, and the notice when accounts are switched off): a slim bar with the
-   mark and the way back, the page centred under it. */
+   mark, the way back and the EN/FR switch, the page centred under it. */
 export function AuthFrame({ lang, children }: { lang: Lang; children: ReactNode }) {
   const t = consoleCopy[lang], L = (p: string) => lp(lang, p);
   return (
@@ -76,6 +77,7 @@ export function AuthFrame({ lang, children }: { lang: Lang; children: ReactNode 
       <header className="cx-top">
         <a className="cx-brand" href={L("/api")} aria-label="Namu API"><Logo className="mark" id="lg-cx-auth" /><span className="cx-api">{t.api}</span></a>
         <nav className="cx-links" aria-label={t.nav.build}><a href={L("/docs")}>{t.nav.docs}</a><a href={L("/")}>Namu AI Lab</a></nav>
+        <LangSwitch lang={lang} label={copy[lang].nav.language} />
       </header>
       <div className="cx-auth-body">{children}</div>
     </div>

@@ -28,7 +28,7 @@ export type AccountCopy = {
   keys: {
     meta: [string, string]; h1: string; lede: string; create: string; name: string; namePh: string; scopes: string;
     scopeNames: Record<string, string>; cancel: string; createIt: string; creating: string;
-    secretH: string; secretBody: string; copy: string; copied: string; done: string;
+    secretH: string; secretBody: string; copy: string; copied: string; copyFailed: string; done: string;
     th: { name: string; key: string; scopes: string; created: string; lastUsed: string };
     never: string; revoke: string; revoked: string; confirmRevoke: (name: string) => string; empty: string;
     demo: string; limit: (n: number) => string; base: string; error: string;
@@ -89,7 +89,7 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       scopeNames: { transcribe: "Tatsuniya · transcribe", speech: "Tafiya · speech", translate: "Kora · translate", converse: "Aïr · converse" },
       cancel: "Cancel", createIt: "Create key", creating: "Creating…",
       secretH: "Save your key now", secretBody: "This is the only time we show it. We keep a fingerprint, not the key, so we cannot show it again.",
-      copy: "Copy", copied: "Copied", done: "I have saved it",
+      copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", done: "I have saved it",
       th: { name: "Name", key: "Key", scopes: "Models", created: "Created", lastUsed: "Last used" },
       never: "Never", revoke: "Revoke", revoked: "Revoked",
       confirmRevoke: k => `Revoke “${k}”? Apps using it stop working within a minute. This cannot be undone.`,
@@ -158,7 +158,7 @@ export const accountCopy: Record<Lang, AccountCopy> = {
       scopeNames: { transcribe: "Tatsuniya · transcription", speech: "Tafiya · synthèse", translate: "Kora · traduction", converse: "Aïr · conversation" },
       cancel: "Annuler", createIt: "Créer la clé", creating: "Création…",
       secretH: "Enregistrez votre clé maintenant", secretBody: "Elle n’est affichée qu’une seule fois. Nous gardons une empreinte, pas la clé : nous ne pourrons pas la réafficher.".replace(" :", `${n}:`),
-      copy: "Copier", copied: "Copiée", done: "Je l’ai enregistrée",
+      copy: "Copier", copied: "Copiée", copyFailed: `Non copié${n}: le texte est sélectionné`, done: "Je l’ai enregistrée",
       th: { name: "Nom", key: "Clé", scopes: "Modèles", created: "Créée le", lastUsed: "Dernier usage" },
       never: "Jamais", revoke: "Révoquer", revoked: "Révoquée",
       confirmRevoke: k => `Révoquer «${n}${k}${n}»${n}? Les applications qui l’utilisent s’arrêtent en moins d’une minute. C’est irréversible.`,

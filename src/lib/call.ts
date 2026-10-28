@@ -50,7 +50,7 @@ export class AirCall {
   private src: AudioBufferSourceNode | null = null;
   private chain: Promise<void> = Promise.resolve();
   private turn = 0;                   // bumps whenever playback or a request should be abandoned
-  private state: CallState = "connecting";
+  private state: CallState | "idle" = "idle";   // idle until start(), so its first set("connecting") is reported
   private sid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
   private abort: AbortController | null = null;
   private raf = 0;
@@ -278,7 +278,7 @@ export class AirCall {
 
   private get over() { return this.state === "ended"; }       // read fresh after each await
   private set(s: CallState) { if (this.state !== s && (this.state !== "ended" || s === "ended")) { this.state = s; this.on.state(s); } }
-  private fail(p: CallProblem) { this.on.problem(p); this.end(); }
+  private fail(p: CallProblem) { if (this.over) return; this.on.problem(p); this.end(); }   // a late wake or worklet error after hanging up says nothing
   private release() {
     cancelAnimationFrame(this.raf); this.clear(); this.amp.current = 0;
     this.stream?.getTracks().forEach(tr => tr.stop()); this.stream = null;

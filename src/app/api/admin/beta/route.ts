@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { profileOf, type Profile } from "@/lib/account";
+import { profileOf, profileRow, type Profile } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { fail, signedIn } from "@/lib/http";
 
@@ -22,5 +22,5 @@ export async function POST(req: NextRequest) {
     `update public.profiles set beta_status = $1, reviewed_at = now(), monthly_audio_seconds = coalesce($2, monthly_audio_seconds)
      where user_id = $3 returning user_id`, [status, minutes, target]);
   if (!rows.length) return fail(404, "not_found", "Unknown account.");
-  return NextResponse.json({ data: await profileOf(target) });
+  return NextResponse.json({ data: profileRow(await profileOf(target)) });
 }
