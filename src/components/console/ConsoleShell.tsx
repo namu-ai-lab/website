@@ -13,8 +13,9 @@ export type ConsoleUser = { name?: string | null; email: string; image?: string 
 export type Access = "approved" | "pending" | "denied";
 export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limits" | "settings" | "admin";
 
-/* The developer console's frame, after platform.openai.com: no top bar; a sidebar with the Namu mark (it leads to the
-   console's Home, as the logo does on platform.openai.com) and the Beta pill at the top, one flat list of pages (Home, Playground, API keys, Usage, Logs, Limits, Settings, and Accounts for an
+/* The developer console's frame, after platform.openai.com: no top bar; a sidebar with the Namu mark (it leads back to
+   the Lab's home page, the way out of the console; Home in the list is the console's own) and the Beta pill at the
+   top, one flat list of pages (Home, Playground, API keys, Usage, Logs, Limits, Settings, and Accounts for an
    admin), the docs and the signed-in account at the foot; then the page under its title. In the Lab's own type
    (Lab Sans, sentence case, no monospace outside code) and colours. On a phone the same sidebar opens as a drawer
    from a slim bar (ConsoleDrawer). */
@@ -35,11 +36,11 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
   return (
     <div className="cx">
       <ConsoleDrawer labels={{ open: t.openMenu, close: t.closeMenu, menu: t.menu }} bar={<>
-        <a className="cx-brand" href={L("/account")} aria-label="Namu API"><Logo className="mark" id="lg-cx-bar" /><span className="cx-api">{t.api}</span></a>
+        <a className="cx-brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" id="lg-cx-bar" /><span className="cx-api">{t.api}</span></a>
         <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
       </>}>
         <div className="cx-side-top">
-          <a className="cx-brand" href={L("/account")} aria-label="Namu API"><Logo className="mark" id="lg-cx" /><span className="cx-api">{t.api}</span></a>
+          <a className="cx-brand" href={L("/")} aria-label="Namu AI Lab"><Logo className="mark" id="lg-cx" /><span className="cx-api">{t.api}</span></a>
           <span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span>
         </div>
         <nav className="cx-nav" aria-label={t.menu}>
