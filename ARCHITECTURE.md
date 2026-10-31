@@ -17,7 +17,7 @@ developer app ─► namu-gateway (Modal, CPU) ─── SECURITY DEFINER calls 
                  namu-transcribe · namu-voice · namu-interpret · namu-agent    (Modal, GPU)
 ```
 
-- **The site** (Vercel) serves the public pages, the developer console and the docs. Its route handlers relay sign-in, manage keys and call the gateway for the demos and the console Playground. It connects to Postgres as the owner, and every query that touches a developer's data filters on that developer's user id.
+- **The site** (Vercel) serves the public pages, the platform (three doors: Create, Agents and the API console; §9) and the docs. Its route handlers relay sign-in, manage keys and call the gateway for the demos and the console Playground. It connects to Postgres as the owner, and every query that touches a developer's data filters on that developer's user id.
 - **The gateway** (`platform/modal/namu_gateway.py`) is the only public API. It checks the key, the account, the scope, the allowance, rate limits and input sizes, then calls one model service and records usage. Its database role can only call the functions in `db/migrations/`; it cannot read a table.
 - **The model services** (`platform/modal/namu_{transcribe,voice,interpret,agent}.py`) run the models on GPUs. On `main` they still answer the open internet (`REQUIRE_PROXY_AUTH = False`). **planned:** only Namu's own callers, which hold the Modal proxy token, can reach them (batch 1; `platform/README.md` step 8).
 - **The database schema** is the numbered files in `db/migrations/`, applied in order by `npm run db:migrate`.
@@ -35,13 +35,15 @@ developer app ─► namu-gateway (Modal, CPU) ─── SECURITY DEFINER calls 
 
 Because of the 30 s cache, revoking a key or pausing an account takes effect within 30 s.
 
-**The console** (`/account/*`) is made of server components. Each page:
+**The platform's pages** (`/create/*`, `/agents/*`, `/account/*`; §9) are server components. Each page:
 1. checks `hasAccounts()`, and shows "not configured" if accounts are off;
 2. calls `requireAccount()` in `src/lib/account.ts`, which reads the Neon Auth session, creates the profile on the first visit, and redirects to `/login?next=…` when signed out;
 3. reads the developer's rows with SQL scoped to their id;
-4. renders inside `ConsoleShell`.
+4. renders inside `PlatformShell` (`ConsoleShell` for the API door), which draws its door's sidebar.
 
 Writes go through route handlers. `signedIn(req, write)` in `src/lib/http.ts` refuses cross-origin writes and signed-out callers. `/api/keys` mints a key with `generateKey`, stores only `hashKey(key)` and a short prefix, and returns the secret once.
+
+**The platform's model calls.** Create's routes (`/api/create/speak`, `/translate`, `/listen`) and the agents' test calls go through `src/lib/gateway.ts`, exactly as the Playground does: the service key plus `X-Namu-Account`. `translateText` sends text to `/v1/translate` as JSON; a gateway deployed before text translation answers 400, and it then speaks the text and translates that speech instead.
 
 **The console Playground** (`/api/playground/[model]`). The route checks the session, then calls the gateway with the site's service key (`NAMU_SERVICE_KEY`) and `X-Namu-Account: <user id>`. The gateway applies that account's status, allowance and a 20-a-minute limit, and meters the run to that account.
 
@@ -103,7 +105,11 @@ Known exceptions on `main`, all with a planned fix:
 | `api.css` | `apx-` | The `/api` page |
 | | `ar-` `ac-` `act-` `mart-` | `ApiRunner`, `ApiCompose`, `ApiConsoleTour`, `ModelArt` |
 | `orgs.css` | `ofd-` | `/organisations` and `OrgListen` |
-| `console.css` | `cx-` | The console, the sign-in pages and the account pages |
+| `console.css` | `cx-` | The console, the sign-in pages and the account pages; the platform's sidebar, pills, cards and tables |
+| `platform.css` | `pf-` | The platform's shell (groups, the door switch, page layouts) and its shared pieces (pickers, player, voice library) |
+| `create.css` | `cr-` | Namu Create's tools (Speak, Transcribe, Kit) |
+| `projects.css` | `pj-` | Namu Create's home, projects and video translation |
+| `agents.css` | `ag-` | Namu Agents |
 
 New styles go in the stylesheet of their area, under that area's prefix, using tokens rather than raw colours. **planned:** more tokens (type scale, radii, alpha steps) and fewer raw colours (batch 40).
 
@@ -132,10 +138,13 @@ New styles go in the stylesheet of their area, under that area's prefix, using t
 | Request limits | Gateway constants (`MAX_UPLOAD_BYTES`, `MAX_AUDIO_SECONDS`, …) | `src/lib/limits.ts` mirrors them for the console; the Playground and demo routes and `content/docs.ts` repeat some as literals (batch 27) |
 | Monthly allowance | `profiles.monthly_audio_seconds`, default 1800 s (`0001`) | "30 minutes" in copy (`content/api.ts`, `account.ts`, `docs.ts`) (batch 27) |
 | Audio used this month | `sum(usage_events.audio_seconds)` since `date_trunc('month', now())` | In `0001`, `0004` (twice), `account/page.tsx`, `account/limits/page.tsx`, `lib/usage.ts` (batch 9) |
-| Model names, endpoints, colours | none yet | `content/site.ts`, `api.ts`, `console.ts`, `account.ts`, `playground.ts`, `ApiCompose.tsx`, `console/colours.ts`, the routes' path maps (**planned:** `lib/models.ts`, batch 28) |
+| Models, endpoints, the languages each takes | `src/lib/catalog/models.ts` (the platform reads only this) | The gateway's `MODELS`; older public pages still name models in `content/site.ts`, `api.ts`, `console.ts`, `account.ts`, `playground.ts`, `console/colours.ts` (batch 28) |
+| Spoken languages (Hausa, Zarma, Fulfulde, Tamasheq, French) | `src/lib/catalog/languages.ts` | none |
+| Voices | `src/lib/catalog/voices.ts` | The gateway's `VOICES`; the Playground's own list in `content/console.ts` |
+| Output targets (WhatsApp, radio, phone line, file) | `src/lib/catalog/outputs.ts` | The gateway's `SPEECH_FORMATS` for what the API encodes itself |
 | Analytics events | `src/lib/analytics.ts` (`docs/analytics.md` explains them) | none |
 | Partner and newsletter form ids | `src/components/Tally.tsx` | none |
-| Languages | `src/i18n/config.ts` `locales` | About 35 files still hard-code `en` and `fr` (batch 35) |
+| Interface languages | `src/i18n/config.ts` `locales` | About 35 files still hard-code `en` and `fr` (batch 35) |
 | Server settings | `src/lib/env-check.ts` (the names and the rules); `.env.example` documents each | none: server code reads them only through `src/lib/env.ts` |
 
 ## 7. How to make common changes
@@ -147,26 +156,32 @@ New styles go in the stylesheet of their area, under that area's prefix, using t
 4. Link it from `Header.tsx` and/or `Footer.tsx` with `lp(lang, "/careers")`.
 5. Put its styles in `lab.css` under a new prefix. A large area gets its own stylesheet, imported in `src/app/[lang]/layout.tsx`.
 
-**Add a console page** (for example `/account/webhooks`). Today this touches three files, plus a route for any write:
-1. `src/app/[lang]/account/webhooks/page.tsx`. Copy `limits/page.tsx`: `hasAccounts()`, then `requireAccount(lang, "/account/webhooks")`, then `<ConsoleShell page="webhooks" …>`, with `robots: { index: false }` in its metadata.
-2. `src/components/console/ConsoleShell.tsx`: add `"webhooks"` to the `Page` type and an entry to `items`.
-3. `src/content/console.ts`: add the page's strings and a `nav` label to `ConsoleCopy`, in `en` and `fr`.
+**Add a platform page** (for example `/account/webhooks`, or `/create/radio`). Three files, plus a route for any write:
+1. The page, for example `src/app/[lang]/account/webhooks/page.tsx`. Copy `create/voices/page.tsx`: `generateMetadata` from `platformMetadata`, `hasAccounts()`, then `requireAccount(lang, path)`, then `<PlatformShell door="…" page="webhooks" …>` (`<ConsoleShell page=…>` in the API door, after adding the id to its `Page` type).
+2. `src/components/platform/doors.ts`: an item in the door's group, with its id, path, icon and `nav` label.
+3. `src/content/platform.ts`: the `nav` label, in `en` and `fr`; the page's own strings go in its door's copy file.
 4. Writes go through a route in `src/app/api/`, which calls `signedIn(req, true)` first.
 
-`robots.ts` and `SiteChrome` already cover everything under `/account`.
+`robots.ts` and `SiteChrome` already cover everything under `/account`, `/create` and `/agents`.
 
-**Add or rename a model.** This is the least local change today, at about 11 files:
+**Teach a model a spoken language** (Zarma, Fulfulde, Tamasheq…). With the model served:
+1. The gateway: the language in its `MODELS` entry and, for speech, a voice in `VOICES`; deploy it.
+2. `src/lib/catalog/models.ts`: the language's code in the model's `languages` (and a direction in `pairs` for translation).
+3. `src/lib/catalog/voices.ts`: the voice, with a sample recorded through the API in `public/`.
+
+Every list on the platform then offers it: Speak, Transcribe, the project columns, the voice library and its filters, the agents' languages, the API's model pages and `/llms.txt`. `npm test` checks that every speech language has a voice.
+
+**Add a spoken language the platform does not know yet:** one entry in `src/lib/catalog/languages.ts` (its code, its own name, its names in the interface languages, the countries, the letters keyboards lack and `npm run check-glyphs` for them). It shows as Soon until a model takes it.
+
+**Add a voice:** one entry in `src/lib/catalog/voices.ts` and one in the gateway's `VOICES`, with consent on file.
+
+**Add or rename a model.** The platform reads the catalog; the older public pages do not yet:
 1. The gateway: `SCOPES`, `MODELS`, the endpoint, the upstream URL.
 2. A migration that widens the `api_keys.scopes` check.
-3. `src/lib/key-shape.ts` `SCOPES`.
-4. The scope lists and names in `content/api.ts`, `content/console.ts`, `content/account.ts` and `content/site.ts`.
-5. `PlaygroundConsole.tsx`.
-6. The path maps in `api/playground/[model]` and `api/demo/[model]`.
-7. The colours in `ApiCompose.tsx` and `console/colours.ts`.
-8. The endpoints and samples in `content/docs.ts`.
-9. `DemoMode` in `lib/analytics.ts`.
+3. `src/lib/catalog/models.ts` and `src/lib/key-shape.ts` `SCOPES` (`catalog.test.ts` keeps them in step). The API door's sidebar, its model page and `/llms.txt` follow.
+4. Still by hand: the names in `content/api.ts`, `content/console.ts`, `content/account.ts` and `content/site.ts`; `PlaygroundConsole.tsx`; the path maps in `api/playground/[model]` and `api/demo/[model]`; the colours in `ApiCompose.tsx` and `console/colours.ts`; the samples in `content/docs.ts`; `DemoMode` in `lib/analytics.ts` (batch 28).
 
-Ship it in the deploy order: migration, gateway, site. **planned:** one registry in `src/lib/models.ts` that the rest derive from (batch 28).
+Ship it in the deploy order: migration, gateway, site.
 
 **Change a limit or the default allowance.**
 1. Change the gateway constant, or the column default by a new migration.
@@ -175,7 +190,7 @@ Ship it in the deploy order: migration, gateway, site. **planned:** one registry
 
 **planned:** the copy formats the numbers from `LIMITS` (batch 27).
 
-**Add a language.**
+**Add an interface language** (the language the pages are written in; spoken languages are in the catalog, above).
 1. Add it to `locales`.
 2. Add a translation to every `Record<Lang, …>` copy module (TypeScript lists the ones that are missing).
 3. Then fix what is still hard-coded to `"en" | "fr"`: `src/proxy.ts`, `i18n/config.ts` (`pickLang`, `lp`, `switchPath`), `i18n/seo.ts`, `sitemap.ts`, `robots.ts`, `SiteChrome.tsx`, `Header.tsx`, `FigureSlot.tsx`, `lib/analytics.ts`, the root layout, and about 30 `lang === "fr"` branches in 19 files.
@@ -187,7 +202,24 @@ Ship it in the deploy order: migration, gateway, site. **planned:** one registry
 
 ## 8. Tests and CI
 
-- **Unit tests** (Vitest): `src/**/*.test.ts`, run by `npm test`. They cover pure logic with no database or network: keys, the redirect allow-list, usage windows, URL redaction, language choice.
+- **Unit tests** (Vitest): `src/**/*.test.ts`, run by `npm test`. They cover pure logic with no database or network: keys, the redirect allow-list, usage windows, URL redaction, language choice, the catalog's consistency, the word list and letters, and the audio files the platform writes (Ogg pages, zip).
 - **Gateway tests** (pytest): `platform/tests/`. They use fakes for the store, the model services and the rate limiter, and run without Modal installed.
 - **CI** (`.github/workflows/ci.yml`) runs on every pull request and on every push to `main`. The `web` job runs typecheck, lint, test and build on Node 24, with no secrets. The `platform` job runs pytest on Python 3.11.
 - **planned:** a Playwright smoke test for the critical journeys, plus axe checks (batch 30).
+
+## 9. The platform: three doors
+
+After ElevenLabs' ElevenCreative, ElevenAgents and ElevenAPI, the signed-in platform has three doors, one account and one shell. A switch at the foot of every sidebar moves between them.
+
+| Door | Routes | For |
+| --- | --- | --- |
+| Namu Create | `/create` (home), `/create/voices`, `/create/projects`, `/create/kit`, `/create/speak`, `/create/transcribe`, `/create/video` | Organisations and creators without code: one message in many languages, made for WhatsApp, radio, phone lines and video |
+| Namu Agents | `/agents`, `/agents/templates`, `/agents/conversations`, `/agents/knowledge` | Voice agents that answer people in their own language |
+| Namu API | `/account` (Get started until the first request, then the dashboard), `/account/keys`, `/account/limits`, `/account/models/[id]`, `/account/voices`, `/account/usage`, `/account/logs`, `/account/playground`, `/account/settings` | Developers |
+
+- **The shell.** `components/platform/PlatformShell.tsx` draws every door's page; `components/platform/doors.ts` lists each door's sidebar. The API door's Models group is built from the catalog. The Namu mark leads back to the Lab's home page.
+- **The catalog.** `src/lib/catalog/` holds the spoken languages, the models, the voices and the output targets, with the questions every screen asks (`languagesFor`, `can`, `canTranslate`, `defaultVoice`, `stateOf`). Nothing on the platform lists a language, a voice or a model by hand. The recipes are in §7.
+- **Shared pieces.** `components/platform/`: the voice library, the language and voice pickers, the player and the recorder. `lib/gateway.ts`: the models on a user's behalf. `lib/audio-out.ts`: a recording made ready for each channel (Ogg Opus for WhatsApp, 48 kHz for radio, 8 kHz for a phone line). `lib/zip.ts`: every language in one download.
+- **Data.** Migration `0006_platform.sql`: projects and their versions, the kit (word list and voice per language), agents, their documents, tests and conversations. Text only: audio is made again from the text when it is needed. Every query filters on the user's id. A page whose table is not there yet (the migration not applied) says the platform is almost ready (`isMissingTable` in `lib/db.ts`).
+- **For coding agents.** `/llms.txt` describes the API from the catalog and the docs, and the API door's Get started gives a prompt that points an agent at it.
+- **Testing locally without production.** A throwaway Postgres with the migrations applied and a stand-in `neon_auth."user"` row, a small server that answers Neon Auth's `get-session` for a cookie, and a stand-in gateway that answers `/v1/*` with recorded samples; then `next dev` with `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEXT_PUBLIC_NAMU_API_BASE`, `NAMU_SERVICE_KEY` and `NAMU_AGENT_URL` pointing at them. Never the production database or keys.

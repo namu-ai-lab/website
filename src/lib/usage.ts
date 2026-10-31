@@ -48,3 +48,14 @@ export async function usageFor(userId: string, range: Range, by: GroupBy, names:
     totals: totals.map(t => ({ group: t.grp, requests: t.requests, errors: t.errors, audioMin: Number(t.audio) / 60, chars: t.chars, latencyMs: t.latency === null ? null : Number(t.latency) })),
   };
 }
+
+export type FirstRequest = { endpoint: string; status: number; at: string; latencyMs: number };
+
+/** The account's latest request through one of its own keys, not the Playground's: what the API door's first visit
+    waits for. */
+export async function latestApiRequest(userId: string): Promise<FirstRequest | null> {
+  const [r] = await sql<{ endpoint: string; status: number; created_at: Date; latency_ms: number }>(`select e.endpoint, e.status, e.created_at, e.latency_ms
+    from public.usage_events e join public.api_keys k on k.id = e.key_id
+    where e.user_id = $1 and not k.is_service order by e.created_at desc, e.id desc limit 1`, [userId]);
+  return r ? { endpoint: r.endpoint, status: r.status, at: r.created_at.toISOString(), latencyMs: r.latency_ms } : null;
+}

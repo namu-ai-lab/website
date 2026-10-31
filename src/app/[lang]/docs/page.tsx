@@ -39,7 +39,7 @@ export default async function Docs({ params }: { params: Promise<{ lang: string 
             <h2 className="h2">{d.quickH}</h2>
             <ol>{d.quick.map(q => <li key={q}>{q}</li>)}</ol>
             <CodeTabs code={code.speech} copyLabel={k.copy} copiedLabel={k.copied} failedLabel={k.copyFailed} />
-            <p className="meta">{k.base}: <code>{apiBase}</code></p>
+            <p className="meta">{k.base}: <code>{apiBase}</code> · {d.forAgents}: <a href="/llms.txt"><code>/llms.txt</code></a></p>
           </section>
 
           <section id="auth">
@@ -59,6 +59,7 @@ export default async function Docs({ params }: { params: Promise<{ lang: string 
               <h3 className="h3">{d.returnsH}</h3>
               <p><code>{e.returns}</code></p>
               <CodeTabs code={code[e.id]} copyLabel={k.copy} copiedLabel={k.copied} failedLabel={k.copyFailed} />
+              {e.id === "translate" && <CodeTabs code={code.translateText} copyLabel={k.copy} copiedLabel={k.copied} failedLabel={k.copyFailed} />}
             </section>
           ))}
 
