@@ -95,6 +95,11 @@ class FakeUpstream:
         self.budgets.append(timeout)
         return self._ok({"source_text": "sannu", "target_text": "bonjour", "audio": "QUJD"})
 
+    def translate_text(self, text, source, target, timeout):
+        self.calls.append(("translate_text", source, target))
+        self.budgets.append(timeout)
+        return self._ok({"text": "Sannu da zuwa", "source": source, "target": target})
+
     def converse(self, data, persona, session_id, timeout):
         self.calls.append(("converse", persona, session_id))
         self.budgets.append(timeout)
@@ -940,3 +945,101 @@ def test_the_window_counter_resets_each_window_and_stays_bounded():
     w.hit("b", 2, 60)
     w.hit("c", 2, 60)
     assert len(w.counts) <= 2
+
+
+# ---------------------------------------------------------------- speech formats
+@pytest.fixture
+def enc_env():
+    store, up, lim, clock = FakeStore(), FakeUpstream(), FakeLimiter(), Clock()
+    seen, broken = [], set()
+
+    def encode(data, fmt):
+        seen.append(fmt)
+        return None if fmt in broken else {"mp3": b"ID3fake", "opus": b"OggSfake"}[fmt]
+
+    app = gw.create_app(store, up, lim, PEPPER, audio_seconds=lambda b: gw.wav_seconds(b), encode=encode, now=clock)
+    return TestClient(app), store, up, seen, broken
+
+
+def test_speech_is_wav_by_default(enc_env):
+    c, store, up, seen, broken = enc_env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "nadia"})
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/wav" and seen == []
+
+
+@pytest.mark.parametrize("fmt,ctype,head", [("mp3", "audio/mpeg", b"ID3"), ("opus", "audio/ogg", b"OggS")])
+def test_speech_in_another_format(enc_env, fmt, ctype, head):
+    c, store, up, seen, broken = enc_env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "nadia", "format": fmt})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == ctype and r.content.startswith(head)
+    assert float(r.headers["x-audio-seconds"]) == 2.0
+    assert seen == [fmt] and store.usage[-1].audio_seconds == 2.0
+
+
+def test_speech_unknown_format_is_refused_before_the_model(enc_env):
+    c, store, up, seen, broken = enc_env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "format": "flac"})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_request"
+    assert up.calls == [] and store.usage == []
+
+
+def test_speech_encode_failure_is_an_error_and_counts_nothing(enc_env):
+    c, store, up, seen, broken = enc_env
+    broken.add("mp3")
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "format": "mp3"})
+    assert r.status_code == 500 and r.json()["error"]["type"] == "encode_failed"
+    assert (store.usage[-1].status, store.usage[-1].audio_seconds) == (500, 0.0)
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is not installed here")
+@pytest.mark.parametrize("fmt", ["mp3", "opus"])
+def test_encode_audio_with_ffmpeg(fmt):
+    out = gw.encode_audio(wav(1.0, 24000), fmt)
+    assert out
+    assert out.startswith(b"OggS") if fmt == "opus" else (out.startswith(b"ID3") or out[0] == 0xFF)
+
+
+def test_encode_audio_refuses_unknown_formats():
+    assert gw.encode_audio(wav(0.2), "flac") is None
+
+
+# ---------------------------------------------------------------- text translation
+def test_translate_text(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/translate", headers=auth(), json={"text": "Bonjour à tous", "source": "fr", "target": "ha"})
+    assert r.status_code == 200
+    j = r.json()
+    assert j["text"] == "Sannu da zuwa" and j["source_text"] == "Bonjour à tous" and j["characters"] == 14
+    assert "audio" not in j
+    assert up.calls == [("translate_text", "fr", "ha")]
+    u = store.usage[-1]
+    assert (u.endpoint, u.characters, u.audio_seconds, u.status) == ("translate", 14, 0.0, 200)
+
+
+def test_translate_text_spoken(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/translate?include_audio=1", headers=auth(), json={"text": "Bonjour", "target": "ha"})
+    assert r.status_code == 200 and r.json()["audio"]
+    assert up.calls == [("translate_text", "fr", "ha"), ("speak", "ha", "nadia")]
+
+
+@pytest.mark.parametrize("body,status,kind", [
+    ({"text": "", "target": "ha"}, 400, "missing_text"),
+    ({"text": "x", "source": "en", "target": "ha"}, 400, "unsupported_pair"),
+    ({"text": "x", "source": "ha", "target": "ha"}, 400, "unsupported_pair"),
+    ({"text": "x" * 2001, "target": "ha"}, 413, "text_too_long"),
+    ({"text": ["x"]}, 400, "invalid_json"),
+])
+def test_translate_text_refusals(env, body, status, kind):
+    c, store, up, *_ = env
+    r = c.post("/v1/translate", headers=auth(), json=body)
+    assert r.status_code == status and r.json()["error"]["type"] == kind
+    assert up.calls == []
+
+
+def test_translate_text_needs_the_scope(env):
+    c, store, *_ = env
+    store.keys[gw.hash_key(GOOD, PEPPER)].scopes = ["speech"]
+    r = c.post("/v1/translate", headers=auth(), json={"text": "Bonjour", "target": "ha"})
+    assert r.status_code == 403 and r.json()["error"]["type"] == "insufficient_scope"
