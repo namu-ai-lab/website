@@ -2,12 +2,13 @@
 
 What Aïr says in the home page's live call that is not generated during the call: its welcome, the short phrases
 that fill the wait while it thinks, and what it says when something goes wrong. One folder per voice (`nadia`, the
-female voice, and `salim`, the male one), spoken by Tafiya through the Namu API on 2026-10-20 and chosen the same way
-as the demo recordings (see `public/demo/README.md`). `src/lib/call.ts` decides when each plays.
+female voice; the male voice, `salim`, was withdrawn on 2026-10-31 with no consent record for its speaker, and its
+folder removed), spoken by Tafiya through the Namu API on 2026-10-20 and chosen the same way as the demo recordings
+(see `public/demo/README.md`). `src/lib/call.ts` decides when each plays.
 
 | File | Hausa | English | When |
 |---|---|---|---|
-| `hello` | Sannu da zuwa! Ni ce Nadia / Ni ne Salim, daga Namu. Muna gina fasahar murya don harsunan Afirka. Ku yi mini magana da Hausa, zan saurare ku. | Welcome! I'm Nadia / Salim, from Namu. We build voice technology for African languages. Speak to me in Hausa; I'm listening. | as the call opens, while the models wake |
+| `hello` | Sannu da zuwa! Ni ce Nadia, daga Namu. Muna gina fasahar murya don harsunan Afirka. Ku yi mini magana da Hausa, zan saurare ku. | Welcome! I'm Nadia, from Namu. We build voice technology for African languages. Speak to me in Hausa; I'm listening. | as the call opens, while the models wake |
 | `ack1` | To, na ji. | OK, I heard you. | after a statement |
 | `ack2` | Eh, na fahimta. | Yes, I understand. | after a statement |
 | `ack3` | Haka ne. | That's right. | after a statement |

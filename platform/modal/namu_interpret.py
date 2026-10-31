@@ -6,6 +6,7 @@ CPU only; it orchestrates the two GPU services and the translation model.
 
     POST /v1/translate  {"text":..., "source":"ha", "target":"fr"} -> text
     POST /v1/speech     audio + ?source=ha&target=fr               -> spoken turn
+                                                                      (text only into French)
     GET  /v1/health
 
 /v1/translate is the endpoint LiveKit uses: in a LiveKit session the STT and TTS
@@ -17,6 +18,10 @@ Gemini (through OpenRouter, the same key and model family as Namu-Agent),
 because Namu-Transcribe is Hausa-only. The French half is not a Namu model and
 is labelled as such in /v1/health rather than quietly implied. Translation is
 Gemini through OpenRouter too.
+
+Only Hausa is spoken back. The French voice was withdrawn on 2026-10-31 (no
+consent record for its speaker, ROADMAP S3), so a translation into French is
+returned as text, with "audio": null, and namu-voice is not called for it.
 
 The Hausa orthography block in the prompt is load bearing. The hooked consonants
 ɓ ɗ ƙ ƴ are separate phonemes, and a model that writes 'bude' for 'buɗe' hands
@@ -32,6 +37,9 @@ VOICE_URL = "https://namu-ai-lab--namu-voice-voice-api.modal.run"
 OR_BASE = "https://openrouter.ai/api/v1"
 TEXT_MODEL = "google/gemini-3.5-flash-lite"   # translation, through OpenRouter
 FR_STT_MODEL = TEXT_MODEL                     # not a Namu model: French ASR only, audio in a chat turn
+
+# Target languages whose translation is spoken (see the module docstring).
+SPOKEN_TARGETS = ("ha",)
 
 app = modal.App("namu-interpret")
 
@@ -203,7 +211,7 @@ def api():
                 "pairs": ["ha->fr", "fr->ha"],
                 "asr": {"ha": "Namu-Transcribe", "fr": FR_STT_MODEL},
                 "translation_model": TEXT_MODEL,
-                "tts": "Namu-Voice"}
+                "tts": "Namu-Voice (Hausa only)"}
 
     @web.post("/v1/translate")
     async def translate(request: Request):
@@ -261,6 +269,13 @@ def api():
             return JSONResponse({"error": f"translate: {type(e).__name__}: {e}",
                                  "source_text": heard}, status_code=502)
         timings["translate"] = round(secs, 3)
+
+        if target not in SPOKEN_TARGETS:
+            return {"source": source, "target": target,
+                    "source_text": heard, "target_text": out,
+                    "audio": None, "sample_rate": None,
+                    "timings": timings,
+                    "total_seconds": round(sum(timings.values()), 3)}
 
         t = time.time()
         try:

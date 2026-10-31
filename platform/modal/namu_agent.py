@@ -119,28 +119,15 @@ def chat_request(body) -> tuple[list[dict], str, str | None]:
 MAX_WORDS = 55
 MAX_SENTENCES = 4
 
-# --- conversation memory ----------------------------------------------------
-# modal.Dict is a real distributed key-value store, not a plain Python dict:
-# confirmed by writing from one process and reading it back from a second,
-# freshly started one. It survives container restarts and scale-to-zero, and
-# any container handling any request sees the same data — which is exactly
-# what a stateless HTTP API needs to remember earlier turns of ONE ongoing
-# conversation.
-#
-# This is a recency window, not summarisation or long-term memory: each
-# session_id keeps only its most recent MAX_HISTORY_MESSAGES messages, and
-# every one of them is resent to the model on the NEXT turn, so the window is
-# kept short on purpose — an unbounded history would make a long call get
-# slower and more expensive turn by turn. A session_id is scoped to ONE call
-# (the browser page mints a new one each time a call starts and drops it on
-# hangup); this does not remember a caller across separate calls or days.
-#
-# Sessions are read and written only inside a turn (/v1/chat, /v1/speech).
-# There is no endpoint that reads or clears one by id: the gateway namespaces
-# ids per account (user_id:session_id), and such an endpoint would step
-# around that.
-SESSIONS_DICT = "namu-agent-sessions"
-MAX_HISTORY_MESSAGES = 12   # 6 user/assistant exchanges
+# --- no conversation memory -------------------------------------------------
+# Every turn uses only what its own request carries, and nothing is kept after
+# the reply. /v1/chat takes the earlier turns in `messages` (a LiveKit session
+# resends its own chat context every turn; MAX_CHAT_MESSAGES bounds it), and
+# /v1/speech is one spoken turn on its own. A `session_id` is still accepted,
+# so existing callers keep working, and echoed back; it is never stored and
+# gives no memory. This service used to keep each session's recent turns in a
+# modal.Dict with no expiry; that store is gone (ROADMAP S2), and a test fails
+# if this file uses a Dict again.
 
 app = modal.App("namu-agent")
 
@@ -172,9 +159,10 @@ image = (
     .pip_install("fastapi[standard]", "requests", "cohere>=5.13")
 )
 
-# Two characters. They share every rule below and differ only in who they are —
-# the voice is half of a persona, the manner is the other half, and a persona
-# that only changes the voice reads as the same assistant wearing a filter.
+# The persona is the character Air plays: the voice is half of it, the manner
+# the other half. Only Nadia is served. "salim" was withdrawn on 2026-10-31 with
+# its voice, a clone with no consent record (ROADMAP S3); asking for it, or any
+# other unknown persona, is a 400, never a quiet switch to Nadia.
 PERSONAS = {
     "nadia": {
         "name": "Nadia",
@@ -186,16 +174,6 @@ PERSONAS = {
             "person said before answering."
         ),
         "greeting": "Sannu. Ni ce Nadia. Me zan taimaka maka da shi yau?",
-    },
-    "salim": {
-        "name": "Salim",
-        "voice": "salim",
-        "style": (
-            "Your name is Salim. You are a man. You are direct, practical and "
-            "brisk. You give the answer first and the reason after, in as few "
-            "words as it takes. You do not pad your replies with pleasantries."
-        ),
-        "greeting": "Sannu. Ni ne Salim. Menene tambayarka?",
     },
 }
 DEFAULT_PERSONA = "nadia"
@@ -315,19 +293,10 @@ def api():
     OR_KEY = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
     OA_KEY = os.environ.get("OPENAI_API_KEY")
     co = cohere.ClientV2(KEY) if KEY else None
-    sessions = modal.Dict.from_name(SESSIONS_DICT, create_if_missing=True)
 
-    def _load_session(session_id: str | None) -> list[dict]:
-        if not session_id:
-            return []
-        return sessions.get(session_id) or []
-
-    def _save_session(session_id: str | None, history: list[dict]) -> None:
-        if not session_id:
-            return
-        # Trim from the front: the recent turns matter more than the old ones,
-        # and this keeps both the stored size and the resend cost bounded.
-        sessions.put(session_id, history[-MAX_HISTORY_MESSAGES:])
+    def _unknown_persona():
+        return JSONResponse({"error": f"unknown persona; use one of: {', '.join(PERSONAS)}"},
+                            status_code=400)
 
     def _chat(messages: list[dict], persona: str,
               model: str = MODEL, meta: dict | None = None) -> tuple[str, str, float]:
@@ -426,8 +395,9 @@ def api():
                                  "greeting": v["greeting"]}
                              for k, v in PERSONAS.items()},
                 "default_persona": DEFAULT_PERSONA,
-                "memory": {"enabled": True, "scope": "per session_id, one call",
-                          "max_history_messages": MAX_HISTORY_MESSAGES},
+                # Nothing is kept between turns; /v1/chat takes earlier turns in `messages`.
+                "memory": {"enabled": False, "stored": False,
+                           "scope": "the request's own messages only"},
                 "key_configured": bool(KEY)}
 
     @web.get("/v1/models")
@@ -449,17 +419,16 @@ def api():
     async def chat(request: Request):
         """Text in, text out. `messages` for multi-turn, `text` for one shot.
 
-        Optional `session_id`: when present, prior turns stored under that id
-        are prepended before the model sees this call's messages, and the
-        updated history (including this turn) is saved back afterwards. When
-        absent, behaviour is unchanged from before memory existed — this is
-        how a LiveKit session, which already resends its own full ChatContext
-        every turn, stays unaffected: it never sends a session_id, so nothing
-        here merges with it.
+        Stateless: the model sees this request's messages and nothing else, and
+        nothing is kept afterwards. A caller that wants the conversation to
+        continue sends its earlier turns in `messages`, as a LiveKit session
+        does with its ChatContext. `session_id` is accepted and echoed back for
+        callers that still send one; it is not stored and gives no memory.
 
-        `model` must be one of CHAT_MODELS, and the request may carry at most
-        MAX_CHAT_MESSAGES messages of MAX_MESSAGE_CHARS each; anything else is
-        a 400 before any provider is called.
+        `model` must be one of CHAT_MODELS, `persona` one of PERSONAS, and the
+        request may carry at most MAX_CHAT_MESSAGES messages of
+        MAX_MESSAGE_CHARS each; anything else is a 400 before any provider is
+        called.
         """
         try:
             body = await request.json() if await request.body() else {}
@@ -469,27 +438,22 @@ def api():
         if problem:
             return JSONResponse({"error": problem}, status_code=400)
 
-        session_id = body.get("session_id")
-        history = _load_session(session_id)
         persona = body.get("persona") or DEFAULT_PERSONA
+        if persona not in PERSONAS:
+            return _unknown_persona()
+        session_id = body.get("session_id")
         meta: dict = {}
         try:
-            reply, raw, secs = _chat(history + messages, persona, model, meta)
+            reply, raw, secs = _chat(messages, persona, model, meta)
         except Exception as e:
             return JSONResponse({"error": f"{type(e).__name__}: {str(e)[:200]}"},
                                 status_code=502)
 
-        if session_id:
-            # Store the CLEANED reply, not the raw model output — that is what
-            # was actually said, so it is what the model should remember saying.
-            _save_session(session_id, history + messages +
-                         [{"role": "assistant", "content": reply}])
-
         out = {"reply": reply, "raw": raw, "model": model,
                "provider": provider_for(model),
                "persona": persona, "seconds": round(secs, 3),
-               "session_id": session_id,
-               "history_messages": len(history) + len(messages) + 1 if session_id else 0}
+               "session_id": session_id if isinstance(session_id, str) else None,
+               "history_messages": 0}
         if body.get("debug"):
             out["debug"] = meta
         return out
@@ -499,12 +463,11 @@ def api():
                      session_id: str | None = None):
         """Audio in, audio out — the whole turn for non-LiveKit clients.
 
-        Pass the same `session_id` on every call in one conversation and the
-        agent carries context between them — a name given three turns ago is
-        still known. Omit it (or change it) for a fresh, memoryless turn.
+        One turn on its own: the reply is to this audio alone, and nothing is
+        kept. `session_id` is accepted and echoed back; it gives no memory.
         """
         if persona not in PERSONAS:
-            persona = DEFAULT_PERSONA
+            return _unknown_persona()
         ct = request.headers.get("content-type", "")
         if ct.startswith("multipart/form-data"):
             form = await request.form()
@@ -533,19 +496,12 @@ def api():
         if not question:
             return JSONResponse({"error": "nothing was heard"}, status_code=422)
 
-        history = _load_session(session_id)
         try:
-            reply, raw, secs = _chat(
-                history + [{"role": "user", "content": question}], persona)
+            reply, raw, secs = _chat([{"role": "user", "content": question}], persona)
         except Exception as e:
             return JSONResponse({"error": f"chat: {type(e).__name__}: {e}"},
                                 status_code=502)
         timings["chat"] = round(secs, 3)
-
-        if session_id:
-            _save_session(session_id, history +
-                         [{"role": "user", "content": question},
-                          {"role": "assistant", "content": reply}])
 
         t = time.time()
         try:
@@ -567,6 +523,6 @@ def api():
                 "sample_rate": 24000, "timings": timings,
                 "total_seconds": round(sum(timings.values()), 3),
                 "session_id": session_id,
-                "history_turns": (len(history) // 2 + 1) if session_id else 0}
+                "history_turns": 0}
 
     return web

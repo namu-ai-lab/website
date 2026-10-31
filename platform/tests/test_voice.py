@@ -30,3 +30,16 @@ def test_num_step_is_held_inside_the_range(requested, expected):
 def test_the_default_is_used_as_it_is():
     # the Hausa default comes from the model card; the clamp is for callers, not for it
     assert voice.clamp_num_step(None, 100) == 100
+
+
+
+# ---------------------------------------------------------------- withdrawn voices (ROADMAP S3)
+@pytest.mark.parametrize("language, name", [("ha", "salim"), ("ha", "fr"), ("fr", None), ("fr", "fr"),
+                                            ("fr", "mine_fr"), ("fr", "nadia"), (None, "salim")])
+def test_withdrawn_voices_and_french_are_not_served(language, name):
+    assert not voice.served(language, name)
+
+
+@pytest.mark.parametrize("language, name", [("ha", "nadia"), ("ha", None), (None, None), ("ha", "")])
+def test_nadia_is_served(language, name):
+    assert voice.served(language, name)

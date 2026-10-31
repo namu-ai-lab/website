@@ -1,11 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { profileOf } from "@/lib/account";
 import { sql } from "@/lib/db";
-import { KEY_COLUMNS as COLUMNS, MAX_ACTIVE_KEYS, displayPrefix, generateKey, hashKey, isScopeList, keyRow, type KeyRecord } from "@/lib/keys";
+import { KEY_COLUMNS as COLUMNS, MAX_ACTIVE_KEYS, displayPrefix, generateKey, hashKey, isScopeList, keyRow, scopesForNewKey, type KeyRecord } from "@/lib/keys";
 import { fail, signedIn } from "@/lib/http";
 
 /* The dashboard's key operations. Keys are minted here, on the server: the browser sees the secret once,
-   in this response, and the database only ever sees its HMAC. Every statement is scoped to the caller. */
+   in this response, and the database only ever sees its HMAC. Every statement is scoped to the caller.
+   A new key's scopes are always written explicitly: the ones asked for, or DEFAULT_SCOPES (no converse) when the
+   request names none. Converse is granted only when it is asked for. */
 export const dynamic = "force-dynamic";
 const noStore = { headers: { "Cache-Control": "no-store" } };
 
@@ -22,8 +24,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null) as { name?: unknown; scopes?: unknown } | null;
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "";
   if (!name) return fail(400, "missing_name", "Give the key a name.");
-  if (!isScopeList(body?.scopes)) return fail(400, "bad_scopes", "Pick at least one model.");
-  const scopes = [...new Set(body.scopes)];
+  const scopes = scopesForNewKey(body?.scopes);
+  if (!scopes) return fail(400, "bad_scopes", "Pick at least one model.");
 
   if ((await profileOf(s.user.id)).beta_status !== "approved") return fail(403, "account_paused", "This account is paused.");
   const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.api_keys where user_id = $1 and revoked_at is null", [s.user.id]);

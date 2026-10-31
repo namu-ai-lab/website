@@ -37,8 +37,8 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     paramsH: "Parameters", returnsH: "Returns",
     endpoints: [
       { id: "speech", model: "Tafiya", method: "POST", path: "/v1/speech", title: "Text to speech",
-        body: "Turns Hausa or French text into speech. Send JSON.",
-        params: [["text", "Required. Up to 2,000 characters."], ["voice", "nadia (Hausa, default), salim (Hausa) or fr (French). See GET /v1/voices."], ["format", "Omit for a WAV file; \"json\" for base64 audio in JSON."]],
+        body: "Turns Hausa text into speech. Send JSON.",
+        params: [["text", "Required. Up to 2,000 characters."], ["voice", "nadia (Hausa, the default; warm is the same voice). See GET /v1/voices."], ["format", "Omit for a WAV file; \"json\" for base64 audio in JSON."]],
         returns: "audio/wav (24 kHz mono), with the duration in the X-Audio-Seconds header." },
       { id: "transcribe", model: "Tatsuniya", method: "POST", path: "/v1/transcribe", title: "Speech to text",
         body: "Transcribes Hausa speech. Send the audio as the raw request body or as a multipart field named file.",
@@ -46,11 +46,11 @@ export const docsCopy: Record<Lang, DocsCopy> = {
         returns: "{ model, text, language, audio_seconds }" },
       { id: "translate", model: "Kora", method: "POST", path: "/v1/translate", title: "Speech translation",
         body: "Listens in one language and answers in the other: Hausa to French or French to Hausa.",
-        params: [["file", "The spoken audio, as for /v1/transcribe."], ["target", "fr (default) or ha. The source is the other one."], ["include_audio", "true to also receive the translation spoken (base64 WAV)."]],
+        params: [["file", "The spoken audio, as for /v1/transcribe."], ["target", "fr (default) or ha. The source is the other one."], ["include_audio", "true to also receive the translation spoken (base64 WAV). Only Hausa is spoken for now: a translation into French returns audio: null."]],
         returns: "{ model, source, target, source_text, text, audio_seconds, audio? }" },
       { id: "converse", model: "Aïr", method: "POST", path: "/v1/converse", title: "Voice conversation (research)",
-        body: "One spoken turn with a Hausa voice agent. Reuse a session_id to keep the conversation’s memory. In research: behaviour may change.",
-        params: [["file", "The user’s spoken turn."], ["persona", "nadia (default) or salim."], ["session_id", "Optional, your own id (up to 100 characters). The turns of a session are kept so the conversation can continue, under your account."]],
+        body: "One spoken turn with a Hausa voice agent. Each call stands alone: Aïr answers this turn only and remembers nothing from earlier calls. Namu keeps no conversation: its database holds only metadata about the call (duration, status, timing), and the words heard are sent to the language model provider, Google Gemini through OpenRouter, to write the reply. In research: behaviour may change.",
+        params: [["file", "The user’s spoken turn."], ["persona", "nadia (the default and, for now, the only value)."], ["session_id", "Optional, up to 100 characters, returned as sent. It is not stored and does not carry memory between calls."]],
         returns: "{ model, persona, session_id, heard, reply, audio, sample_rate, audio_seconds }" },
     ],
     errorsH: "Errors", errorsSub: "Errors are JSON: { \"error\": { \"type\", \"message\", \"request_id\" } }; every response also carries X-Request-Id. Retry 429 after the Retry-After header, and 502 or 504 after a short wait. A request that fails counts nothing against your allowance.",
@@ -91,8 +91,8 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     paramsH: "Paramètres", returnsH: "Réponse",
     endpoints: [
       { id: "speech", model: "Tafiya", method: "POST", path: "/v1/speech", title: "Synthèse vocale",
-        body: "Transforme un texte en haoussa ou en français en parole. Envoyez du JSON.",
-        params: [["text", "Obligatoire. Jusqu’à 2 000 caractères."], ["voice", "nadia (haoussa, par défaut), salim (haoussa) ou fr (français). Voir GET /v1/voices."], ["format", `Omis pour un fichier WAV${n}; "json" pour l’audio en base64 dans du JSON.`]],
+        body: "Transforme un texte en haoussa en parole. Envoyez du JSON.",
+        params: [["text", "Obligatoire. Jusqu’à 2 000 caractères."], ["voice", `nadia (haoussa, par défaut${n}; warm désigne la même voix). Voir GET /v1/voices.`], ["format", `Omis pour un fichier WAV${n}; "json" pour l’audio en base64 dans du JSON.`]],
         returns: "audio/wav (24 kHz mono), avec la durée dans l’en-tête X-Audio-Seconds." },
       { id: "transcribe", model: "Tatsuniya", method: "POST", path: "/v1/transcribe", title: "Transcription",
         body: "Transcrit la parole en haoussa. Envoyez l’audio comme corps brut de la requête ou dans un champ multipart nommé file.",
@@ -100,11 +100,11 @@ export const docsCopy: Record<Lang, DocsCopy> = {
         returns: "{ model, text, language, audio_seconds }" },
       { id: "translate", model: "Kora", method: "POST", path: "/v1/translate", title: "Traduction de la parole",
         body: `Écoute dans une langue et répond dans l’autre${n}: du haoussa vers le français ou du français vers le haoussa.`,
-        params: [["file", "L’audio parlé, comme pour /v1/transcribe."], ["target", "fr (par défaut) ou ha. La source est l’autre langue."], ["include_audio", "true pour recevoir aussi la traduction parlée (WAV en base64)."]],
+        params: [["file", "L’audio parlé, comme pour /v1/transcribe."], ["target", "fr (par défaut) ou ha. La source est l’autre langue."], ["include_audio", `true pour recevoir aussi la traduction parlée (WAV en base64). Seul le haoussa est parlé pour l’instant${n}: une traduction vers le français renvoie audio: null.`]],
         returns: "{ model, source, target, source_text, text, audio_seconds, audio? }" },
       { id: "converse", model: "Aïr", method: "POST", path: "/v1/converse", title: "Conversation vocale (recherche)",
-        body: `Un tour de parole avec un agent vocal en haoussa. Réutilisez un session_id pour garder la mémoire de la conversation. En recherche${n}: le comportement peut changer.`,
-        params: [["file", "Le tour de parole de l’utilisateur."], ["persona", "nadia (par défaut) ou salim."], ["session_id", "Facultatif, votre propre identifiant (jusqu’à 100 caractères). Les tours d’une session sont conservés, rattachés à votre compte, pour que la conversation puisse continuer."]],
+        body: `Un tour de parole avec un agent vocal en haoussa. Chaque appel est indépendant${n}: Aïr répond à ce tour seulement et ne se souvient de rien des appels précédents. Namu ne conserve aucune conversation${n}: sa base de données ne garde que des métadonnées sur l’appel (durée, statut, temps de réponse), et les mots entendus sont envoyés au fournisseur du modèle de langage, Google Gemini via OpenRouter, pour rédiger la réponse. En recherche${n}: le comportement peut changer.`,
+        params: [["file", "Le tour de parole de l’utilisateur."], ["persona", "nadia (la valeur par défaut et, pour l’instant, la seule)."], ["session_id", "Facultatif, jusqu’à 100 caractères, renvoyé tel quel. Il n’est pas conservé et ne transmet aucune mémoire d’un appel à l’autre."]],
         returns: "{ model, persona, session_id, heard, reply, audio, sample_rate, audio_seconds }" },
     ],
     errorsH: "Erreurs", errorsSub: `Les erreurs sont en JSON${n}: { "error": { "type", "message", "request_id" } }${n}; chaque réponse porte aussi X-Request-Id. Réessayez un 429 après l’en-tête Retry-After, et un 502 ou 504 après une courte attente. Une requête qui échoue ne compte pas dans votre allocation.`,
@@ -219,7 +219,7 @@ const { source_text, text } = await r.json();`,
     converse: {
       cURL: `curl ${base}/v1/converse \\
   -H "Authorization: Bearer $NAMU_API_KEY" \\
-  -F file=@turn.wav -F persona=nadia -F session_id=user-42`,
+  -F file=@turn.wav -F persona=nadia`,
       Python: `import base64, os, requests
 
 with open("turn.wav", "rb") as f:
@@ -227,8 +227,8 @@ with open("turn.wav", "rb") as f:
         "${base}/v1/converse",
         headers={"Authorization": f"Bearer {os.environ['NAMU_API_KEY']}"},
         files={"file": f},
-        data={"persona": "nadia", "session_id": "user-42"},   # reuse the session_id so Aïr remembers
-        timeout=300,                                           # the first turn can wait for the models to wake
+        data={"persona": "nadia"},   # one turn: Aïr keeps nothing between calls
+        timeout=300,                 # the first turn can wait for the models to wake
     )
 r.raise_for_status()
 out = r.json()
@@ -237,7 +237,6 @@ open("reply.wav", "wb").write(base64.b64decode(out["audio"]))`,
       JavaScript: `const form = new FormData();
 form.append("file", turnBlob, "turn.wav");
 form.append("persona", "nadia");
-form.append("session_id", "user-42");
 const r = await fetch("${base}/v1/converse", {
   method: "POST",
   headers: { Authorization: \`Bearer \${process.env.NAMU_API_KEY}\` },

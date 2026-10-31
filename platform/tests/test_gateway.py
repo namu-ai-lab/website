@@ -3,8 +3,8 @@
     python3 -m pytest platform/tests -q     (pip install -r platform/requirements-dev.txt first)
 
 Each rule the gateway claims (keys, revocation, beta approval, scopes, quota,
-rate limits, demo limits, input caps, session isolation, metering without
-content) is checked here against fakes, so a regression shows up locally
+rate limits, demo limits, input caps, withdrawn voices, stateless converse,
+metering without content) is checked here against fakes, so a regression shows up locally
 before it reaches the deployed API.
 """
 
@@ -95,8 +95,8 @@ class FakeUpstream:
         self.budgets.append(timeout)
         return self._ok({"source_text": "sannu", "target_text": "bonjour", "audio": "QUJD"})
 
-    def converse(self, data, persona, session_id, timeout):
-        self.calls.append(("converse", persona, session_id))
+    def converse(self, data, persona, timeout):
+        self.calls.append(("converse", persona))
         self.budgets.append(timeout)
         return self._ok({"question": "wane sunana?", "reply": "Sunanka Musa.",
                          "audio": base64.b64encode(wav(1.5, 24000)).decode()})
@@ -268,6 +268,31 @@ def test_demo_key_is_limited_per_visitor_ip(env):
     h2 = {**auth(DEMO), "X-Namu-Client-IP": "198.51.100.9"}
     assert c.post("/v1/transcribe", headers=h2,
                   files={"file": ("a.wav", wav(), "audio/wav")}).status_code == 200
+
+
+def test_demo_limit_counts_an_ipv6_64_as_one_visitor(env):
+    # A host with a /64 could take a fresh address for every request; the limit holds across all of them.
+    c, *_ = env
+
+    def demo(ip):
+        return c.post("/v1/transcribe", headers={**auth(DEMO), "X-Namu-Client-IP": ip},
+                      files={"file": ("a.wav", wav(), "audio/wav")})
+
+    for i in range(gw.DEMO_IP_PER_HOUR):
+        assert demo(f"2001:db8:1:2::{i + 1:x}").status_code == 200
+    assert demo("2001:db8:1:2:ffff:ffff:ffff:fffe").status_code == 429
+    # the website sends an IPv6 visitor already narrowed to its /64: the same visitor, the same bucket
+    assert demo("2001:db8:1:2::/64").status_code == 429
+    # the next /64 is another visitor
+    assert demo("2001:db8:1:3::1").status_code == 200
+
+
+def test_demo_limit_keeps_ipv4_visitors_apart(env):
+    c, store, up, lim, _ = env
+    for ip in ("203.0.113.7", "203.0.113.8", "::ffff:203.0.113.7"):
+        c.post("/v1/transcribe", headers={**auth(DEMO), "X-Namu-Client-IP": ip},
+               files={"file": ("a.wav", wav(), "audio/wav")})
+    assert lim.counts["demo-ip:203.0.113.7"] == 2 and lim.counts["demo-ip:203.0.113.8"] == 1
 
 
 def test_ip_header_ignored_for_normal_keys(env):
@@ -619,32 +644,94 @@ def test_speech_refuses_a_body_that_is_not_json(env):
 
 def test_translate_pair_and_optional_audio(env):
     c, *_ = env
-    r = post_audio(c, "/v1/translate", target="fr")
+    r = post_audio(c, "/v1/translate", target="ha")
     assert r.status_code == 200 and r.json()["text"] == "bonjour" and "audio" not in r.json()
-    r = post_audio(c, "/v1/translate", target="fr", include_audio="true")
+    r = post_audio(c, "/v1/translate", target="ha", include_audio="true")
     assert r.json()["audio"] == "QUJD"
     assert post_audio(c, "/v1/translate", target="en").status_code == 400
 
 
-def test_converse_sessions_are_namespaced_per_account(env):
+def test_a_french_translation_is_text_only(env):
+    # French speech is withdrawn with the fr voice: asked for, the audio is null, even if the model service sent some.
     c, store, up, *_ = env
-    r = post_audio(c, "/v1/converse", session_id="call-1", persona="salim")
+    r = post_audio(c, "/v1/translate", target="fr", include_audio="true")
+    assert r.status_code == 200 and r.json()["text"] == "bonjour"
+    assert "audio" in r.json() and r.json()["audio"] is None
+    assert "audio" not in post_audio(c, "/v1/translate", target="fr").json()
+    assert store.usage[-1].audio_seconds == 1.0                    # still counted by the audio sent
+
+
+@pytest.mark.parametrize("voice", ["salim", "fr"])
+def test_withdrawn_voices_are_a_400_not_another_voice(env, voice):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": voice})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "unknown_voice"
+    assert voice not in r.json()["error"]["message"]
+    assert up.calls == [] and store.usage == []
+
+
+@pytest.mark.parametrize("persona", ["salim", "fr", "nobody"])
+def test_withdrawn_or_unknown_personas_are_a_400(env, persona):
+    c, store, up, *_ = env
+    r = post_audio(c, "/v1/converse", persona=persona)
+    assert r.status_code == 400 and r.json()["error"]["type"] == "unknown_persona"
+    assert up.calls == [] and store.usage == []
+
+
+def test_converse_never_passes_a_session_on(env):
+    # Stateless: a session_id is accepted and echoed back, but the agent never sees one, so nothing can be kept under it.
+    c, store, up, *_ = env
+    r = post_audio(c, "/v1/converse", session_id="call-1")
     assert r.status_code == 200
-    assert up.calls[-1] == ("converse", "salim", "u1:call-1")     # never the bare id
-    assert r.json()["session_id"] == "call-1"                      # caller sees their own id
+    assert up.calls[-1] == ("converse", "nadia")
+    assert r.json()["session_id"] == "call-1"
     assert store.usage[-1].audio_seconds == pytest.approx(2.5)     # 1.0 in + 1.5 out
 
 
-def test_converse_without_session_is_stateless(env):
+def test_converse_without_session_echoes_none(env):
     c, store, up, *_ = env
-    post_audio(c, "/v1/converse")
-    assert up.calls[-1][2] is None
+    r = post_audio(c, "/v1/converse")
+    assert up.calls[-1] == ("converse", "nadia") and r.json()["session_id"] is None
+
+
+def test_the_agent_call_carries_the_persona_and_no_session():
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200, json={"reply": "Sannu."})
+
+    modal_upstream(handler).converse(wav(), "nadia", 60)
+    assert dict(seen[0].url.params) == {"persona": "nadia"}
 
 
 def test_public_catalogue_needs_no_key(env):
     c, *_ = env
     assert c.get("/v1/models").status_code == 200
-    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} >= {"nadia", "salim", "warm"}
+    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} == {"nadia", "warm"}
+
+
+def test_the_catalogue_offers_no_withdrawn_voice_or_language(env):
+    c, *_ = env
+    tafiya = next(m for m in c.get("/v1/models").json()["data"] if m["id"] == "tafiya")
+    assert tafiya["languages"] == ["ha"]
+    assert all(v["language"] == "ha" for v in c.get("/v1/voices").json()["data"])
+    assert {"salim", "fr"}.isdisjoint(gw.VOICES) and gw.PERSONAS == ("nadia",)
+
+
+def test_the_website_offers_the_voices_the_gateway_serves():
+    # src/lib/voices.ts is the website's copy of VOICES and PERSONAS; a drift would offer a voice the API refuses.
+    import re
+
+    source = (Path(__file__).resolve().parents[2] / "src" / "lib" / "voices.ts").read_text()
+
+    def listed(name):
+        m = re.search(rf"export const {name} = \[([^\]]*)\]", source)
+        assert m, f"{name} not found in src/lib/voices.ts"
+        return tuple(re.findall(r'"([^"]+)"', m.group(1)))
+
+    assert listed("VOICES") == tuple(gw.VOICES)
+    assert listed("PERSONAS") == gw.PERSONAS
 
 
 # ---------------------------------------------------------------- the website's service key (console Playground)
@@ -929,6 +1016,13 @@ def test_ipv6_callers_are_counted_by_their_64():
     assert gw.address_bucket("::ffff:203.0.113.7") == "203.0.113.7"          # not one bucket for every IPv4 caller
     assert gw.address_bucket("::ffff:203.0.113.7") != gw.address_bucket("::ffff:198.51.100.9")
     assert gw.address_bucket(None) == "unknown"
+
+
+def test_a_network_already_narrowed_lands_in_the_same_bucket():
+    # the website's demo routes send an IPv6 visitor as its /64
+    assert gw.address_bucket("2001:db8:1:2::/64") == gw.address_bucket("2001:db8:1:2::1") == "2001:db8:1:2::/64"
+    assert gw.address_bucket("2001:db8:1:2::9/128") == "2001:db8:1:2::/64"
+    assert gw.address_bucket("unknown") == "unknown"
 
 
 def test_the_window_counter_resets_each_window_and_stays_bounded():

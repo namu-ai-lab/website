@@ -41,7 +41,7 @@ export type ConsoleCopy = {
   playground: {
     meta: [string, string]; lede: string;
     modes: Record<"speech" | "transcribe" | "translate" | "converse", string>;
-    settings: string; model: string; voice: string; voices: Record<"nadia" | "salim" | "fr", [string, string]>;
+    settings: string; model: string; voice: string; voices: Record<"nadia", [string, string]>;
     textLabel: string; textPh: string; generate: string; generating: string;
     input: string; record: string; stopRec: string; upload: string; sample: string; samples: { ha: string; fr: string };
     recording: (t: string) => string; remove: string; maxRec: (m: number, mb: number) => string;
@@ -154,20 +154,20 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       lede: "Try every model with your voice and your words. Requests run on your account: they count towards your allowance and appear in Logs.",
       modes: { speech: "Text to speech", transcribe: "Speech to text", translate: "Translate", converse: "Conversation" },
       settings: "Settings", model: "Model", voice: "Voice",
-      voices: { nadia: ["Nadia", "Warm and patient · Hausa"], salim: ["Salim", "Direct and practical · Hausa"], fr: ["French", "Reference voice · French"] },
+      voices: { nadia: ["Nadia", "Warm and patient · Hausa"] },
       textLabel: "Text", textPh: "Write something in Hausa to hear it spoken…", generate: "Generate", generating: "Generating…",
       input: "Audio", record: "Record", stopRec: "Stop", upload: "Upload a file", sample: "Use a sample",
       samples: { ha: "Hausa sample", fr: "French sample" },
       recording: s => `Recording · ${s}`, remove: "Remove", maxRec: (m, mb) => `Up to ${m} minutes (files up to ${mb} MB), any common audio format.`,
       transcribe: "Transcribe", transcribing: "Transcribing…", translate: "Translate", translating: "Translating…", send: "Send", sending: "Aïr is answering…",
       language: "Language", hausa: "Hausa", direction: "Direction", haFr: "Hausa → French", frHa: "French → Hausa",
-      persona: "Persona", session: "Conversation", newSession: "New conversation", sessionNote: "Aïr remembers this conversation until you start a new one.",
+      persona: "Persona", session: "Conversation", newSession: "Clear conversation", sessionNote: "Aïr answers each turn on its own and keeps no memory of earlier ones. Namu stores none of the conversation; the turns shown here stay on this page.",
       output: "Output", transcript: "Transcript", heard: "Heard", translation: "Translation", you: "You", air: "Aïr",
       empty: {
         speech: "Write something and press Generate. The voice comes back here.",
         transcribe: "Record or upload Hausa speech, then press Transcribe.",
         translate: "Record or upload speech, choose the direction, then press Translate.",
-        converse: "Record a question in Hausa. Aïr answers aloud, and remembers the conversation.",
+        converse: "Record a question in Hausa. Aïr answers it aloud.",
       },
       stats: { status: "Status", latency: "Latency", audio: "Audio", chars: "Characters" },
       download: "Download", copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", play: "Play", pause: "Pause",
@@ -287,20 +287,20 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       lede: "Essayez chaque modèle avec votre voix et vos mots. Les requêtes passent par votre compte : elles comptent dans votre allocation et apparaissent dans les journaux.".replace(" :", `${n}:`),
       modes: { speech: "Texte vers parole", transcribe: "Parole vers texte", translate: "Traduction", converse: "Conversation" },
       settings: "Réglages", model: "Modèle", voice: "Voix",
-      voices: { nadia: ["Nadia", "Chaleureuse et patiente · haoussa"], salim: ["Salim", "Direct et pratique · haoussa"], fr: ["Français", "Voix de référence · français"] },
+      voices: { nadia: ["Nadia", "Chaleureuse et patiente · haoussa"] },
       textLabel: "Texte", textPh: "Écrivez quelque chose en haoussa pour l’entendre…", generate: "Générer", generating: "Génération…",
       input: "Audio", record: "Enregistrer", stopRec: "Arrêter", upload: "Importer un fichier", sample: "Utiliser un exemple",
       samples: { ha: "Exemple en haoussa", fr: "Exemple en français" },
       recording: s => `Enregistrement · ${s}`, remove: "Retirer", maxRec: (m, mb) => `Jusqu’à ${m} minutes (fichiers de ${mb} Mo au plus), dans tout format audio courant.`,
       transcribe: "Transcrire", transcribing: "Transcription…", translate: "Traduire", translating: "Traduction…", send: "Envoyer", sending: "Aïr répond…",
       language: "Langue", hausa: "Haoussa", direction: "Sens", haFr: "Haoussa → français", frHa: "Français → haoussa",
-      persona: "Personnage", session: "Conversation", newSession: "Nouvelle conversation", sessionNote: "Aïr se souvient de cette conversation jusqu’à ce que vous en commenciez une autre.",
+      persona: "Personnage", session: "Conversation", newSession: "Effacer la conversation", sessionNote: `Aïr répond à chaque tour séparément et ne garde aucun souvenir des précédents. Namu ne conserve rien de la conversation${n}; les tours affichés ici restent sur cette page.`,
       output: "Résultat", transcript: "Transcription", heard: "Entendu", translation: "Traduction", you: "Vous", air: "Aïr",
       empty: {
         speech: "Écrivez quelque chose et appuyez sur Générer. La voix apparaît ici.",
         transcribe: "Enregistrez ou importez de la parole en haoussa, puis appuyez sur Transcrire.",
         translate: "Enregistrez ou importez de la parole, choisissez le sens, puis appuyez sur Traduire.",
-        converse: "Enregistrez une question en haoussa. Aïr répond à voix haute et se souvient de la conversation.",
+        converse: "Enregistrez une question en haoussa. Aïr y répond à voix haute.",
       },
       stats: { status: "Statut", latency: "Latence", audio: "Audio", chars: "Caractères" },
       download: "Télécharger", copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`, play: "Lire", pause: "Pause",

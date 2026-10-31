@@ -11,9 +11,11 @@
    person fills it, with short recorded Hausa phrases in the same voice chosen from what was heard: a question gets
    "Tambaya mai kyau." and a statement "To, na ji."; a greeting gets nothing, since the answer to it comes quickly;
    "Bari in duba." and "Kusan na gama." follow only if the wait goes on. The call opens with a recorded welcome,
-   which also covers the time the models take to wake. The caller can talk over Aïr, or tap, to cut it short. */
+   which also covers the time the models take to wake. The caller can talk over Aïr, or tap, to cut it short.
+   Aïr answers each turn on its own, and the server keeps no conversation. */
+import type { PersonaId } from "./voices";
 
-export type Persona = "nadia" | "salim";
+export type Persona = PersonaId;     // the personas the API serves (lib/voices)
 export type CallState = "connecting" | "listening" | "hearing" | "thinking" | "speaking" | "ended";
 export type CallProblem = "mic" | "limit" | "unavailable" | "failed";
 export type CallEvents = { state(s: CallState): void; heard?(text: string): void; reply?(text: string): void; problem(p: CallProblem): void };
@@ -51,7 +53,6 @@ export class AirCall {
   private chain: Promise<void> = Promise.resolve();
   private turn = 0;                   // bumps whenever playback or a request should be abandoned
   private state: CallState | "idle" = "idle";   // idle until start(), so its first set("connecting") is reported
-  private sid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
   private abort: AbortController | null = null;
   private raf = 0;
   private timers: number[] = [];
@@ -170,7 +171,7 @@ export class AirCall {
     this.abort = new AbortController();
     let status = 0;
     try {
-      const res = await fetch(`/api/demo/converse?persona=${this.persona}&sid=${this.sid}`, { method: "POST", body: audio, headers: { "Content-Type": "audio/wav" }, signal: this.abort.signal });
+      const res = await fetch(`/api/demo/converse?persona=${this.persona}`, { method: "POST", body: audio, headers: { "Content-Type": "audio/wav" }, signal: this.abort.signal });
       if (!res.ok || !res.body) status = res.status || 500;
       else {
         const reader = res.body.getReader(), dec = new TextDecoder();

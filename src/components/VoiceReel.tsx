@@ -224,8 +224,11 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
           const voice = voices[mod(v, n)];
           return <div key={v} className="vr-name" ref={el => { if (el) labelEls.current.set(v, el); else labelEls.current.delete(v); }}><b>{voice.name}</b><span>{voice.note}</span></div>;
         })}
-        <button type="button" className="vr-arrow prev" aria-label={labels.previous} onClick={() => turn(-1)} disabled={!loop && index === 0}><Icon name="chevron" size={18} stroke={1.6} className="rot90" /></button>
-        <button type="button" className="vr-arrow next" aria-label={labels.next} onClick={() => turn(1)} disabled={!loop && index === n - 1}><Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
+        {/* one voice: nothing to turn to */}
+        {n > 1 && <>
+          <button type="button" className="vr-arrow prev" aria-label={labels.previous} onClick={() => turn(-1)} disabled={!loop && index === 0}><Icon name="chevron" size={18} stroke={1.6} className="rot90" /></button>
+          <button type="button" className="vr-arrow next" aria-label={labels.next} onClick={() => turn(1)} disabled={!loop && index === n - 1}><Icon name="chevron" size={18} stroke={1.6} className="rot-90" /></button>
+        </>}
       </div>
       <p className="sr-only" aria-live="polite">{chosen.name}. {chosen.note}</p>
     </div>

@@ -1,7 +1,8 @@
 # Demo recordings
 
 Real output of Tafiya (`POST /v1/speech`), generated through the Namu API on 2026-10-20: `<script>-<voice>.m4a`,
-for the scripts in `src/content/playground.ts` and the voices `nadia` (shown as Female) and `salim` (shown as Male).
+for the scripts in `src/content/playground.ts` and the voice `nadia` (shown as Female). The male voice, `salim`, was
+withdrawn on 2026-10-31 (no consent record for its speaker) and its recordings were removed.
 
 | Script | Hausa | English |
 |---|---|---|
@@ -18,4 +19,4 @@ weather script opens with "Ina kwana?" instead. Each file then has 50 ms of lead
 (EBU R128, -18 LUFS), a short fade at each end, and is AAC, mono, 64 kbit/s.
 
 The Hausa has not yet been reviewed by a native speaker. The home console plays these first and falls back to the
-live demo for anything not recorded here; if a script's text changes, regenerate its two files.
+live demo for anything not recorded here; if a script's text changes, regenerate its file.

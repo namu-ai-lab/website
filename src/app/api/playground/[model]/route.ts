@@ -3,6 +3,7 @@ import { setting } from "@/lib/env";
 import { apiBase } from "@/lib/public-config";
 import { fail, signedIn } from "@/lib/http";
 import { LIMITS } from "@/lib/limits";
+import { isPersona, isVoice } from "@/lib/voices";
 
 /* The console Playground: a signed-in developer tries a model as themselves, as on platform.openai.com. The browser
    never holds a key. This route checks the session, then calls the gateway with the website's service key
@@ -10,8 +11,9 @@ import { LIMITS } from "@/lib/limits";
    allowance and rate limit, and the request appears in their usage and logs as "Playground".
      speech      JSON { text, voice }                    → audio/wav
      transcribe  audio body                              → { text, ... }
-     translate   audio body, ?target=fr|ha               → { source_text, text, audio }
-     converse    audio body, ?persona=&session_id=       → { heard, reply, audio }
+     translate   audio body, ?target=fr|ha               → { source_text, text, audio } (audio into Hausa only)
+     converse    audio body, ?persona=                   → { heard, reply, audio }, one turn, nothing kept
+   A voice or persona the API does not serve (lib/voices) is a 400 here, never another voice.
    Audio is passed on in its own container (WAV, WebM/Opus, MP4/AAC, MP3...): the gateway measures any of them with
    ffprobe. Bodies are capped at LIMITS.playgroundUploadMb, under Vercel's 4.5 MB limit on a function's request. */
 export const dynamic = "force-dynamic";
@@ -38,9 +40,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     const text = typeof j?.text === "string" ? j.text.trim() : "";
     if (!text) return fail(400, "missing_text", "Write something to say.");
     if (text.length > LIMITS.textChars) return fail(413, "text_too_long", `Up to ${LIMITS.textChars} characters.`);
-    body = JSON.stringify({ text, voice: typeof j?.voice === "string" ? j.voice : "nadia" });
+    const voice = j?.voice || "nadia";
+    if (!isVoice(voice)) return fail(400, "unknown_voice", "Unknown voice. Try nadia.");
+    body = JSON.stringify({ text, voice });
     headers["Content-Type"] = "application/json";
   } else {
+    const persona = q.get("persona") || "nadia";
+    if (model === "converse" && !isPersona(persona)) return fail(400, "unknown_persona", "Unknown persona. Try nadia.");
     if (Number(req.headers.get("content-length") ?? "0") > MAX_AUDIO_BYTES) return fail(413, "payload_too_large", TOO_LARGE);
     const audio = await req.arrayBuffer();
     if (!audio.byteLength) return fail(400, "empty_audio", "The audio was empty.");
@@ -49,12 +55,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     /* the clip's own type (audio/webm;codecs=opus, audio/mp4...), never anything the gateway would parse as a form */
     const type = (req.headers.get("content-type") ?? "").slice(0, 100);
     headers["Content-Type"] = /^audio\/[\w.+-]+(\s*;[\w\s=.+-]*)?$/i.test(type) ? type : "application/octet-stream";
-    if (model === "translate") { out.set("target", q.get("target") === "ha" ? "ha" : "fr"); out.set("include_audio", "1"); }
-    if (model === "converse") {
-      out.set("persona", q.get("persona") === "salim" ? "salim" : "nadia");
-      const sid = (q.get("session_id") ?? "").replace(/[^\w-]/g, "").slice(0, 64);
-      if (sid) out.set("session_id", sid);
+    if (model === "translate") {
+      const target = q.get("target") === "ha" ? "ha" : "fr";
+      out.set("target", target);
+      if (target === "ha") out.set("include_audio", "1");      // French speech is withdrawn: a French translation is text
     }
+    if (model === "converse") out.set("persona", persona);     // no session id: the API keeps no conversation
   }
 
   const t0 = Date.now();

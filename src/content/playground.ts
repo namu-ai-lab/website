@@ -50,15 +50,14 @@ export const scripts: Record<Lang, Script[]> = {
   ],
 };
 
-/* The live API's two Hausa voices (GET /v1/voices): ids nadia and salim, shown as the female and the male voice. */
+/* The live API's Hausa voice (GET /v1/voices; lib/voices). The male voice, salim, was withdrawn on 2026-10-31: there is
+   no consent record for its speaker. Add a voice here only once the API serves it. */
 export const voices: Record<Lang, Voice[]> = {
   en: [
     { id: "nadia", name: "Female", note: "Hausa · warm and patient", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
-    { id: "salim", name: "Male", note: "Hausa · direct and steady", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
   fr: [
     { id: "nadia", name: "Féminine", note: "Haoussa · chaleureuse et patiente", palette: ["#f0884f", "#ffe3cc", "#b23e1f", "#ec6b80"] },
-    { id: "salim", name: "Masculine", note: "Haoussa · direct et posé", palette: ["#7c9bd2", "#f4e7d7", "#2e3f6b", "#e8935a"] },
   ],
 };
 
