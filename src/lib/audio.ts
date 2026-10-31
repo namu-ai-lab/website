@@ -7,7 +7,7 @@ export type Clip = { wav: Blob; source: Blob; seconds: number; peaks: number[]; 
 
 const RATE = 16000;
 
-function encodeWav(samples: Float32Array, rate: number): Blob {
+export function encodeWav(samples: Float32Array, rate: number): Blob {
   const b = new ArrayBuffer(44 + samples.length * 2), v = new DataView(b);
   const s = (o: number, t: string) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
   s(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); s(8, "WAVE"); s(12, "fmt ");
