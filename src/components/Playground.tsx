@@ -13,6 +13,7 @@
    touch (lib/wake), so the first live answer does not wait for a GPU to start. Tabs follow the WAI-ARIA tabs pattern. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { CopyButton } from "./ui/CopyButton";
 import { AgentOrb, VoiceReel } from "./VoiceReel";
 import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
@@ -67,16 +68,16 @@ function demoMessage(e: unknown, c: PlaygroundCopy, kind: "text" | "audio" = "te
   if (e.status === 503 || e.status === 404) return c.live.unavailable;
   return c.live.failed;
 }
-async function speech(text: string, voice: string): Promise<{ blob: Blob; seconds: string }> {
-  const res = await demo("speech", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }) });
+async function speech(text: string, voice: string, signal?: AbortSignal): Promise<{ blob: Blob; seconds: string }> {
+  const res = await demo("speech", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }) }, signal);
   return { blob: await res.blob(), seconds: res.headers.get("x-audio-seconds") ?? "" };
 }
 
 /* Each example was spoken by Tafiya through the API beforehand (public/demo/<script>-<voice>.m4a, the best of five takes)
    and plays at once: the example is heard the moment it is picked, with no wait for a sleeping model, and it is the
    model's real output. Text the visitor types or edits is always generated live. */
-async function recorded(script: string, voice: string): Promise<Blob | null> {
-  try { const r = await fetch(`/demo/${script}-${voice}.m4a`); return r.ok ? await r.blob() : null; } catch { return null; }
+async function recorded(script: string, voice: string, signal?: AbortSignal): Promise<Blob | null> {
+  try { const r = await fetch(`/demo/${script}-${voice}.m4a`, { signal }); return r.ok ? await r.blob() : null; } catch { return null; }
 }
 
 /** True once a request has been waiting long enough that the model is probably waking up. */
@@ -91,12 +92,16 @@ function useWaking(busy: boolean, after = 4000) {
   return waking;
 }
 
-/* Plays a clip and writes its loudness into `amp` each frame, so the orb moves with the real voice. */
+/* Plays a clip and writes its loudness into `amp` each frame, so the orb moves with the real voice. Once its panel has
+   closed it plays nothing (a reply that arrives late stays silent), and its AudioContext is closed with it, so tab
+   switches do not pile contexts up. */
 function usePlayer(amp: { current: number }) {
   const audio = useRef<HTMLAudioElement | null>(null);
+  const context = useRef<AudioContext | null>(null);
   const analyser = useRef<AnalyserNode | null>(null);
   const buf = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const url = useRef<string | null>(null);
+  const disposed = useRef(false);
   const [playing, setPlaying] = useState(false);
   const ensure = () => {
     if (audio.current) return audio.current;
@@ -104,7 +109,7 @@ function usePlayer(amp: { current: number }) {
     a.onended = a.onpause = () => { setPlaying(false); amp.current = 0; };
     a.onplay = () => setPlaying(true);
     try {
-      const ctx = new AudioContext(), node = ctx.createAnalyser(); node.fftSize = 512;
+      const ctx = (context.current = new AudioContext()), node = ctx.createAnalyser(); node.fftSize = 512;
       ctx.createMediaElementSource(a).connect(node); node.connect(ctx.destination);
       analyser.current = node;
       a.addEventListener("play", () => { void ctx.resume(); });
@@ -120,13 +125,22 @@ function usePlayer(amp: { current: number }) {
     amp.current = Math.min(1, Math.sqrt(sum / buf.current.length) * 4);
   });
   const play = (blob: Blob) => {
+    if (disposed.current) return;
     const a = ensure();
     if (url.current) URL.revokeObjectURL(url.current);
     a.src = url.current = URL.createObjectURL(blob);
     void a.play();
   };
   const stop = () => { audio.current?.pause(); amp.current = 0; };
-  useEffect(() => () => { audio.current?.pause(); if (url.current) URL.revokeObjectURL(url.current); }, []);
+  useEffect(() => {
+    disposed.current = false;
+    return () => {
+      disposed.current = true;
+      audio.current?.pause(); audio.current = null; analyser.current = null;
+      if (url.current) { URL.revokeObjectURL(url.current); url.current = null; }
+      void context.current?.close().catch(() => {}); context.current = null;
+    };
+  }, []);
   return { play, stop, playing };
 }
 
@@ -144,43 +158,59 @@ function useClipUrl() {
 }
 
 /* The microphone, through the same worklet as a call with Aïr (lib/call): loudness into `amp` for the orb, the seconds
-   left for the countdown, and 16 kHz WAV handed to `onClip` when the visitor stops or 15 seconds run out. */
+   left for the countdown, and 16 kHz WAV handed to `onClip` when the visitor stops or 15 seconds run out.
+   Opening the microphone takes a permission prompt and two awaits, so: a take that is still starting blocks another
+   (`starting`, which also disables the button); cancel() or the panel closing during the prompt leaves nothing behind
+   (each await is followed by a check, and a stale start closes what it opened); and finish() closes the take it is
+   given, never a newer one. */
 function useRecorder(amp: { current: number }, onClip: (wav: ArrayBuffer) => void) {
-  type Take = { ctx: AudioContext; stream: MediaStream; node: AudioWorkletNode; chunks: Float32Array[]; n: number };
+  type Take = { ctx: AudioContext; stream: MediaStream; node: AudioWorkletNode; chunks: Float32Array[]; n: number; closed: boolean };
   const take = useRef<Take | null>(null);
   const done = useRef(onClip); done.current = onClip;
   const [left, setLeft] = useState<number | null>(null);
-  const finish = (send: boolean) => {
-    const s = take.current;
-    if (!s) return;
-    take.current = null;
+  const [starting, setStarting] = useState(false);
+  const opening = useRef(false), gen = useRef(0), disposed = useRef(false);
+  const finish = (s: Take | null, send: boolean) => {
+    if (!s || s.closed) return;
+    s.closed = true;
     s.node.port.onmessage = null; s.node.disconnect(); s.stream.getTracks().forEach(t => t.stop());
     const rate = s.ctx.sampleRate; void s.ctx.close();
-    amp.current = 0; setLeft(null);
-    if (send && s.n > rate * 0.4) done.current(wav16k(s.chunks, rate));     // under 0.4 s is a stray tap, not speech
+    if (take.current === s) { take.current = null; amp.current = 0; setLeft(null); }
+    if (send && !disposed.current && s.n > rate * 0.4) done.current(wav16k(s.chunks, rate));     // under 0.4 s is a stray tap, not speech
   };
   const start = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
-    const ctx = new AudioContext();
+    if (opening.current || take.current) return;
+    const g = ++gen.current, stale = () => disposed.current || g !== gen.current;
+    opening.current = true; setStarting(true);
     try {
-      await ctx.resume().catch(() => {});          // iOS pauses the context while it switches to the microphone
-      await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TAP], { type: "application/javascript" })));
-      const node = new AudioWorkletNode(ctx, "namu-tap"), mute = ctx.createGain(); mute.gain.value = 0;
-      ctx.createMediaStreamSource(stream).connect(node); node.connect(mute); mute.connect(ctx.destination);
-      const s: Take = { ctx, stream, node, chunks: [], n: 0 }, max = (ctx.sampleRate * MAX_CLIP_MS) / 1000;
-      take.current = s;
-      node.port.onmessage = (e: MessageEvent<Float32Array>) => {
-        const x = e.data; s.chunks.push(x); s.n += x.length;
-        let sum = 0; for (const v of x) sum += v * v;
-        amp.current = reduced() ? 0 : Math.min(1, Math.sqrt(sum / x.length) * 6);
-        setLeft(Math.max(0, Math.ceil((max - s.n) / ctx.sampleRate)));
-        if (s.n >= max) finish(true);
-      };
-      setLeft(Math.round(MAX_CLIP_MS / 1000));
-    } catch (e) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); throw e; }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+      if (stale()) { stream.getTracks().forEach(t => t.stop()); return; }
+      const ctx = new AudioContext();
+      try {
+        await ctx.resume().catch(() => {});          // iOS pauses the context while it switches to the microphone
+        await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TAP], { type: "application/javascript" })));
+        if (stale()) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); return; }
+        const node = new AudioWorkletNode(ctx, "namu-tap"), mute = ctx.createGain(); mute.gain.value = 0;
+        ctx.createMediaStreamSource(stream).connect(node); node.connect(mute); mute.connect(ctx.destination);
+        const s: Take = { ctx, stream, node, chunks: [], n: 0, closed: false }, max = (ctx.sampleRate * MAX_CLIP_MS) / 1000;
+        take.current = s;
+        node.port.onmessage = (e: MessageEvent<Float32Array>) => {
+          const x = e.data; s.chunks.push(x); s.n += x.length;
+          let sum = 0; for (const v of x) sum += v * v;
+          amp.current = reduced() ? 0 : Math.min(1, Math.sqrt(sum / x.length) * 6);
+          setLeft(Math.max(0, Math.ceil((max - s.n) / ctx.sampleRate)));
+          if (s.n >= max) finish(s, true);
+        };
+        setLeft(Math.round(MAX_CLIP_MS / 1000));
+      } catch (e) { stream.getTracks().forEach(t => t.stop()); void ctx.close(); throw e; }
+    } finally { if (g === gen.current) { opening.current = false; setStarting(false); } }
   };
-  useEffect(() => () => finish(false), []);
-  return { start, stop: () => finish(true), cancel: () => finish(false), recording: left !== null, left: left ?? 0 };
+  const cancel = () => { gen.current++; opening.current = false; setStarting(false); finish(take.current, false); };
+  useEffect(() => {
+    disposed.current = false;
+    return () => { disposed.current = true; gen.current++; finish(take.current, false); };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  return { start, stop: () => finish(take.current, true), cancel, starting, recording: left !== null, left: left ?? 0 };
 }
 
 /* An uploaded clip as 16 kHz mono WAV, cut to the demo's 15 seconds: any format the browser can decode goes in. */
@@ -221,16 +251,6 @@ function Pills<T extends string>({ items, value, onPick, label, disabled, extra 
   );
 }
 
-function CopyButton({ text, labels }: { text: string; labels: { copy: string; copied: string } }) {
-  const [done, setDone] = useState(false);
-  useEffect(() => { setDone(false); }, [text]);
-  return (
-    <button type="button" className="pg-mini" onClick={() => { void navigator.clipboard?.writeText(text).then(() => setDone(true)); }}>
-      <Icon name={done ? "check" : "copy"} size={15} stroke={1.6} />{done ? labels.copied : labels.copy}
-    </button>
-  );
-}
-
 /* ---------------------------------------------------------------- Text to speech (Tafiya) */
 function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
   const c = playground[lang], t = c.tts, ss = scripts[lang], vs = voices[lang];
@@ -244,6 +264,11 @@ function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
   const cache = useRef(new Map<string, Blob>());     // each voice and text is generated once per visit
   const box = useRef<HTMLTextAreaElement>(null);
   const waking = useWaking(busy);
+  /* a request still out when the tab closes is abandoned; one that comes back after the voice or the text changed is
+     kept in the cache but not played */
+  const req = useRef<AbortController | null>(null);
+  const shown = useRef(""); shown.current = `${vs[vi].id}\n${text.trim()}`;
+  useEffect(() => () => req.current?.abort(), []);
   useEffect(() => {                                   // the box is as tall as its text, no taller
     const el = box.current;
     if (!el) return;
@@ -262,9 +287,11 @@ function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
     let blob = cache.current.get(k);
     if (!blob) {
       setBusy(true);
-      try { blob = (example && await recorded(example.id, voice)) || (await speech(body, voice)).blob; cache.current.set(k, blob); }
-      catch (e) { setError(demoMessage(e, c, "text")); return; }
+      const ac = (req.current = new AbortController());
+      try { blob = (example && await recorded(example.id, voice, ac.signal)) || (await speech(body, voice, ac.signal)).blob; cache.current.set(k, blob); }
+      catch (e) { if (!ac.signal.aborted) setError(demoMessage(e, c, "text")); return; }
       finally { setBusy(false); }
+      if (shown.current !== k) return;
     }
     keepClip(blob, blob.type.includes("mp4") || blob.type.includes("m4a") ? `tafiya-${voice}-${example?.id ?? "clip"}.m4a` : `tafiya-${voice}.wav`);
     player.play(blob);
@@ -318,11 +345,14 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
   const player = usePlayer(amp);
   const abort = useRef<AbortController | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const said = useRef<HTMLParagraphElement>(null);
   const waking = useWaking(busy);
   const rec = useRecorder(amp, wav => { void send(wav); });
-  useEffect(() => () => abort.current?.abort(), []);
+  const gone = useRef(false);       // the panel has closed: a sample or upload still being read is not sent
+  useEffect(() => { gone.current = false; return () => { gone.current = true; abort.current?.abort(); }; }, []);
 
   async function send(audio: Blob | ArrayBuffer) {
+    if (gone.current) return;
     abort.current?.abort();
     const ac = (abort.current = new AbortController());
     setBusy(true); setError(null); setOut(null);
@@ -344,7 +374,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
 
   async function record() {
     if (rec.recording) { rec.stop(); return; }
-    if (busy) return;
+    if (busy || rec.starting) return;
     player.stop(); reset(); setPicked(null); setOut(null);
     try { await rec.start(); } catch { setError(t.mic); track("mic_denied", { mode: mode === "stt" ? "transcribe" : "translate" }); }
   }
@@ -385,7 +415,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
         <div className={`pg-agent${rec.recording ? " live hearing" : ""}`}>
           <i aria-hidden="true" /><i aria-hidden="true" />
           <AgentOrb palette={listenPalettes[mode]} amp={amp} live={rec.recording || player.playing || busy} />
-          <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy}>
+          <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy || rec.starting}>
             <Icon name={rec.recording ? "stop" : "microphone"} size={22} stroke={1.6} />
           </button>
         </div>
@@ -404,11 +434,11 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
                 <span className="pg-row-acts">
                   {out.audio && <button type="button" className="pg-mini" onClick={() => out.audio && (player.playing ? player.stop() : player.play(out.audio))}>
                     <Icon name={player.playing ? "stop" : "play"} size={14} stroke={1.8} />{player.playing ? c.tts.stop : t.playTranslation}</button>}
-                  <CopyButton text={out.text} labels={t} />
+                  <CopyButton text={out.text} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={said} className="pg-mini" icon={{ size: 15, stroke: 1.6 }} />
                 </span>
               )}
             </div>
-            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
+            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"} ref={said}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
           </div>
         </div>
       </div>
@@ -436,11 +466,19 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
   const call = useRef<AirCall | null>(null);
   const voice = vs.find(v => v.id === persona) ?? vs[0];
 
+  /* One call at a time: the button shows "connecting" at once, and a second tap during the microphone prompt or the
+     welcome cannot start another call (which would keep its own microphone, out of reach of End). Callbacks from a
+     call that is no longer current are ignored. */
   const start = () => {
-    setError(null);
+    if (call.current) return;
+    setError(null); setState("connecting");
     const k = new AirCall(persona, {
-      state: s => { if (call.current === k) setState(s === "ended" ? "idle" : s); },
+      state: s => {
+        if (call.current !== k) return;
+        if (s === "ended") { call.current = null; setState("idle"); } else setState(s);
+      },
       problem: p => {
+        if (call.current !== k) return;
         setError(p === "mic" ? t.mic : p === "limit" ? c.live.limited : p === "unavailable" ? c.live.unavailable : c.live.failed);
         if (p === "mic") track("mic_denied", { mode: "converse" }); else track("demo_run", { mode: "converse", result: p });
       },
@@ -502,10 +540,13 @@ function Api({ lang }: { lang: Lang }) {
   const [error, setError] = useState<string | null>(null);
   const amp = useRef(0);
   const player = usePlayer(amp);
+  const req = useRef<AbortController | null>(null);
+  useEffect(() => () => req.current?.abort(), []);      // closing the tab abandons the request: nothing plays later
   async function run() {
+    const ac = (req.current = new AbortController());
     setState("running"); setError(null);
-    try { const out = await speech(SAMPLE, "nadia"); setClip(out); setState("done"); player.play(out.blob); }
-    catch (e) { setError(demoMessage(e, c)); setState("idle"); }
+    try { const out = await speech(SAMPLE, "nadia", ac.signal); setClip(out); setState("done"); player.play(out.blob); }
+    catch (e) { if (ac.signal.aborted) return; setError(demoMessage(e, c)); setState("idle"); }
   }
   return (
     <div className="pg-api">

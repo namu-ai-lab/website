@@ -6,8 +6,9 @@
    an environment variable, edit (name and permissions), and a revoke that says what will break. Keys are created,
    edited and revoked through /api/keys; the server keeps only a fingerprint of each secret. ?create=1 opens the
    create dialog (the console's Home links here). */
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import { Icon } from "../Icon";
+import { CopyButton } from "../ui/CopyButton";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { MAX_ACTIVE_KEYS, SCOPES, type KeyRow, type Scope } from "@/lib/key-shape";
@@ -64,11 +65,11 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ key: string; name: string; scopes: Scope[] } | null>(null);
-  const [copied, setCopied] = useState<"secret" | "base" | "env" | null>(null);
   const [revoking, setRevoking] = useState<KeyRow | null>(null);
   const [editing, setEditing] = useState<KeyRow | null>(null);
   const [eName, setEName] = useState(""), [eAll, setEAll] = useState(true), [eChosen, setEChosen] = useState<Scope[]>([]);
   const [showRevoked, setShowRevoked] = useState(false);
+  const [leaving, setLeaving] = useState(false);        // the key's dialog was asked to close: "Have you saved your key?"
   const createRef = useDialog(creating), revokeRef = useDialog(!!revoking), editRef = useDialog(!!editing);
   useEffect(() => {                                     // ?create=1, from the console's Home
     const u = new URL(window.location.href);
@@ -80,7 +81,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const live = keys.filter(k => !k.revoked_at), gone = keys.filter(k => k.revoked_at);
   const scopes: Scope[] = all ? [...SCOPES] : chosen;
   const isAll = (s: Scope[]) => SCOPES.every(x => s.includes(x));
-  const copy = async (text: string, what: "secret" | "base" | "env") => { await navigator.clipboard.writeText(text); setCopied(what); setTimeout(() => setCopied(null), 1600); };
+  const copyLabels = { copy: t.copy, copied: t.copied, failed: t.copyFailed };
+  const baseEl = useRef<HTMLElement>(null), keyEl = useRef<HTMLElement>(null), envEl = useRef<HTMLElement>(null);   // selected if copying is refused
 
   async function create(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
@@ -99,7 +101,13 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     } catch { setError(t.error); }
     finally { setBusy(false); }
   }
-  const closeCreate = () => { setCreating(false); setSecret(null); setError(null); setAll(true); };
+  const closeCreate = () => { setCreating(false); setSecret(null); setError(null); setAll(true); setLeaving(false); };
+  /* The secret is shown once, so nothing but Done (or "Yes, close" after the question) may throw it away. Escape
+     fires `cancel`: refused while the key is on screen, and the question shown instead. Chrome lets a repeated Escape
+     close a dialog without a cancelable event, so a close that slips through reopens the dialog on the question. */
+  const cancelCreate = (e: SyntheticEvent<HTMLDialogElement>) => { if (secret) { e.preventDefault(); setLeaving(true); } };
+  const onCreateClosed = () => { if (secret) { createRef.current?.showModal(); setLeaving(true); } else closeCreate(); };
+  const backToKey = () => { setLeaving(false); requestAnimationFrame(() => createRef.current?.querySelector<HTMLElement>(".cx-key button")?.focus()); };
   const openEdit = (k: KeyRow) => { setError(null); setEditing(k); setEName(k.name); setEAll(isAll(k.scopes)); setEChosen(isAll(k.scopes) ? ["speech", "transcribe"] : k.scopes); };
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -133,8 +141,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     <>
       <div className="cx-toolbar">
         <div className="cx-base">
-          <span>{t.base}</span><code>{apiBase}</code>
-          <button type="button" className="cx-icon-btn" onClick={() => copy(apiBase, "base")} aria-label={t.copyBase} title={t.copyBase}><Icon name={copied === "base" ? "check" : "copy"} size={16} stroke={1.5} /></button>
+          <span>{t.base}</span><code ref={baseEl}>{apiBase}</code>
+          <CopyButton text={apiBase} labels={copyLabels} select={baseEl} className="cx-icon-btn" iconOnly name={t.copyBase} icon={{ size: 16, stroke: 1.5 }} />
         </div>
         <div className="cx-toolbar-end">
           <span className="cx-muted">{t.count(live.length, MAX_ACTIVE_KEYS)}</span>
@@ -175,7 +183,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
       )}
 
       {/* create, then the secret, once */}
-      <dialog ref={createRef} className={`cx-dialog${secret ? " cx-dialog-key" : ""}`} onClose={closeCreate} aria-labelledby="cx-create-h">
+      <dialog ref={createRef} className={`cx-dialog${secret ? " cx-dialog-key" : ""}`} onCancel={cancelCreate} onClose={onCreateClosed} aria-labelledby="cx-create-h">
         {secret ? (
           <div className="cx-dialog-body">
             <h2 id="cx-create-h">{t.saveH}</h2>
@@ -183,8 +191,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
             {/* the whole key, always in view: it wraps rather than scrolls, and one click selects all of it; the dialog
                 opens with Copy focused */}
             <div className="cx-key">
-              <code className="cx-key-value">{secret.key}</code>
-              <button type="button" className="cx-btn" autoFocus onClick={() => copy(secret.key, "secret")}><Icon name={copied === "secret" ? "check" : "copy"} size={16} stroke={1.6} />{copied === "secret" ? t.copied : t.copy}</button>
+              <code className="cx-key-value" ref={keyEl}>{secret.key}</code>
+              <CopyButton text={secret.key} labels={copyLabels} select={keyEl} className="cx-btn" autoFocus />
             </div>
             <dl className="cx-key-meta">
               <div><dt>{t.th.name}</dt><dd>{secret.name}</dd></div>
@@ -193,11 +201,17 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
             <div className="cx-env-hint">
               <p>{t.envHint}</p>
               <div className="cx-env">
-                <pre className="cx-code wrap"><code>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
-                <button type="button" className="cx-icon-btn" onClick={() => copy(`export NAMU_API_KEY="${secret.key}"`, "env")} aria-label={t.copy}><Icon name={copied === "env" ? "check" : "copy"} size={16} stroke={1.6} /></button>
+                <pre className="cx-code wrap"><code ref={envEl}>{`export NAMU_API_KEY="${secret.key}"`}</code></pre>
+                <CopyButton text={`export NAMU_API_KEY="${secret.key}"`} labels={copyLabels} select={envEl} className="cx-icon-btn" iconOnly />
               </div>
             </div>
-            <div className="cx-dialog-acts"><button type="button" className="cx-btn primary" onClick={closeCreate}>{t.done}</button></div>
+            {leaving ? (
+              <div className="cx-dialog-acts cx-leave">
+                <p role="alert">{t.leaveQ}</p>
+                <button type="button" className="cx-btn" autoFocus onClick={backToKey}>{t.leaveBack}</button>
+                <button type="button" className="cx-btn primary" onClick={closeCreate}>{t.leaveYes}</button>
+              </div>
+            ) : <div className="cx-dialog-acts"><button type="button" className="cx-btn primary" onClick={closeCreate}>{t.done}</button></div>}
           </div>
         ) : (
           <form className="cx-dialog-body" onSubmit={create}>

@@ -31,7 +31,8 @@ export type ConsoleCopy = {
     emptyH: string; emptyBody: string;
     createH: string; nameLabel: string; namePh: string; permsLabel: string; permsAll: string; permsRestricted: string; permsHelp: string;
     cancel: string; create: string; creating: string;
-    saveH: string; saveBody: string; copy: string; copied: string; done: string; permsOf: string;
+    saveH: string; saveBody: string; copy: string; copied: string; copyFailed: string; done: string; permsOf: string;
+    leaveQ: string; leaveBack: string; leaveYes: string;
     revokeH: string; revokeBody: string; revokeIt: string; revoking: string;
     editLabel: (name: string) => string; editH: string; save: string; saving: string; editNote: string; envHint: string;
     models: Record<string, { name: string; task: string }>;
@@ -43,16 +44,16 @@ export type ConsoleCopy = {
     settings: string; model: string; voice: string; voices: Record<"nadia" | "salim" | "fr", [string, string]>;
     textLabel: string; textPh: string; generate: string; generating: string;
     input: string; record: string; stopRec: string; upload: string; sample: string; samples: { ha: string; fr: string };
-    recording: (t: string) => string; remove: string; maxRec: (m: number) => string;
+    recording: (t: string) => string; remove: string; maxRec: (m: number, mb: number) => string;
     transcribe: string; transcribing: string; translate: string; translating: string; send: string; sending: string;
     language: string; hausa: string; direction: string; haFr: string; frHa: string;
     persona: string; session: string; newSession: string; sessionNote: string;
     output: string; transcript: string; heard: string; translation: string; you: string; air: string;
     empty: Record<"speech" | "transcribe" | "translate" | "converse", string>;
     stats: { status: string; latency: string; audio: string; chars: string };
-    download: string; copy: string; copied: string; play: string; pause: string;
+    download: string; copy: string; copied: string; copyFailed: string; play: string; pause: string;
     code: string; codeH: string; codeLede: string; close: string; wake: string; runsOn: string; history: string; noHistory: string;
-    errors: { mic: string; decode: string; long: (m: number) => string; generic: string };
+    errors: { mic: string; decode: string; long: (m: number) => string; big: (mb: number) => string; generic: string };
   };
   logs: {
     meta: [string, string]; lede: string; privacy: string;
@@ -64,7 +65,7 @@ export type ConsoleCopy = {
   settings: {
     meta: [string, string]; lede: string;
     profileH: string; name: string; save: string; saving: string; saved: string; email: string; verified: string; unverified: string;
-    accountH: string; id: string; since: string; plan: string; planValue: (min: string) => string; copy: string; copied: string;
+    accountH: string; id: string; since: string; plan: string; planValue: (min: string) => string; copy: string; copied: string; copyFailed: string;
     securityH: string; methods: string; method: Record<string, string>;
     passwordH: string; current: string; next: string; change: string; changing: string; changed: string; rule: string;
     sessionsH: string; sessionsBody: string; signOutAll: string; signingOut: string;
@@ -119,7 +120,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       keyName: "Key name", keyNamePh: "My first key", creating: "Creating…", created: "Your key", shownOnce: "Copy it now: we keep only its fingerprint, so this is the only time it is shown.",
       tryFirst: "Or try the models first, no key needed:", playground: "Open the Playground", newKey: "Create API key",
       requests30: "Requests", success: "Success rate", latency: "Average latency", last30: "Last 30 days",
-      recentH: "Recent requests", recentAll: "All logs", recentEmpty: "Nothing yet in the last 30 days.",
+      recentH: "Recent requests", recentAll: "All logs", recentEmpty: "No requests yet.",
       tryH: "Try a model", tryLede: "Each one opens in the Playground, on your account.", tryIt: "Try", playgroundKey: "Playground",
       getStarted: "Get started", dismiss: "Dismiss",
       steps: [["Create an API key", "Keep it on your server"], ["Try the models", "In the Playground, no code"], ["Make your first request", "Hausa speech back in one call"]],
@@ -139,7 +140,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       permsAll: "All", permsRestricted: "Restricted", permsHelp: "Choose the models this key may call.",
       cancel: "Cancel", create: "Create secret key", creating: "Creating…",
       saveH: "Save your key", saveBody: "Copy it now and keep it somewhere safe, such as your server’s environment. For your security we keep only its fingerprint, so you will not be able to see it again.",
-      copy: "Copy", copied: "Copied", done: "Done", permsOf: "Permissions",
+      copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", done: "Done", permsOf: "Permissions",
+      leaveQ: "Have you saved your key? It will not be shown again.", leaveBack: "Back to the key", leaveYes: "Yes, close",
       revokeH: "Revoke secret key", revokeBody: "This key will stop working within a minute, and requests made with it will be refused. Anything still using it will break. This cannot be undone.",
       revokeIt: "Revoke key", revoking: "Revoking…",
       editLabel: k => `Edit ${k}`, editH: "Edit secret key", save: "Save", saving: "Saving…",
@@ -156,7 +158,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       textLabel: "Text", textPh: "Write something in Hausa to hear it spoken…", generate: "Generate", generating: "Generating…",
       input: "Audio", record: "Record", stopRec: "Stop", upload: "Upload a file", sample: "Use a sample",
       samples: { ha: "Hausa sample", fr: "French sample" },
-      recording: s => `Recording · ${s}`, remove: "Remove", maxRec: m => `Up to ${m} minutes, any common audio format.`,
+      recording: s => `Recording · ${s}`, remove: "Remove", maxRec: (m, mb) => `Up to ${m} minutes (files up to ${mb} MB), any common audio format.`,
       transcribe: "Transcribe", transcribing: "Transcribing…", translate: "Translate", translating: "Translating…", send: "Send", sending: "Aïr is answering…",
       language: "Language", hausa: "Hausa", direction: "Direction", haFr: "Hausa → French", frHa: "French → Hausa",
       persona: "Persona", session: "Conversation", newSession: "New conversation", sessionNote: "Aïr remembers this conversation until you start a new one.",
@@ -168,11 +170,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         converse: "Record a question in Hausa. Aïr answers aloud, and remembers the conversation.",
       },
       stats: { status: "Status", latency: "Latency", audio: "Audio", chars: "Characters" },
-      download: "Download", copy: "Copy", copied: "Copied", play: "Play", pause: "Pause",
+      download: "Download", copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected", play: "Play", pause: "Pause",
       code: "View code", codeH: "Use this request in your code", codeLede: "The same request as here, with your key read from NAMU_API_KEY.", close: "Close",
       wake: "The first request wakes the model: it can take about twenty seconds.", runsOn: "Runs on your account",
       history: "History", noHistory: "What you try here is listed in this tab until you leave the page.",
-      errors: { mic: "Allow the microphone to record.", decode: "This file could not be read as audio.", long: m => `Keep it under ${m} minutes.`, generic: "Something went wrong. Try again." },
+      errors: { mic: "Allow the microphone to record.", decode: "This file could not be read as audio.", long: m => `Keep it under ${m} minutes.`,
+        big: mb => `This clip is too large for the Playground (${mb} MB at most). Larger files go through the API.`, generic: "Something went wrong. Try again." },
     },
     logs: {
       meta: ["Logs", "Every request to the Namu API from your keys and the Playground."],
@@ -189,7 +192,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       meta: ["Settings", "Your Namu API profile, sign-in and account."],
       lede: "Your profile, how you sign in, and your account.",
       profileH: "Profile", name: "Name", save: "Save", saving: "Saving…", saved: "Saved", email: "Email", verified: "Verified", unverified: "Not verified",
-      accountH: "Account", id: "Account ID", since: "Member since", plan: "Plan", planValue: m => `Beta · free, ${m} minutes of audio a month`, copy: "Copy", copied: "Copied",
+      accountH: "Account", id: "Account ID", since: "Member since", plan: "Plan", planValue: m => `Beta · free, ${m} minutes of audio a month`, copy: "Copy", copied: "Copied", copyFailed: "Not copied: the text is selected",
       securityH: "Sign-in and security", methods: "Sign-in methods",
       method: { credential: "Email and password", google: "Google", github: "GitHub" },
       passwordH: "Change password", current: "Current password", next: "New password", change: "Change password", changing: "Changing…", changed: "Password changed.",
@@ -250,7 +253,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       keyName: "Nom de la clé", keyNamePh: "Ma première clé", creating: "Création…", created: "Votre clé", shownOnce: "Copiez-la maintenant : nous n’en gardons que l’empreinte, elle ne s’affichera plus.".replace(" :", `${n}:`),
       tryFirst: `Ou essayez d’abord les modèles, sans clé${n}:`, playground: "Ouvrir le bac à sable", newKey: "Créer une clé d’API",
       requests30: "Requêtes", success: "Taux de réussite", latency: "Latence moyenne", last30: "30 derniers jours",
-      recentH: "Requêtes récentes", recentAll: "Tous les journaux", recentEmpty: "Rien ces 30 derniers jours.",
+      recentH: "Requêtes récentes", recentAll: "Tous les journaux", recentEmpty: "Aucune requête pour l’instant.",
       tryH: "Essayer un modèle", tryLede: "Chacun s’ouvre dans le bac à sable, sur votre compte.", tryIt: "Essayer", playgroundKey: "Bac à sable",
       getStarted: "Pour commencer", dismiss: "Masquer",
       steps: [["Créer une clé d’API", "À garder sur votre serveur"], ["Essayer les modèles", "Dans le bac à sable, sans code"], ["Faire votre première requête", "De la parole en haoussa en un appel"]],
@@ -270,7 +273,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       permsAll: "Toutes", permsRestricted: "Restreintes", permsHelp: "Choisissez les modèles que cette clé peut appeler.",
       cancel: "Annuler", create: "Créer la clé secrète", creating: "Création…",
       saveH: "Enregistrez votre clé", saveBody: "Copiez-la maintenant et gardez-la en lieu sûr, par exemple dans l’environnement de votre serveur. Pour votre sécurité, nous n’en gardons que l’empreinte : vous ne pourrez plus la voir.".replace(" :", `${n}:`),
-      copy: "Copier", copied: "Copiée", done: "Terminé", permsOf: "Permissions",
+      copy: "Copier", copied: "Copiée", copyFailed: `Non copié${n}: le texte est sélectionné`, done: "Terminé", permsOf: "Permissions",
+      leaveQ: `Avez-vous enregistré votre clé${n}? Elle ne sera plus affichée.`, leaveBack: "Revenir à la clé", leaveYes: "Oui, fermer",
       revokeH: "Révoquer la clé secrète", revokeBody: "Cette clé cessera de fonctionner en moins d’une minute et les requêtes qui l’utilisent seront refusées. Tout ce qui en dépend encore cessera de fonctionner. C’est irréversible.",
       revokeIt: "Révoquer la clé", revoking: "Révocation…",
       editLabel: k => `Modifier ${k}`, editH: "Modifier la clé secrète", save: "Enregistrer", saving: "Enregistrement…",
@@ -287,7 +291,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       textLabel: "Texte", textPh: "Écrivez quelque chose en haoussa pour l’entendre…", generate: "Générer", generating: "Génération…",
       input: "Audio", record: "Enregistrer", stopRec: "Arrêter", upload: "Importer un fichier", sample: "Utiliser un exemple",
       samples: { ha: "Exemple en haoussa", fr: "Exemple en français" },
-      recording: s => `Enregistrement · ${s}`, remove: "Retirer", maxRec: m => `Jusqu’à ${m} minutes, dans tout format audio courant.`,
+      recording: s => `Enregistrement · ${s}`, remove: "Retirer", maxRec: (m, mb) => `Jusqu’à ${m} minutes (fichiers de ${mb} Mo au plus), dans tout format audio courant.`,
       transcribe: "Transcrire", transcribing: "Transcription…", translate: "Traduire", translating: "Traduction…", send: "Envoyer", sending: "Aïr répond…",
       language: "Langue", hausa: "Haoussa", direction: "Sens", haFr: "Haoussa → français", frHa: "Français → haoussa",
       persona: "Personnage", session: "Conversation", newSession: "Nouvelle conversation", sessionNote: "Aïr se souvient de cette conversation jusqu’à ce que vous en commenciez une autre.",
@@ -299,11 +303,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         converse: "Enregistrez une question en haoussa. Aïr répond à voix haute et se souvient de la conversation.",
       },
       stats: { status: "Statut", latency: "Latence", audio: "Audio", chars: "Caractères" },
-      download: "Télécharger", copy: "Copier", copied: "Copié", play: "Lire", pause: "Pause",
+      download: "Télécharger", copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`, play: "Lire", pause: "Pause",
       code: "Voir le code", codeH: "Utiliser cette requête dans votre code", codeLede: "La même requête qu’ici, avec votre clé lue dans NAMU_API_KEY.", close: "Fermer",
       wake: "La première requête réveille le modèle : cela peut prendre une vingtaine de secondes.".replace(" :", `${n}:`), runsOn: "Sur votre compte",
       history: "Historique", noHistory: "Ce que vous essayez ici s’affiche dans cet onglet jusqu’à ce que vous quittiez la page.",
-      errors: { mic: "Autorisez le micro pour enregistrer.", decode: "Ce fichier n’a pas pu être lu comme de l’audio.", long: k => `Restez sous ${k} minutes.`, generic: "Une erreur s’est produite. Réessayez." },
+      errors: { mic: "Autorisez le micro pour enregistrer.", decode: "Ce fichier n’a pas pu être lu comme de l’audio.", long: k => `Restez sous ${k} minutes.`,
+        big: mb => `Ce clip est trop lourd pour le bac à sable (${mb} Mo au plus). Les fichiers plus lourds passent par l’API.`, generic: "Une erreur s’est produite. Réessayez." },
     },
     logs: {
       meta: ["Journaux", "Chaque requête à l’API Namu, depuis vos clés et le bac à sable."],
@@ -320,7 +325,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       meta: ["Paramètres", "Votre profil, votre connexion et votre compte sur l’API Namu."],
       lede: "Votre profil, votre façon de vous connecter et votre compte.",
       profileH: "Profil", name: "Nom", save: "Enregistrer", saving: "Enregistrement…", saved: "Enregistré", email: "Adresse e-mail", verified: "Vérifiée", unverified: "Non vérifiée",
-      accountH: "Compte", id: "Identifiant du compte", since: "Membre depuis", plan: "Offre", planValue: m => `Bêta · gratuite, ${m} minutes d’audio par mois`, copy: "Copier", copied: "Copié",
+      accountH: "Compte", id: "Identifiant du compte", since: "Membre depuis", plan: "Offre", planValue: m => `Bêta · gratuite, ${m} minutes d’audio par mois`, copy: "Copier", copied: "Copié", copyFailed: `Non copié${n}: le texte est sélectionné`,
       securityH: "Connexion et sécurité", methods: "Moyens de connexion",
       method: { credential: "E-mail et mot de passe", google: "Google", github: "GitHub" },
       passwordH: "Changer de mot de passe", current: "Mot de passe actuel", next: "Nouveau mot de passe", change: "Changer le mot de passe", changing: "Modification…", changed: "Mot de passe modifié.",

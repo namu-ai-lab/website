@@ -5,7 +5,7 @@ import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { AdminBeta } from "@/components/account/AdminBeta";
 import { accountCopy } from "@/content/account";
 import { isLang, type Lang } from "@/i18n/config";
-import { allProfiles, requireAccount } from "@/lib/account";
+import { allProfiles, profileRow, requireAccount } from "@/lib/account";
 import { hasAccounts } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function Admin({ params }: { params: Promise<{ lang: string
 
   return (
     <ConsoleShell lang={lang} page="admin" admin user={user} access={profile.beta_status} title={t.h1} lede={t.lede}>
-      <AdminBeta lang={lang} initial={rows} me={user.id} />
+      <AdminBeta lang={lang} initial={rows.map(profileRow)} me={user.id} />
     </ConsoleShell>
   );
 }

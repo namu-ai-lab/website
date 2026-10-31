@@ -126,7 +126,7 @@ const global: any = typeof window !== "undefined" ? window : {};
     }, { threshold: 0.4 });
     io.observe(root);
     go(reduce ? STAGES.length - 1 : 0, reduce);
-    return { go };
+    return { go, destroy() { io.disconnect(); clearTimeout(timer); } };
   }
 
 export { createUtterance, UTTERANCE_STRINGS };

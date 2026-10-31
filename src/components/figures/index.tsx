@@ -14,13 +14,16 @@ import type { Lang } from "@/i18n/config";
    (scripts/coverage.json), so the browser takes this one space from the fallback font. */
 const NNBSP = "\u202F";
 
-/** Mounts a ported engine once per language; the keyed <div> gives each language a fresh root. */
+/** Mounts a ported engine once per language; the keyed <div> gives each language a fresh root. When the figure
+    unmounts (or its language changes) it calls the destroy() the engine returned, if any, so the engine's observers,
+    timers and animation frames stop with it. The engines are untyped ports, hence the one cast. */
 function useMount(fn: (el: HTMLDivElement) => unknown, deps: unknown[]) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current; if (!el) return;
     el.innerHTML = "";
-    fn(el);
+    const engine = fn(el) as { destroy?: () => void } | null | undefined;
+    return () => engine?.destroy?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return ref;
@@ -67,6 +70,7 @@ export function ConversationScore({ lang = "en" }: { lang?: Lang }) {
       strings: lang === "fr" ? TURN_TAKING_FR : undefined,
     });
     tt.seek(4.2);
+    return { destroy: tt.pause };          // a score left playing stops its frames
   }, [lang]);
   return <div key={lang} ref={ref} />;
 }
@@ -158,6 +162,7 @@ export function UtterancePipeline({ lang = "en" }: { lang?: Lang }) {
       strings: lang === "fr" ? UTTERANCE_FR : undefined,
     });
     lu.go(4, true);
+    return lu;
   }, [lang]);
   return <div key={lang} ref={ref} />;
 }
@@ -175,9 +180,9 @@ const BLOSSOM_FR: typeof BLOSSOM_STRINGS = {
 export function BlossomPlayer({ label, gloss, note, words, duration, lang = "en" }: {
   label: string; gloss: string; note?: string; duration: number; words: { w: string; start: number; end: number }[]; lang?: Lang;
 }) {
-  const ref = useMount(el => createBlossomPlayer(el, {
-    label, gloss, note, words, duration,
-    strings: lang === "fr" ? BLOSSOM_FR : undefined,
-  }), [lang]);
+  const ref = useMount(el => {
+    const player = createBlossomPlayer(el, { label, gloss, note, words, duration, strings: lang === "fr" ? BLOSSOM_FR : undefined });
+    return { destroy: player.pause };      // a clip left playing stops its frames
+  }, [lang]);
   return <div key={lang} ref={ref} />;
 }
