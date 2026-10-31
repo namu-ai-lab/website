@@ -52,15 +52,6 @@ const en = {
   },
   home: {
     hero: "Speech AI for the languages of the Sahel",
-    featuredLabel: "Featured research and models",
-    featured: {
-      air: "A voice agent that holds a conversation in the languages of the Sahel",
-      hira: "Research into speech models that listen while they speak",
-      rumbu: "A consented speech commons for the Sahel, Niger first",
-      maauni: "Honest measurement for speech in the languages of the Sahel",
-      zarma: "Speech technology for Zarma, from the ground up",
-      tankade: "From raw audio to data a model and a reader can trust",
-    } as Record<string, string>,
     latest: "Latest news", viewNews: "View news",
     models: "Models", modelsSub: "Speech systems built on our research", modelsLink: "View on namu-ai.org", badge: "Research", statusLabel: "Status",
     research: "Research", researchSub: `Five programmes, one aim: speech technology that works for the people of the Sahel`, researchLink: "Explore research",
@@ -186,15 +177,6 @@ const fr: Copy = {
   },
   home: {
     hero: "L’IA de la parole pour les langues du Sahel",
-    featuredLabel: "Recherches et modèles à la une",
-    featured: {
-      air: "Un agent vocal qui tient une conversation dans les langues du Sahel",
-      hira: "Des modèles de parole qui écoutent pendant qu’ils parlent",
-      rumbu: "Un fonds commun de parole du Sahel, constitué avec consentement, au Niger d’abord",
-      maauni: "Une mesure honnête pour la parole dans les langues du Sahel",
-      zarma: "Des technologies de la parole pour le zarma, à partir de zéro",
-      tankade: "De l’audio brut à des données dignes de confiance, pour un modèle comme pour un lecteur",
-    },
     latest: "Dernières actualités", viewNews: "Toutes les actualités",
     models: "Modèles", modelsSub: "Des systèmes de parole issus de nos recherches", modelsLink: "Voir sur namu-ai.org", badge: "Recherche", statusLabel: "Statut",
     research: "Recherche", researchSub: `Cinq programmes, un seul but${n}: des technologies de la parole qui fonctionnent pour les populations du Sahel`, researchLink: "Explorer la recherche",

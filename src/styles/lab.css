@@ -642,7 +642,6 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 @media (max-width: 1120px) { .menu-toggle { margin-left: 8px; } }
 /* on narrower desktops the parent-site pill gives way to the nav and to Log in / Start building; namu-ai.org stays in
    the footer and the phone menu. Below 1280 the menu also moves closer to the logo, which French needs. */
-@media (max-width: 1400px) { .hdr-cta .parent { display: none; } }
 @media (max-width: 1280px) { .nav { margin-left: 20px; } }
 
 /* ---- API landing page (/api): its Beta pill; the page itself is styled in api.css ---- */

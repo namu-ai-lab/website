@@ -4,23 +4,13 @@ import { Playground } from "@/components/Playground";
 import { UseCases } from "@/components/UseCases";
 import { playground } from "@/content/playground";
 import { Icon } from "@/components/Icon";
-import { Explorer, Rail, Reveal } from "@/components/Interactive";
+import { Explorer, Reveal } from "@/components/Interactive";
 import { NewsArt, ProgrammeArt, darkArt } from "@/components/NewsArt";
 import { getNews, getProgrammes, monthYear } from "@/content";
 import { models } from "@/content/site";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
 import { alternates } from "@/i18n/seo";
-
-const featured = [
-  { slug: "air", name: "Aïr", href: "/models/air", listen: true },
-  { slug: "hira", name: "Hira", href: "/programmes/hira" },
-  { slug: "rumbu", name: "Rumbu", href: "/programmes/rumbu" },
-  { slug: "maauni", name: "Maʼauni", href: "/programmes/maauni" },
-  { slug: "zarma", name: "Zarma", href: "/programmes/zarma" },
-  { slug: "tankade", name: "Tankaɗe", href: "/programmes/tankade" },
-];
-const isHausa = (s: string) => /[ɓɗƙƴʼ]/.test(s);
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -42,7 +32,8 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         <a className="pill lg frost cta rise d2" href="#try">{c.common.learnMore}</a>
       </section>
 
-      {/* After elevenlabs.io and openai.fm: a console to try the models (a design preview), right under the hero. */}
+      {/* After elevenlabs.io and openai.fm: a console to try the models (a design preview), right under the hero; the
+          use cases follow it. */}
       <section id="try" className="section try" aria-labelledby="h-try">
         <div className="wrap">
           <h2 id="h-try" className="try-title">{pg.sub}</h2>
@@ -50,22 +41,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         </div>
       </section>
 
-      <section id="featured" className="section" aria-label={h.featuredLabel}>
-        <div className="rail-wrap">
-          <Rail label={h.featuredLabel} prev={c.common.previous} next={c.common.next}>
-            {featured.map(f => (
-              <a key={f.slug} href={L(f.href)} className={`fcard${darkArt.has(f.slug) ? " dark" : ""}`}>
-                <div className="art"><ProgrammeArt slug={f.slug} /></div>
-                <div className="txt"><h2 className="h3" lang={isHausa(f.name) ? "ha" : undefined}>{f.name}</h2><p>{h.featured[f.slug]}</p></div>
-                <div className="acts">
-                  <span className={`pill ${darkArt.has(f.slug) ? "light" : "dark"}`}>{c.common.learnMore}</span>
-                  {f.listen && <span className="pill frost"><Icon name="play" size={16} stroke={1.6} />{c.common.listen}</span>}
-                </div>
-              </a>
-            ))}
-          </Rail>
-        </div>
-      </section>
+      <UseCases lang={lang} />
 
       <section id="latest" className="section" aria-labelledby="h-latest">
         <div className="wrap">
@@ -126,7 +102,6 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         </div>
       </section>
 
-      <UseCases lang={lang} />
     </>
   );
 }

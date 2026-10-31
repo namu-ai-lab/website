@@ -75,7 +75,6 @@ export function Header({ lang, c, programmes }: Props) {
         </nav>
         <LangSwitch lang={lang} label={n.language} />
         <div className="hdr-cta">
-          <a className="pill parent" href="https://www.namu-ai.org">namu-ai.org</a>
           <a className="hdr-login" href={L("/login")}>{n.logIn}</a>
           <a className="pill dark" href={L("/signup")}>{n.startBuilding}</a>
         </div>
@@ -157,7 +156,6 @@ export function Header({ lang, c, programmes }: Props) {
             <div className="sheet-more">
               <a className="pill dark" href={L("/signup")}>{n.startBuilding}</a>
               <a className="pill" href={L("/login")}>{n.logIn}</a>
-              <a className="pill" href="https://www.namu-ai.org">namu-ai.org <Icon name="external" size={16} stroke={1.6} /></a>
             </div>
           </div>
         )}
