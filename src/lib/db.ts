@@ -18,3 +18,7 @@ export async function sql<T>(text: string, params: unknown[] = []): Promise<T[]>
   const { rows } = await db().query(text, params);
   return rows as T[];
 }
+
+/** Whether a query failed because its table does not exist yet: a migration that has not been applied to this
+    database. Pages that read the platform's newer tables show "almost ready" instead of an error. */
+export const isMissingTable = (e: unknown) => (e as { code?: string } | null)?.code === "42P01";
