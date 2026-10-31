@@ -75,7 +75,7 @@ export const translation = {
 
 /* Clips for Speech to text and Translate, so a visitor without a microphone can still try them (public/usecases/README.md):
    Hausa spoken by Tafiya, and French spoken by Kora when it translated two of those Hausa clips. */
-const SAMPLES = {
+export const SAMPLES = {
   market: { src: "/usecases/translation-ha.m4a", says: "Nawa ne farashin buhun gero?" },
   story: { src: "/usecases/heritage.m4a", says: "Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari." },
   count: { src: "/usecases/education.m4a", says: "Bari mu koyi ƙidaya tare: ɗaya, biyu, uku, huɗu, biyar." },

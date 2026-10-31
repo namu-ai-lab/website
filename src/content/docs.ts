@@ -133,20 +133,23 @@ export const docsCopy: Record<Lang, DocsCopy> = {
 };
 
 /* Code samples, identical in both languages. `base` is the API base URL. */
-export function samples(base: string): Record<string, Record<"cURL" | "Python" | "JavaScript", string>> {
+/* Every call in cURL, Python and JavaScript. `speech` sets the text-to-speech sample's sentence and voice (the /api
+   studio shows the sentence it plays). */
+export function samples(base: string, speech = { text: SAMPLE_HA, voice: "nadia" }): Record<string, Record<"cURL" | "Python" | "JavaScript", string>> {
+  const { text, voice } = speech;
   return {
     speech: {
       cURL: `curl ${base}/v1/speech \\
   -H "Authorization: Bearer $NAMU_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"text": "${SAMPLE_HA}", "voice": "nadia"}' \\
+  -d '{"text": "${text}", "voice": "${voice}"}' \\
   -o labarai.wav`,
       Python: `import os, requests
 
 r = requests.post(
     "${base}/v1/speech",
     headers={"Authorization": f"Bearer {os.environ['NAMU_API_KEY']}"},
-    json={"text": "${SAMPLE_HA}", "voice": "nadia"},
+    json={"text": "${text}", "voice": "${voice}"},
     timeout=120,
 )
 r.raise_for_status()
@@ -159,7 +162,7 @@ const r = await fetch("${base}/v1/speech", {
     Authorization: \`Bearer \${process.env.NAMU_API_KEY}\`,
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ text: "${SAMPLE_HA}", voice: "nadia" }),
+  body: JSON.stringify({ text: "${text}", voice: "${voice}" }),
 });
 if (!r.ok) throw new Error((await r.json()).error.message);
 await writeFile("labarai.wav", Buffer.from(await r.arrayBuffer()));`,

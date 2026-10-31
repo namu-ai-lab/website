@@ -36,7 +36,7 @@ const HA = {
 const FR_TRANSLATION = "Quel est le prix du sac de mil ?";   // Kora's own output
 
 /* Tatsuniya's transcript of the heritage clip, as it came back from /v1/transcribe */
-const HEARD = { by: "Tatsuniya", text: "wata rana a wani ƙauye akwai wani tsoho mai bada labari." };
+export const HEARD = { by: "Tatsuniya", text: "wata rana a wani ƙauye akwai wani tsoho mai bada labari." };
 
 const clips = {
   education: [{ src: "/usecases/education.m4a", text: HA.education, lang: "ha", by: "Tafiya" }],

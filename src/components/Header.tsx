@@ -59,7 +59,8 @@ export function Header({ lang, c, programmes }: Props) {
 
   const toggle = (m: Menu) => setMenu(cur => (cur === m ? null : m));
   const open = (p: Page) => { setBack(p === null); setPage(p); };
-  const cls = ["hdr", solid ? "solid" : "", menu ? "open" : ""].join(" ");
+  const onFilm = path === "/api" && !solid && !menu;   // /api's hero is a film: the bar reads white on it
+  const cls = ["hdr", solid ? "solid" : "", menu ? "open" : "", onFilm ? "on-film" : ""].join(" ");
   const ha = (s: string) => (/[ɗʼ]/.test(s) ? "ha" : undefined);
 
   return (
