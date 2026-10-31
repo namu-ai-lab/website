@@ -23,8 +23,10 @@ export async function saveWords(userId: string, words: Word[]): Promise<KitWord[
     .slice(0, MAX_WORDS);
   await tx(async q => {
     await q("delete from public.kit_words where user_id = $1", [userId]);
-    if (clean.length) await q(`insert into public.kit_words (user_id, term, say, lang)
-      select $1, t.term, t.say, t.lang from jsonb_to_recordset($2::jsonb) as t(term text, say text, lang text)`, [userId, JSON.stringify(clean)]);
+    // created_at a microsecond apart, so the list reads back in the order it was saved
+    if (clean.length) await q(`insert into public.kit_words (user_id, term, say, lang, created_at)
+      select $1, t.term, t.say, t.lang, now() + t.ord * interval '1 microsecond'
+      from rows from (jsonb_to_recordset($2::jsonb) as (term text, say text, lang text)) with ordinality as t(term, say, lang, ord)`, [userId, JSON.stringify(clean)]);
   });
   return wordsOf(userId);
 }
