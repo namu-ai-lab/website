@@ -1,4 +1,6 @@
+import "server-only";
 import { createHmac, randomBytes } from "node:crypto";
+import { setting } from "./env";
 import { KEY_PREFIX } from "./key-shape";
 
 export * from "./key-shape";
@@ -16,7 +18,7 @@ export function generateKey(): string {
 }
 
 export function hashKey(key: string): string {
-  const pepper = process.env.NAMU_KEY_PEPPER;
+  const pepper = setting("NAMU_KEY_PEPPER");
   if (!pepper || pepper.length < 32) throw new Error("NAMU_KEY_PEPPER is missing or too short");
   return createHmac("sha256", pepper).update(key).digest("hex");
 }

@@ -1,5 +1,6 @@
 import { after, type NextRequest } from "next/server";
-import { apiBase } from "@/lib/env";
+import { setting } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 import { clientIp, fail, sameOrigin } from "@/lib/http";
 
 /* The home page's live conversation with Aïr. Aïr is a chain, not one speech-to-speech model: Tatsuniya writes down
@@ -23,13 +24,13 @@ import { clientIp, fail, sameOrigin } from "@/lib/http";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const AGENT = (process.env.NAMU_AGENT_URL || "https://namu-ai-lab--namu-agent-api.modal.run").replace(/\/+$/, "");
+const AGENT = (setting("NAMU_AGENT_URL") ?? "https://namu-ai-lab--namu-agent-api.modal.run").replace(/\/+$/, "");
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;        // 15 s of 16 kHz WAV is under 500 KB
 const PERSONAS = ["nadia", "salim"] as const;
 
 /* Modal proxy auth, for when the model services stop answering the open internet (set both in Vercel) */
 const agentHeaders = (): Record<string, string> => {
-  const k = process.env.MODAL_PROXY_KEY, s = process.env.MODAL_PROXY_SECRET;
+  const k = setting("MODAL_PROXY_KEY"), s = setting("MODAL_PROXY_SECRET");
   return k && s ? { "Modal-Key": k, "Modal-Secret": s } : {};
 };
 
@@ -66,7 +67,7 @@ function split(reply: string): string[] {
 
 export async function GET(req: NextRequest) {
   if (!sameOrigin(req) && req.headers.get("sec-fetch-site") !== "same-origin") return fail(403, "bad_origin", "The demo runs from the Namu site only.");
-  const key = process.env.NAMU_DEMO_KEY;
+  const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
   const voice = req.nextUrl.searchParams.get("persona") === "salim" ? "salim" : "nadia";
   const h = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": clientIp(req) };
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return fail(403, "bad_origin", "The demo runs from the Namu site only.");
-  const key = process.env.NAMU_DEMO_KEY;
+  const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
   const q = req.nextUrl.searchParams;
   const persona = PERSONAS.find(p => p === q.get("persona")) ?? "nadia";

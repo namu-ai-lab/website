@@ -8,14 +8,12 @@
    create dialog (the console's Home links here). */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "../Icon";
+import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
 import { MAX_ACTIVE_KEYS, SCOPES, type KeyRow, type Scope } from "@/lib/key-shape";
 import type { Lang } from "@/i18n/config";
 
 const ENDPOINT: Record<Scope, string> = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" };
-
-const day = (lang: Lang, iso: string | null) =>
-  iso ? new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso)) : null;
 
 async function call(method: "POST" | "PATCH" | "DELETE", url: string, body?: unknown) {
   const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
@@ -122,8 +120,8 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
       <td className="cx-name c-main">{k.name}{k.is_demo && <span className="cx-tag">{t.demo}</span>}</td>
       <td data-label={t.th.secret}><code className="cx-secret">{k.prefix}…</code></td>
       <td data-label={t.th.perms}>{perms(k.scopes)}</td>
-      <td data-label={t.th.created}>{day(lang, k.created_at)}</td>
-      <td data-label={t.th.lastUsed}>{day(lang, k.last_used_at) ?? <span className="cx-muted">{t.never}</span>}</td>
+      <td data-label={t.th.created}><LocalTime iso={k.created_at} lang={lang} style="dayShort" /></td>
+      <td data-label={t.th.lastUsed}>{k.last_used_at ? <LocalTime iso={k.last_used_at} lang={lang} style="dayShort" /> : <span className="cx-muted">{t.never}</span>}</td>
       <td className="cx-acts c-corner">
         {!k.revoked_at && !k.is_demo && <button type="button" className="cx-icon-btn" onClick={() => openEdit(k)} aria-label={t.editLabel(k.name)} title={t.editLabel(k.name)}><Icon name="pencil" size={17} stroke={1.5} /></button>}
         {!k.revoked_at && <button type="button" className="cx-icon-btn" onClick={() => { setError(null); setRevoking(k); }} aria-label={t.revokeLabel(k.name)} title={t.revokeLabel(k.name)}><Icon name="trash" size={17} stroke={1.5} /></button>}

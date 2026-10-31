@@ -9,7 +9,8 @@ import { isLang, type Lang } from "@/i18n/config";
 import { requireAccount } from "@/lib/account";
 import { sql } from "@/lib/db";
 import { KEY_COLUMNS, type KeyRow } from "@/lib/key-shape";
-import { apiBase, hasAccounts } from "@/lib/env";
+import { hasAccounts } from "@/lib/env";
+import { apiBase } from "@/lib/public-config";
 
 export const dynamic = "force-dynamic";
 

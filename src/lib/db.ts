@@ -1,4 +1,6 @@
+import "server-only";
 import { Pool } from "pg";
+import { required } from "@/lib/env";
 
 /* The Neon Postgres database, from the server only. Every query that touches a developer's data filters on
    their user id in SQL; nothing here is reachable from the browser. One pool per server instance, kept small:
@@ -6,8 +8,8 @@ import { Pool } from "pg";
 const g = globalThis as unknown as { namuPool?: Pool };
 
 export function db(): Pool {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-  g.namuPool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 5, idleTimeoutMillis: 30_000 });
+  const url = required("DATABASE_URL");
+  g.namuPool ??= new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 30_000 });
   return g.namuPool;
 }
 

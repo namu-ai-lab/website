@@ -1,4 +1,5 @@
 import type { Lang } from "@/i18n/config";
+import type { IconName } from "@/lib/icons";
 
 /* The home page's use cases, after openai.com's "Use cases driven by our platform": six things people can build with
    the Lab's models, each with a photograph of the people it is for. Where openai.com opens a list of customer
@@ -9,7 +10,7 @@ import type { Lang } from "@/i18n/config";
 export type Clip = { src: string; text: string; lang: "ha" | "fr"; by: string };
 export type UseCase = {
   id: string;
-  icon: string;
+  icon: IconName;
   photo?: { src: string; alt: string; credit: string; position?: string };
   title: string;
   body: string;

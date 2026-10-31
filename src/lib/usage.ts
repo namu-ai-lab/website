@@ -1,3 +1,4 @@
+import "server-only";
 import { sql } from "@/lib/db";
 import { SCOPES, type Scope } from "@/lib/key-shape";
 

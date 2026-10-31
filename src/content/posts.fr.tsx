@@ -12,7 +12,8 @@ import { FigureSlot } from "@/components/FigureSlot";
 
    Header of posts-new.tsx, kept as written: */
 
-/* New Lab copy, drafted 2026-10-13 for the founders to approve. Nothing here is published.
+/* Lab copy drafted 2026-10-13 for the founders to approve, and now live: the three posts below are on /research
+   (posts.tsx lists them) and aboutCopy is the /about page.
 
    Sources (every claim must agree with them):
    - src/content/programmes.ts (the five programmes, statuses, ladders, "What we do not claim yet")

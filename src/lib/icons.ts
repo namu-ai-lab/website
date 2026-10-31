@@ -1,6 +1,4 @@
-// @ts-nocheck — ported verbatim from ~/Desktop/Namu/lab-web-mastery/studies/icons.js (tested there).
-// Client-only: call these from useEffect. TODO: add types.
-const global: any = typeof window !== "undefined" ? window : {};
+// Ported from ~/Desktop/Namu/lab-web-mastery/studies/icons.js; rendered by components/Icon.tsx.
 
 /* Namu AI Lab icons — one grammar for every glyph.
  *
@@ -14,10 +12,11 @@ const global: any = typeof window !== "undefined" ? window : {};
  * marks (GitHub, Hugging Face, arXiv) use their own official logos.
  */
 
-  const F = d => ({ d, fill: "solid" });   // filled glyph part
-  const DOT = d => ({ d, fill: "dot" });   // the Blossom dot, in the accent
+  export type IconPart = string | { d: string; fill: "solid" | "dot" };
+  const F = (d: string): IconPart => ({ d, fill: "solid" });   // filled glyph part
+  const DOT = (d: string): IconPart => ({ d, fill: "dot" });   // the Blossom dot, in the accent
 
-  const ICONS = {
+  export const ICONS = {
     // ---- navigation and apparatus
     "arrow-long": ["M3 12h17", "M14.5 6.5L20 12l-5.5 5.5"],
     "external": ["M7 17L17 7", "M9 7h8v8"],
@@ -27,6 +26,10 @@ const global: any = typeof window !== "undefined" ? window : {};
     "sidebar-open": ["M6.5 5h11a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z", "M9 5v14", { d: "M6.5 5H9v14H6.5a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z", fill: "solid" }],
     "arrow-back": ["M21 12H4", "M9.5 6.5L4 12l5.5 5.5"],
     "close": ["M6.5 6.5l11 11", "M17.5 6.5l-11 11"],
+    "eye": ["M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"],
+    "eye-off": ["M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M4 20L20 4"],
+    "warn": ["M12 21.5a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19z", "M12 7.5v5.5", "M12 16.4v.1"],
+    "share": ["M12 15V3.5", "M7.5 8L12 3.5 16.5 8", "M5 12.5v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"],
     "plus": ["M12 5v14", "M5 12h14"],
     "search": ["M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z", "M15.8 15.8L20 20"],
     "filter": ["M4 6.5h16", "M7 12h10", "M10 17.5h4"],
@@ -92,24 +95,7 @@ const global: any = typeof window !== "undefined" ? window : {};
     "care": ["M12 19.5s-7.5-4.4-7.5-9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.5 2.3c0 5.2-7.5 9.6-7.5 9.6z", "M9.5 12.5h1.6l.9-1.8 1.2 3.6.9-1.8h1.4"],
     "grow": ["M12 20v-8.5", "M12 11.5c0-3.6-2.6-6.2-6.6-6.2 0 3.6 2.6 6.2 6.6 6.2z", "M12 14.2c0-3.1 2.3-5.4 6.2-5.4 0 3.1-2.3 5.4-6.2 5.4z", "M7.5 20h9"],
     "civic": ["M4 9.6 12 5l8 4.6", "M4.5 20h15", "M6.6 11v6.5", "M10.2 11v6.5", "M13.8 11v6.5", "M17.4 11v6.5"],
-  };
-  // Aliases kept for older studies.
-  ICONS["arrow-right"] = ICONS["arrow-long"];
-  ICONS["arrow-out"] = ICONS["external"];
-  ICONS["braces"] = ICONS["bibtex"];
-  ICONS["phone"] = ICONS["phone-voice"].slice(0, 1);
+  } satisfies Record<string, IconPart[]>;
 
-  function icon(name, { size = 24, label, stroke = 1.25 } = {}) {
-    const parts = ICONS[name];
-    if (!parts) throw new Error("No icon: " + name);
-    const aria = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
-    let i = 0;
-    const body = parts.map(p => {
-      if (typeof p === "string") return `<path d="${p}" pathLength="1" style="--i:${i++}"/>`;
-      const fill = p.fill === "dot" ? "var(--sahel, #E8935A)" : "currentColor";
-      return `<path class="ic-${p.fill}" d="${p.d}" fill="${fill}" stroke="none"/>`;
-    }).join("");
-    return `<svg class="ic ic-${name}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ${aria}>${body}</svg>`;
-  }
-
-export { ICONS, icon };
+  /** Every glyph's name: a typo in <Icon name> is a type error, not an empty space. */
+  export type IconName = keyof typeof ICONS;

@@ -174,7 +174,7 @@ export function AuthFlow({ lang, door, next, providers, start, token, failed }:
   /* ---- the screens */
   const pending = busy || leaving;
   const errId = err ? "auth-err" : undefined;
-  const errEl = err && <p className="cx-door-err" id="auth-err" role="alert"><Warn />{err}</p>;
+  const errEl = err && <p className="cx-door-err" id="auth-err" role="alert"><Icon name="warn" size={16} stroke={1.6} />{err}</p>;
   const who = (
     <div className="cx-door-who">
       <span>{email}</span>
@@ -187,7 +187,7 @@ export function AuthFlow({ lang, door, next, providers, start, token, failed }:
   const pwd = (label: string, auto: "current-password" | "new-password", focus = false) => (
     <Field label={label} invalid={!!err} trailing={
       <button type="button" className="cx-door-eye" aria-label={shown ? t.hide : t.show} aria-pressed={shown} onClick={() => setShown(s => !s)}>
-        <Eye open={!shown} />
+        <Icon name={shown ? "eye-off" : "eye"} size={20} stroke={1.4} />
       </button>}>
       <input type={shown ? "text" : "password"} name="password" autoComplete={auto} required minLength={auto === "new-password" ? MIN : undefined} maxLength={MAX}
         value={password} onChange={edit(setPassword)} autoFocus={focus} placeholder=" " aria-invalid={!!err} aria-describedby={errId} />
@@ -378,25 +378,7 @@ function Field({ label, children, trailing, invalid, multiline }:
   );
 }
 
-/* Small glyphs in the Lab's grammar (24 grid, round caps), and the two providers' own marks. */
-function Eye({ open }: { open: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="3" />
-      {!open && <path d="M4 20L20 4" />}
-    </svg>
-  );
-}
-
-function Warn() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9.5" /><path d="M12 7.5v5.5" /><path d="M12 16.4v.1" />
-    </svg>
-  );
-}
-
+/* The two providers' own marks (the Lab's glyphs come from lib/icons through <Icon>). */
 function GoogleMark() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">

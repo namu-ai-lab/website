@@ -94,7 +94,7 @@ export function Header({ lang, c, programmes }: Props) {
           <div className="mega-list">
             {programmes.map(p => (
               <a key={p.slug} className="mega-item" href={L(`/programmes/${p.slug}`)}>
-                <span className="ic"><Icon name={programmeIcon[p.slug]} size={22} stroke={1.4} /></span>
+                <span className="ic"><Icon name={programmeIcon[p.slug] ?? "programme"} size={22} stroke={1.4} /></span>
                 <span><b lang={ha(p.name)}>{p.name}</b><span>{p.title}</span></span>
               </a>
             ))}
