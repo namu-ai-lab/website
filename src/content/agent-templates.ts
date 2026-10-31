@@ -32,7 +32,7 @@ export const TEMPLATES: Template[] = [
     id: "health-line", sector: "health", purpose: "information", channels: ["whatsapp", "phone"], languages: ["ha"],
     name: { en: "Health information line", fr: "Ligne d’information santé" },
     line: { en: "Answers health questions from your approved guides", fr: "Répond aux questions de santé à partir de vos guides" },
-    greeting: "Bonjour, ici la ligne d’information santé. Quelle est votre question ?",
+    greeting: "Bonjour, ici la ligne d’information santé. Quelle est votre question ?",
     instructions: "Tu réponds aux questions de santé de la population, uniquement à partir des documents de l’organisation.\n" +
       "Tu ne poses jamais de diagnostic et tu ne prescris aucun médicament.\n" +
       "Si la personne parle de signes de danger (forte fièvre d’un enfant, convulsions, saignement, difficulté à respirer), dis-lui d’aller tout de suite au CSI le plus proche.\n" +
@@ -56,11 +56,11 @@ export const TEMPLATES: Template[] = [
     id: "school-line", sector: "education", purpose: "information", channels: ["whatsapp", "web"], languages: ["ha"],
     name: { en: "School and exam helpline", fr: "Ligne écoles et examens" },
     line: { en: "Dates, results and procedures for parents and pupils", fr: "Dates, résultats et démarches pour parents et élèves" },
-    greeting: "Bonjour, ici la ligne d’information des écoles. Comment puis-je vous aider ?",
-    instructions: "Tu aides les parents et les élèves avec les informations scolaires : calendrier, examens (BEPC, BAC), inscriptions et démarches.\n" +
+    greeting: "Bonjour, ici la ligne d’information des écoles. Comment puis-je vous aider ?",
+    instructions: "Tu aides les parents et les élèves avec les informations scolaires : calendrier, examens (BEPC, BAC), inscriptions et démarches.\n" +
       "Tu réponds uniquement à partir des documents de l’organisation. Pour un dossier personnel, tu donnes le service à contacter.",
     checks: [{ kind: "goal", text: "La date ou la démarche demandée est donnée" }, { kind: "field", text: "Examen ou niveau" }],
-    tests: [{ ask: "Où puis-je déposer le dossier d’inscription ?", expect: [] }],
+    tests: [{ ask: "Où puis-je déposer le dossier d’inscription ?", expect: [] }],
     steps: [
       s("start", "start", "Greeting", "Accueil", [go("ask")]),
       s("ask", "step", "Understand the need", "Comprendre la demande", [go("answer", "General", "Général"), go("office", "A personal file", "Un dossier personnel")]),
@@ -74,10 +74,10 @@ export const TEMPLATES: Template[] = [
     name: { en: "Farmer advice", fr: "Conseil agricole" },
     line: { en: "Planting, storage and where to find support", fr: "Semis, stockage et où trouver un appui" },
     greeting: "Bonjour, ici le conseil agricole. Parlez-moi de votre champ.",
-    instructions: "Tu donnes des conseils agricoles simples à partir des fiches techniques de l’organisation : semis, entretien, récolte, stockage des grains.\n" +
+    instructions: "Tu donnes des conseils agricoles simples à partir des fiches techniques de l’organisation : semis, entretien, récolte, stockage des grains.\n" +
       "Tu restes concret et bref. Pour un problème grave (maladie inconnue, attaque importante), tu orientes vers l’agent agricole de la zone.",
     checks: [{ kind: "goal", text: "Le conseil vient des fiches techniques" }, { kind: "field", text: "Culture" }, { kind: "field", text: "Village ou commune" }],
-    tests: [{ ask: "Comment conserver le mil après la récolte ?", expect: [] }],
+    tests: [{ ask: "Comment conserver le mil après la récolte ?", expect: [] }],
     steps: [
       s("start", "start", "Greeting", "Accueil", [go("ask")]),
       s("ask", "step", "Crop and problem", "Culture et problème", [go("advise", "Known", "Connu"), go("agent", "Serious or unknown", "Grave ou inconnu")]),
@@ -90,8 +90,8 @@ export const TEMPLATES: Template[] = [
     id: "customer-service", sector: "finance", purpose: "support", channels: ["whatsapp", "web", "phone"], languages: ["ha"],
     name: { en: "Customer service", fr: "Service client" },
     line: { en: "Procedures, opening hours and where to go", fr: "Démarches, horaires et où aller" },
-    greeting: "Bonjour, bienvenue au service client. Que puis-je faire pour vous ?",
-    instructions: "Tu réponds aux clients à partir des documents de l’entreprise : services, démarches, horaires, points de service.\n" +
+    greeting: "Bonjour, bienvenue au service client. Que puis-je faire pour vous ?",
+    instructions: "Tu réponds aux clients à partir des documents de l’entreprise : services, démarches, horaires, points de service.\n" +
       "Tu ne demandes jamais de code secret ni de mot de passe, et tu le rappelles si la personne en parle.\n" +
       "Pour une réclamation sur un compte, tu expliques comment joindre un conseiller.",
     checks: [{ kind: "goal", text: "Aucun code secret n’est demandé" }, { kind: "goal", text: "La démarche est expliquée" }, { kind: "field", text: "Motif de l’appel" }],
@@ -108,11 +108,11 @@ export const TEMPLATES: Template[] = [
     id: "public-info", sector: "public", purpose: "information", channels: ["whatsapp", "phone"], languages: ["ha"],
     name: { en: "Public information", fr: "Information publique" },
     line: { en: "Explains a procedure or a campaign", fr: "Explique une démarche ou une campagne" },
-    greeting: "Bonjour, ici le service d’information. Quelle démarche vous intéresse ?",
+    greeting: "Bonjour, ici le service d’information. Quelle démarche vous intéresse ?",
     instructions: "Tu expliques les démarches administratives et les campagnes de l’institution (état civil, inscriptions, campagnes de sensibilisation), uniquement à partir de ses documents.\n" +
       "Tu donnes les pièces à fournir et le lieu où se rendre. Tu ne donnes pas d’avis politique.",
     checks: [{ kind: "goal", text: "Les pièces et le lieu sont donnés" }, { kind: "goal", text: "Aucun avis politique" }, { kind: "field", text: "Démarche" }],
-    tests: [{ ask: "Que faut-il pour déclarer une naissance ?", expect: [] }],
+    tests: [{ ask: "Que faut-il pour déclarer une naissance ?", expect: [] }],
     steps: [
       s("start", "start", "Greeting", "Accueil", [go("ask")]),
       s("ask", "step", "Which procedure", "Quelle démarche", [go("explain")]),
@@ -124,7 +124,7 @@ export const TEMPLATES: Template[] = [
     id: "french-practice", sector: "education", purpose: "learning", channels: ["whatsapp", "web"], languages: ["ha"],
     name: { en: "French practice", fr: "Pratique du français" },
     line: { en: "Practise speaking French, helped in your language", fr: "Pratiquer le français à l’oral, avec de l’aide dans sa langue" },
-    greeting: "Bonjour ! On pratique le français ensemble ? Dites-moi une phrase.",
+    greeting: "Bonjour ! On pratique le français ensemble ? Dites-moi une phrase.",
     instructions: "Tu aides une personne qui parle haoussa à pratiquer le français à l’oral.\n" +
       "Tu proposes des phrases courtes de la vie de tous les jours, tu corriges avec douceur et tu expliques dans la langue de la personne quand elle ne comprend pas.",
     checks: [{ kind: "goal", text: "Une correction claire et bienveillante" }, { kind: "field", text: "Niveau" }],
@@ -140,7 +140,7 @@ export const TEMPLATES: Template[] = [
     id: "story-companion", sector: "education", purpose: "learning", channels: ["whatsapp", "web"], languages: ["ha"],
     name: { en: "Story companion", fr: "Compagnon de contes" },
     line: { en: "Tells and talks about folktales with children", fr: "Raconte des contes et en parle avec les enfants" },
-    greeting: "Bonjour ! Tu veux entendre un conte ?",
+    greeting: "Bonjour ! Tu veux entendre un conte ?",
     instructions: "Tu racontes des contes aux enfants, à partir des contes fournis par l’organisation, avec des phrases simples.\n" +
       "Après le conte, tu poses une ou deux questions pour savoir ce que l’enfant a compris. Tu restes doux et encourageant.",
     checks: [{ kind: "goal", text: "Le conte vient des documents" }, { kind: "goal", text: "Une question de compréhension est posée" }],
@@ -156,10 +156,10 @@ export const TEMPLATES: Template[] = [
     id: "front-desk", sector: "commerce", purpose: "reception", channels: ["phone", "whatsapp"], languages: ["ha"],
     name: { en: "Front desk", fr: "Accueil" },
     line: { en: "Answers, informs and takes a message", fr: "Répond, informe et prend un message" },
-    greeting: "Bonjour, vous êtes bien à l’accueil. Comment puis-je vous aider ?",
-    instructions: "Tu es l’accueil de l’organisation : horaires, adresse, services. Si la personne veut parler à quelqu’un, tu prends son nom, son numéro et son message.",
+    greeting: "Bonjour, vous êtes bien à l’accueil. Comment puis-je vous aider ?",
+    instructions: "Tu es l’accueil de l’organisation : horaires, adresse, services. Si la personne veut parler à quelqu’un, tu prends son nom, son numéro et son message.",
     checks: [{ kind: "goal", text: "Le message est complet" }, { kind: "field", text: "Nom" }, { kind: "field", text: "Numéro" }, { kind: "field", text: "Message" }],
-    tests: [{ ask: "Quels sont vos horaires ?", expect: [] }],
+    tests: [{ ask: "Quels sont vos horaires ?", expect: [] }],
     steps: [
       s("start", "start", "Greeting", "Accueil", [go("ask")]),
       s("ask", "step", "What is needed", "Le besoin", [go("inform", "Information", "Information"), go("message", "Speak to someone", "Parler à quelqu’un")]),

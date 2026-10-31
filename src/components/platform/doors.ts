@@ -47,7 +47,7 @@ export const DOORS: Door[] = [
       { items: [
         { id: "agents", href: "/agents", icon: "phone-voice", label: "agents" },
         { id: "templates", href: "/agents/templates", icon: "grid", label: "templates" },
-        { id: "conversations", href: "/agents/conversations", icon: "talk", label: "conversations" },
+        { id: "conversations", href: "/agents/conversations", icon: "turns", label: "conversations" },
         { id: "knowledge", href: "/agents/knowledge", icon: "paper", label: "knowledge" },
       ] },
     ],
