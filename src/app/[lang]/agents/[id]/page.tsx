@@ -47,7 +47,7 @@ export default async function Builder({ params, searchParams }: { params: Promis
   return (
     <PlatformShell {...shell} layout="full">
       <AgentBuilder lang={lang} initial={data.agent} docs={data.docs} tests={data.tests} conversations={data.conversations}
-        steps={template(data.agent.template)?.steps ?? BLANK_STEPS} tab={tab} whatsapp={{ server: hasWhatsapp(), webhook: `${proto}://${host}/api/agents/whatsapp` }} />
+        steps={template(data.agent.template)?.steps ?? BLANK_STEPS} tab={tab} whatsapp={{ server: hasWhatsapp(), webhook: `${proto}://${host}/api/agents/whatsapp`, admin: shell.admin }} />
     </PlatformShell>
   );
 }

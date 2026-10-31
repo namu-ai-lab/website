@@ -200,3 +200,5 @@
   .ag-builder, .ag-page { padding-top: 22px; }
   .ag-talk { height: 560px; }
 }
+.ag-number { width: fit-content; padding: 6px 10px; border-radius: 10px; background: var(--surface); font-size: 14px; }
+.ag-request { width: fit-content; margin-top: 4px; }

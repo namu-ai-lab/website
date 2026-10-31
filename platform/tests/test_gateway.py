@@ -1014,7 +1014,9 @@ def test_translate_text(env):
     assert "audio" not in j
     assert up.calls == [("translate_text", "fr", "ha")]
     u = store.usage[-1]
-    assert (u.endpoint, u.characters, u.audio_seconds, u.status) == ("translate", 14, 0.0, 200)
+    # counted as the time its text takes to say (14 characters at 15 a second), never as nothing
+    assert (u.endpoint, u.characters, u.status) == ("translate", 14, 200)
+    assert u.audio_seconds == pytest.approx(14 / 15, abs=1e-3)
 
 
 def test_translate_text_spoken(env):
@@ -1022,6 +1024,8 @@ def test_translate_text_spoken(env):
     r = c.post("/v1/translate?include_audio=1", headers=auth(), json={"text": "Bonjour", "target": "ha"})
     assert r.status_code == 200 and r.json()["audio"]
     assert up.calls == [("translate_text", "fr", "ha"), ("speak", "ha", "nadia")]
+    # the text's time and the spoken translation both count
+    assert store.usage[-1].audio_seconds > 7 / 15
 
 
 @pytest.mark.parametrize("body,status,kind", [

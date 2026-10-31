@@ -43,7 +43,9 @@ describe("agent shape", () => {
     expect(cleanPatch({ name: "  Ligne  ", languages: ["ha", "xx", "ha"], voice: "nadia", extra: 1 })).toEqual({ name: "Ligne", languages: ["ha"], voice: "nadia" });
     expect(cleanPatch({ name: " " })).toBeNull();
     expect(cleanPatch({ languages: [] })).toBeNull();
-    expect(cleanPatch({ channels: { whatsapp: { phoneNumberId: "1234 5678" } } })).toEqual({ channels: { whatsapp: { phoneNumberId: "12345678" } } });
+    // a WhatsApp number is bound by an admin only; anyone else's channels are dropped
+    expect(cleanPatch({ channels: { whatsapp: { phoneNumberId: "1234 5678" } } }, { channels: true })).toEqual({ channels: { whatsapp: { phoneNumberId: "12345678" } } });
+    expect(cleanPatch({ channels: { whatsapp: { phoneNumberId: "12345678" } } })).toEqual({});
     expect(cleanPatch({ checks: [{ kind: "goal", text: " Oriente vers le CSI " }, { kind: "x", text: "no" }] })).toEqual({ checks: [{ kind: "goal", text: "Oriente vers le CSI" }] });
   });
 

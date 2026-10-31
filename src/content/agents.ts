@@ -13,10 +13,10 @@ export type AgentsCopy = {
   templates: { title: string; blank: string; use: string; using: string; all: string; filters: { sector: string; purpose: string; channel: string }; sectors: Record<Sector, string>; purposes: Record<Purpose, string>; channels: Record<Channel, string> };
   tabs: { agent: string; workflow: string; knowledge: string; checks: string; tests: string; deploy: string; conversations: string };
   agent: { name: string; greeting: string; greetingPh: string; instructions: string; instructionsPh: string; languages: string; voice: string; remove: string; removeAsk: string };
-  knowledge: { add: string; name: string; namePh: string; text: string; textPh: string; upload: string; save: string; chars: (n: string) => string; emptyH: string; tooBig: string };
+  knowledge: { add: string; name: string; namePh: string; text: string; textPh: string; upload: string; save: string; chars: (n: string) => string; emptyH: string; tooBig: string; heard: string };
   checks: { goals: string; goalPh: string; fields: string; fieldPh: string; add: string };
   tests: { ask: string; askPh: string; expect: string; expectPh: string; add: string; runAll: string; running: string; passed: string; failed: string; notRun: string; reply: string; emptyH: string };
-  deploy: { whatsapp: string; phoneId: string; phoneIdPh: string; webhook: string; verify: string; verifySet: string; connected: string; waiting: string; serverOff: string; web: string; phone: string; copy: string; copied: string };
+  deploy: { whatsapp: string; phoneId: string; phoneIdPh: string; webhook: string; verify: string; verifySet: string; connected: string; waiting: string; serverOff: string; web: string; phone: string; copy: string; copied: string; request: string; number: string };
   talk: { title: string; start: string; typePh: string; send: string; again: string; french: string; hide: string; thinking: string; caller: string; agent: string };
   convs: { title: string; emptyH: string; flag: string; unflag: string; flagged: string; all: string; turns: (n: number) => string; channels: Record<"test" | "whatsapp" | "web", string>; back: string };
   docsPage: { title: string; emptyH: string; th: { name: string; agent: string; size: string; added: string } };
@@ -38,13 +38,13 @@ export const agentsCopy: Record<Lang, AgentsCopy> = {
       name: "Name", greeting: "Greeting", greetingPh: "In French. Said in each language.", instructions: "Instructions", instructionsPh: "In French.",
       languages: "Languages", voice: "Voice", remove: "Delete agent", removeAsk: "Delete this agent, its documents and its conversations?",
     },
-    knowledge: { add: "Add a document", name: "Name", namePh: "Health guide", text: "Text", textPh: "Paste the text here", upload: "Upload .txt or .md", save: "Add", chars: k => `${k} characters`, emptyH: "No document yet", tooBig: "Up to 200,000 characters per document." },
+    knowledge: { add: "Add a document", name: "Name", namePh: "Health guide", text: "Text", textPh: "Paste the text here", upload: "Upload .txt or .md", save: "Add", chars: k => `${k} characters`, emptyH: "No document yet", tooBig: "Up to 200,000 characters per document.", heard: "Callers can hear what these documents say." },
     checks: { goals: "A good conversation", goalPh: "The caller gets an answer from the guides", fields: "Fields to collect", fieldPh: "Region", add: "Add" },
     tests: { ask: "Question", askPh: "My child has a high fever.", expect: "Must contain", expectPh: "CSI, health worker", add: "Add test", runAll: "Run all", running: "Running…", passed: "Passed", failed: "Failed", notRun: "Not run", reply: "Reply", emptyH: "No test yet" },
     deploy: {
       whatsapp: "WhatsApp", phoneId: "Phone number ID", phoneIdPh: "From Meta's WhatsApp Manager", webhook: "Webhook URL", verify: "Verify token",
-      verifySet: "Set on the server", connected: "Connected", waiting: "Add the phone number ID", serverOff: "Not set up on this server yet", web: "Website", phone: "Phone line",
-      copy: "Copy", copied: "Copied",
+      verifySet: "Set on the server", connected: "Connected", waiting: "No number yet", serverOff: "Not set up on this server yet", web: "Website", phone: "Phone line",
+      copy: "Copy", copied: "Copied", request: "Connect a number", number: "Number",
     },
     talk: { title: "Talk to your agent", start: "Start", typePh: "Type a message", send: "Send", again: "New conversation", french: "French", hide: "Hide", thinking: "…", caller: "You", agent: "Agent" },
     convs: { title: "Conversations", emptyH: "No conversation yet", flag: "Flag", unflag: "Unflag", flagged: "Flagged", all: "All", turns: k => `${k} turn${k === 1 ? "" : "s"}`, channels: { test: "Test", whatsapp: "WhatsApp", web: "Website" }, back: "Conversations" },
@@ -65,13 +65,13 @@ export const agentsCopy: Record<Lang, AgentsCopy> = {
       name: "Nom", greeting: "Accueil", greetingPh: "En français. Dit dans chaque langue.", instructions: "Consignes", instructionsPh: "En français.",
       languages: "Langues", voice: "Voix", remove: "Supprimer l’agent", removeAsk: `Supprimer cet agent, ses documents et ses conversations${n}?`,
     },
-    knowledge: { add: "Ajouter un document", name: "Nom", namePh: "Guide santé", text: "Texte", textPh: "Collez le texte ici", upload: "Importer un .txt ou .md", save: "Ajouter", chars: k => `${k} caractères`, emptyH: "Aucun document", tooBig: "200 000 caractères au plus par document." },
+    knowledge: { add: "Ajouter un document", name: "Nom", namePh: "Guide santé", text: "Texte", textPh: "Collez le texte ici", upload: "Importer un .txt ou .md", save: "Ajouter", chars: k => `${k} caractères`, emptyH: "Aucun document", tooBig: "200 000 caractères au plus par document.", heard: "Les appelants peuvent entendre ce que disent ces documents." },
     checks: { goals: "Une bonne conversation", goalPh: "La personne reçoit une réponse tirée des guides", fields: "Informations à recueillir", fieldPh: "Région", add: "Ajouter" },
     tests: { ask: "Question", askPh: "Mon enfant a une forte fièvre.", expect: "Doit contenir", expectPh: "CSI, agent de santé", add: "Ajouter un test", runAll: "Tout lancer", running: "En cours…", passed: "Réussi", failed: "Échoué", notRun: "Pas lancé", reply: "Réponse", emptyH: "Aucun test" },
     deploy: {
       whatsapp: "WhatsApp", phoneId: "ID du numéro", phoneIdPh: "Dans le WhatsApp Manager de Meta", webhook: "URL du webhook", verify: "Jeton de vérification",
-      verifySet: "Défini sur le serveur", connected: "Connecté", waiting: "Ajoutez l’ID du numéro", serverOff: "Pas encore configuré sur ce serveur", web: "Site web", phone: "Ligne téléphonique",
-      copy: "Copier", copied: "Copié",
+      verifySet: "Défini sur le serveur", connected: "Connecté", waiting: "Aucun numéro", serverOff: "Pas encore configuré sur ce serveur", web: "Site web", phone: "Ligne téléphonique",
+      copy: "Copier", copied: "Copié", request: "Connecter un numéro", number: "Numéro",
     },
     talk: { title: "Parler à votre agent", start: "Commencer", typePh: "Écrire un message", send: "Envoyer", again: "Nouvelle conversation", french: "Français", hide: "Masquer", thinking: "…", caller: "Vous", agent: "Agent" },
     convs: { title: "Conversations", emptyH: "Aucune conversation", flag: "Signaler", unflag: "Retirer", flagged: "Signalées", all: "Toutes", turns: k => `${k} tour${k > 1 ? "s" : ""}`, channels: { test: "Test", whatsapp: "WhatsApp", web: "Site web" }, back: "Conversations" },

@@ -22,7 +22,7 @@ type Save = "idle" | "saving" | "saved" | "failed";
 
 export function AgentBuilder({ lang, initial, docs: docs0, tests: tests0, conversations, steps, tab: tab0, whatsapp }: {
   lang: Lang; initial: Agent; docs: AgentDoc[]; tests: AgentTest[]; conversations: Conversation[];
-  steps: Step[]; tab: Tab; whatsapp: { server: boolean; webhook: string };
+  steps: Step[]; tab: Tab; whatsapp: { server: boolean; webhook: string; admin: boolean };
 }) {
   const t = agentsCopy[lang], p = platformCopy[lang];
   const [a, setA] = useState(initial);
@@ -168,6 +168,7 @@ function KnowledgeTab({ agentId, initial, t, lang }: { agentId: string; initial:
         <p className="ag-add-h">{t.knowledge.add}</p>
         <input value={name} onChange={e => setName(e.target.value)} placeholder={t.knowledge.namePh} aria-label={t.knowledge.name} maxLength={200} />
         <textarea rows={6} value={body} onChange={e => setBody(e.target.value)} placeholder={t.knowledge.textPh} aria-label={t.knowledge.text} />
+        <p className="ag-quiet">{t.knowledge.heard}</p>
         <div className="ag-add-acts">
           <button type="button" className="cx-btn sm" onClick={() => file.current?.click()}><Icon name="upload" size={15} stroke={1.6} />{t.knowledge.upload}</button>
           <input ref={file} type="file" accept=".txt,.md,text/plain,text/markdown" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void read(f); }} />
@@ -266,7 +267,9 @@ function TestsTab({ agentId, initial, t, p }: { agentId: string; initial: AgentT
 }
 
 /* ---------------------------------------------------------------- Deploy */
-function DeployTab({ a, change, t, p, whatsapp }: { a: Agent; change: (x: Partial<Agent>) => void; t: AgentsCopy; p: PlatformCopy; whatsapp: { server: boolean; webhook: string } }) {
+/* A WhatsApp number is bound to an agent by a Namu admin (the API refuses channels from anyone else), so nobody can
+   point an agent at a number that is not theirs; the organisation asks, and sees the number once it is connected. */
+function DeployTab({ a, change, t, p, whatsapp }: { a: Agent; change: (x: Partial<Agent>) => void; t: AgentsCopy; p: PlatformCopy; whatsapp: { server: boolean; webhook: string; admin: boolean } }) {
   const id = a.channels.whatsapp?.phoneNumberId ?? "";
   const state = !whatsapp.server ? "off" : id ? "on" : "wait";
   return (
@@ -277,15 +280,23 @@ function DeployTab({ a, change, t, p, whatsapp }: { a: Agent; change: (x: Partia
           <h3>{t.deploy.whatsapp}</h3>
           <span className={`ag-pill ${state === "on" ? "pass" : "none"}`}>{state === "on" ? t.deploy.connected : state === "wait" ? t.deploy.waiting : t.deploy.serverOff}</span>
         </header>
-        <label className="ag-field">
-          <span>{t.deploy.phoneId}</span>
-          <input inputMode="numeric" value={id} placeholder={t.deploy.phoneIdPh} onChange={e => change({ channels: { whatsapp: { phoneNumberId: e.target.value.replace(/\D/g, "").slice(0, 24) } } })} />
-        </label>
-        <div className="ag-field">
-          <span>{t.deploy.webhook}</span>
-          <div className="ag-copyrow"><code>{whatsapp.webhook}</code><CopyButton text={whatsapp.webhook} labels={{ copy: t.deploy.copy, copied: t.deploy.copied, failed: p.errors.generic }} className="cx-icon-btn" iconOnly /></div>
-        </div>
-        <div className="ag-field"><span>{t.deploy.verify}</span><p className="ag-quiet">{whatsapp.server ? t.deploy.verifySet : t.deploy.serverOff}</p></div>
+        {whatsapp.admin ? (
+          <>
+            <label className="ag-field">
+              <span>{t.deploy.phoneId}</span>
+              <input inputMode="numeric" value={id} placeholder={t.deploy.phoneIdPh} onChange={e => change({ channels: { whatsapp: { phoneNumberId: e.target.value.replace(/\D/g, "").slice(0, 24) } } })} />
+            </label>
+            <div className="ag-field">
+              <span>{t.deploy.webhook}</span>
+              <div className="ag-copyrow"><code>{whatsapp.webhook}</code><CopyButton text={whatsapp.webhook} labels={{ copy: t.deploy.copy, copied: t.deploy.copied, failed: p.errors.generic }} className="cx-icon-btn" iconOnly /></div>
+            </div>
+            <div className="ag-field"><span>{t.deploy.verify}</span><p className="ag-quiet">{whatsapp.server ? t.deploy.verifySet : t.deploy.serverOff}</p></div>
+          </>
+        ) : id ? (
+          <div className="ag-field"><span>{t.deploy.number}</span><code className="ag-number">{id}</code></div>
+        ) : (
+          <a className="cx-btn primary sm ag-request" href={`mailto:contact@namuai.org?subject=${encodeURIComponent(`WhatsApp · ${a.name}`)}`}>{t.deploy.request}</a>
+        )}
       </section>
       <div className="ag-soon-row">
         <section className="ag-channel soon"><header><span className="ag-wa" aria-hidden="true"><Icon name="code" size={20} stroke={1.5} /></span><h3>{t.deploy.web}</h3><span className="pf-soon">{p.soon}</span></header></section>

@@ -51,8 +51,9 @@ export function retrieve(docs: readonly Doc[], query: string, budget: number): {
 
 /** The context message: the agent's instructions, then the matching passages, the whole within MAX_MESSAGE_CHARS.
     Labelled so the model reads it as the organisation's brief, not as something the caller said. */
+export const CONTEXT_MARK = "[Context from the organisation that runs this agent.";
 export function contextMessage(o: { name: string; instructions: string; docs: readonly Doc[]; query: string; languages: string[] }): string {
-  const head = `[Context from the organisation that runs this agent. It is not the caller speaking.]\nAgent: ${o.name}\n` +
+  const head = `${CONTEXT_MARK} It is not the caller speaking.]\nAgent: ${o.name}\n` +
     `Answer in the caller's language (${o.languages.join(", ")}), briefly, as a voice would.`;
   const brief = o.instructions.trim() ? `\n\nInstructions:\n${o.instructions.trim()}` : "";
   const room = MAX_MESSAGE_CHARS - head.length - brief.length - 40;

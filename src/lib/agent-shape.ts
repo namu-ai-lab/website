@@ -4,7 +4,7 @@
    collect), and the channels it answers on. lib/agents keeps them; lib/agent-turn runs a conversation. */
 import { isLangCode, isVoiceId, type LangCode, type VoiceId } from "@/lib/catalog";
 
-export const LIMITS_AGENT = { name: 80, greeting: 600, instructions: 8000, doc: 200_000, docs: 50, tests: 50, checks: 30, ask: 1000, expect: 8 } as const;
+export const LIMITS_AGENT = { name: 80, greeting: 600, instructions: 8000, doc: 200_000, docs: 20, tests: 50, testsPerRun: 10, checks: 30, ask: 1000, expect: 8, agents: 50, turns: 200 } as const;
 
 export type Check = { kind: "goal" | "field"; text: string };
 export type Channels = { whatsapp?: { phoneNumberId: string } };
@@ -16,7 +16,8 @@ export type Agent = {
 };
 export type AgentDoc = { id: string; agent_id: string; name: string; chars: number; created_at: string };
 export type AgentTest = { id: string; agent_id: string; ask: string; expect: string[]; last_pass: boolean | null; last_reply: string | null; last_run_at: string | null };
-export type Turn = { role: "caller" | "agent"; text: string; at: string };
+/** One turn; `ref` is the channel's own id for it (a WhatsApp message id), so a message delivered twice is answered once. */
+export type Turn = { role: "caller" | "agent"; text: string; at: string; ref?: string };
 export type Conversation = {
   id: string; agent_id: string; agent_name: string; channel: "test" | "whatsapp" | "web"; contact: string | null;
   turns: Turn[]; flagged: boolean; started_at: string; updated_at: string;
@@ -25,7 +26,9 @@ export type Conversation = {
 /** The fields a PATCH may change, each cleaned; anything else is dropped. */
 export type AgentPatch = Partial<Pick<Agent, "name" | "greeting" | "instructions" | "voice" | "languages" | "checks" | "channels">>;
 
-export function cleanPatch(x: unknown): AgentPatch | null {
+/** A PATCH body, cleaned. Channels (which WhatsApp number an agent answers) change only with `channels: true`: Namu
+    binds a number to its owner's agent, so nobody can point an agent at someone else's number. */
+export function cleanPatch(x: unknown, o: { channels?: boolean } = {}): AgentPatch | null {
   if (!x || typeof x !== "object") return null;
   const j = x as Record<string, unknown>, out: AgentPatch = {};
   if (typeof j.name === "string") { const n = j.name.trim().slice(0, LIMITS_AGENT.name); if (!n) return null; out.name = n; }
@@ -42,7 +45,7 @@ export function cleanPatch(x: unknown): AgentPatch | null {
       .filter((c): c is Check => !!c && typeof c === "object" && ((c as Check).kind === "goal" || (c as Check).kind === "field") && typeof (c as Check).text === "string")
       .map(c => ({ kind: c.kind, text: c.text.trim().slice(0, 300) })).filter(c => c.text).slice(0, LIMITS_AGENT.checks);
   }
-  if (j.channels && typeof j.channels === "object") {
+  if (o.channels && j.channels && typeof j.channels === "object") {
     const w = (j.channels as Channels).whatsapp;
     const id = typeof w?.phoneNumberId === "string" ? w.phoneNumberId.replace(/\D/g, "").slice(0, 24) : "";
     out.channels = id ? { whatsapp: { phoneNumberId: id } } : {};

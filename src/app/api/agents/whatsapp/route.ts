@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { after, type NextRequest } from "next/server";
 import { agentForWhatsapp, appendTurns, bodiesOf, recentWhatsapp } from "@/lib/agents";
 import { nowTurn, reply, say } from "@/lib/agent-turn";
@@ -16,9 +17,14 @@ import { downloadMedia, hasWhatsapp, markRead, parseWebhook, sendText, sendVoice
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+const same = (a: string, b: string) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
+/* A contact may send this many messages a minute before the agent stops answering them (the owner's account limit,
+   lib/agent-meter, applies as well). */
+const PER_CONTACT_PER_MIN = 6;
+
 export function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams, want = setting("WHATSAPP_VERIFY_TOKEN");
-  if (q.get("hub.mode") === "subscribe" && want && q.get("hub.verify_token") === want) {
+  if (q.get("hub.mode") === "subscribe" && want && same(q.get("hub.verify_token") ?? "", want)) {
     return new Response(q.get("hub.challenge") ?? "", { headers: { "Content-Type": "text/plain" } });
   }
   return fail(403, "bad_token", "Verification failed.");
@@ -39,6 +45,11 @@ async function answer(m: Incoming) {
   const found = await agentForWhatsapp(m.phoneNumberId).catch(() => null);
   if (!found) return;
   const { agent, userId } = found;
+  const conv = await recentWhatsapp(userId, agent.id, m.from).catch(() => null);
+  const turns = conv?.turns ?? [];
+  if (turns.some(t => t.ref === m.id)) return;                                   // Meta delivered it again
+  const minuteAgo = Date.now() - 60_000;
+  if (turns.filter(t => t.role === "caller" && Date.parse(t.at) > minuteAgo).length >= PER_CONTACT_PER_MIN) return;
   await markRead(m.phoneNumberId, m.id);
   try {
     let heard = "";
@@ -48,12 +59,11 @@ async function answer(m: Incoming) {
       heard = (await transcribe(userId, media.data, media.type.split(";")[0] || "audio/ogg")).trim();
     }
     if (!heard) return;
-    const conv = await recentWhatsapp(userId, agent.id, m.from);
-    const text = await reply(agent, await bodiesOf(userId, agent.id), conv?.turns ?? [], heard);
+    const text = await reply(userId, agent, await bodiesOf(userId, agent.id), turns, heard);
     const spoken = await say(userId, agent, text, { opus: true }).catch(() => null);
     if (spoken?.type === "audio/ogg") await sendVoice(m.phoneNumberId, m.from, spoken.audio);
     else await sendText(m.phoneNumberId, m.from, text);
-    await appendTurns(userId, agent.id, conv?.id ?? null, "whatsapp", m.from, [nowTurn("caller", heard), nowTurn("agent", text)]);
+    await appendTurns(userId, agent.id, conv?.id ?? null, "whatsapp", m.from, [{ ...nowTurn("caller", heard), ref: m.id }, nowTurn("agent", text)]);
   } catch (e) {
     console.error("whatsapp turn failed", { agent: agent.id, error: e instanceof Error ? e.message.slice(0, 120) : "unknown" });
   }

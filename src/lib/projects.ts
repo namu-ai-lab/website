@@ -1,7 +1,7 @@
 import "server-only";
 import { sql } from "@/lib/db";
 import { isLangCode, isOutputId, type LangCode } from "@/lib/catalog";
-import { isKind, isStatus, type Project, type ProjectKind, type ProjectSummary, type Version, type VersionStatus } from "@/lib/project-shape";
+import { isKind, isStatus, isUuid, type Project, type ProjectKind, type ProjectSummary, type Version, type VersionStatus } from "@/lib/project-shape";
 import type { OutputId } from "@/lib/catalog";
 
 /* Create's projects in Postgres (db/migrations/0006_platform.sql): one row per project, one per version. Every query
@@ -38,13 +38,19 @@ export async function listProjects(userId: string, limit = 100): Promise<Project
 }
 
 export async function getProject(userId: string, id: string): Promise<Project | null> {
+  if (!isUuid(id)) return null;
   const [r] = await sql<Row>(`select ${COLS} from public.projects where id = $1 and user_id = $2`, [id, userId]);
   if (!r) return null;
   const vs = await sql<VRow>("select project_id::text, lang, text, voice, status, updated_at from public.project_versions where project_id = $1", [id]);
   return project(r, vs);
 }
 
+/** How many projects one account may keep. */
+export const MAX_PROJECTS = 500;
+
 export async function createProject(userId: string, p: { title: string; kind: ProjectKind; sourceLang: LangCode; sourceText: string; madeFor: OutputId }): Promise<Project> {
+  const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.projects where user_id = $1", [userId]);
+  if (n >= MAX_PROJECTS) throw new RangeError("too_many_projects");
   const [r] = await sql<Row>(`insert into public.projects (user_id, title, kind, source_lang, source_text, made_for)
     values ($1, $2, $3, $4, $5, $6) returning ${COLS}`, [userId, p.title, p.kind, p.sourceLang, p.sourceText, p.madeFor]);
   return project(r, []);

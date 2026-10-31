@@ -43,6 +43,8 @@ export async function getAgent(userId: string, id: string): Promise<Agent | null
 export type AgentInit = Omit<Agent, "id" | "created_at" | "updated_at" | "channels"> & { tests?: { ask: string; expect: string[] }[] };
 
 export async function createAgent(userId: string, a: AgentInit): Promise<Agent> {
+  const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.agents where user_id = $1", [userId]);
+  if (n >= LIMITS_AGENT.agents) throw new RangeError("too_many_agents");
   return tx(async q => {
     const [r] = await q<AgentRecord>(`insert into public.agents (user_id, name, template, greeting, instructions, voice, languages, checks)
       values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb) returning ${AGENT_COLUMNS}`,
@@ -93,13 +95,19 @@ export async function bodiesOf(userId: string, agentId: string): Promise<Doc[]> 
 }
 
 export async function addDoc(userId: string, agentId: string, name: string, body: string): Promise<DocRow | null> {
-  if (!(await getAgent(userId, agentId))) return null;
-  const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.agent_documents where agent_id = $1", [agentId]);
-  if (n >= LIMITS_AGENT.docs) throw new RangeError("too_many_documents");
-  await sql("insert into public.agent_documents (agent_id, user_id, name, body) values ($1, $2, $3, $4)",
-    [agentId, userId, name.trim().slice(0, 200) || "Document", body.slice(0, LIMITS_AGENT.doc)]);
-  await sql("update public.agents set updated_at = now() where id = $1", [agentId]);
-  return (await docsOf(userId, agentId))[0] ?? null;
+  if (!isUuid(agentId)) return null;
+  const added = await tx(async q => {
+    // the agent's row is locked while its documents are counted, so two uploads at once cannot pass the limit together
+    const [own] = await q<{ id: string }>("select id::text from public.agents where id = $1 and user_id = $2 for update", [agentId, userId]);
+    if (!own) return false;
+    const [{ n }] = await q<{ n: number }>("select count(*)::int as n from public.agent_documents where agent_id = $1", [agentId]);
+    if (n >= LIMITS_AGENT.docs) throw new RangeError("too_many_documents");
+    await q("insert into public.agent_documents (agent_id, user_id, name, body) values ($1, $2, $3, $4)",
+      [agentId, userId, name.trim().slice(0, 200) || "Document", body.slice(0, LIMITS_AGENT.doc)]);
+    await q("update public.agents set updated_at = now() where id = $1", [agentId]);
+    return true;
+  });
+  return added ? (await docsOf(userId, agentId))[0] ?? null : null;
 }
 
 export async function deleteDoc(userId: string, docId: string): Promise<boolean> {
@@ -156,11 +164,12 @@ export async function conversationOf(userId: string, id: string): Promise<Conver
   return r ? convOf(r) : null;
 }
 
-/** Adds turns to a conversation (a new one when `id` is null or not this agent's), and returns its id. */
+/** Adds turns to a conversation (a new one when `id` is null, not this agent's or full), and returns its id. */
 export async function appendTurns(userId: string, agentId: string, id: string | null, channel: Conversation["channel"], contact: string | null, turns: Turn[]): Promise<string> {
   if (id && isUuid(id)) {
+    // a long conversation continues in a new row past LIMITS_AGENT.turns, so no row grows without end
     const [r] = await sql<{ id: string }>(`update public.agent_conversations set turns = (turns || $4::jsonb), updated_at = now()
-      where id = $1 and user_id = $2 and agent_id = $3 returning id::text`, [id, userId, agentId, JSON.stringify(turns)]);
+      where id = $1 and user_id = $2 and agent_id = $3 and jsonb_array_length(turns) < $5 returning id::text`, [id, userId, agentId, JSON.stringify(turns), LIMITS_AGENT.turns]);
     if (r) return r.id;
   }
   const [r] = await sql<{ id: string }>(`insert into public.agent_conversations (agent_id, user_id, channel, contact, turns)
@@ -175,9 +184,10 @@ export async function setFlag(userId: string, id: string, flagged: boolean): Pro
 
 /* ---- the WhatsApp webhook: no user on Meta's call, so the phone number finds the agent */
 export async function agentForWhatsapp(phoneNumberId: string): Promise<{ agent: Agent; userId: string } | null> {
-  const [r] = await sql<AgentRecord & { user_id: string }>(`select ${AGENT_COLUMNS}, user_id from public.agents
-    where channels -> 'whatsapp' ->> 'phoneNumberId' = $1 order by updated_at desc limit 1`, [phoneNumberId]);
-  return r ? { agent: agentOf(r), userId: r.user_id } : null;
+  const rows = await sql<AgentRecord & { user_id: string }>(`select ${AGENT_COLUMNS}, user_id from public.agents
+    where channels -> 'whatsapp' ->> 'phoneNumberId' = $1 limit 2`, [phoneNumberId]);
+  // one number, one agent (migration 0007 makes it unique); anything else is refused rather than guessed
+  return rows.length === 1 ? { agent: agentOf(rows[0]), userId: rows[0].user_id } : null;
 }
 
 /** The contact's conversation from the last day, to carry on, or null for a new one. */

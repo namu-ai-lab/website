@@ -31,5 +31,9 @@ export async function POST(req: NextRequest) {
       title: p.title ?? (titleFrom(sourceText) || "Untitled"), kind: p.kind ?? "message", sourceLang: p.sourceLang, sourceText, madeFor: p.madeFor ?? "whatsapp",
     });
     return NextResponse.json({ project }, { status: 201 });
-  } catch (e) { if (isMissingTable(e)) return notReady(); throw e; }
+  } catch (e) {
+    if (isMissingTable(e)) return notReady();
+    if (e instanceof RangeError) return fail(409, "limit_reached", "This account has as many projects as it can keep.");
+    throw e;
+  }
 }

@@ -88,6 +88,7 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 MULTIPART_SLACK_BYTES = 1024 * 1024           # room for the multipart framing and the form's text fields
 MAX_AUDIO_SECONDS = 300.0
 MAX_TEXT_CHARS = 2000
+TEXT_CHARS_PER_SECOND = 15.0   # text translation is counted as speech of its length: about 15 characters a second
 DEMO_MAX_AUDIO_SECONDS = 15.0
 DEMO_MAX_TEXT_CHARS = 300
 DEMO_IP_PER_HOUR = 30
@@ -129,11 +130,14 @@ def billable_seconds(endpoint: str, status: int, sent_s: float = 0.0, returned_s
         speech      the audio returned
         translate   the audio sent; not the translated speech it can return, until the open billing
                     question in platform/README.md is decided
+        translate_text  a written request: its text counted as the time it takes to say
+                    (TEXT_CHARS_PER_SECOND), plus the translation spoken, when it was asked for
         converse    the audio sent and the spoken reply
     """
     if not 200 <= status < 300:
         return 0.0
     counted = {"transcribe": sent_s, "speech": returned_s, "translate": sent_s,
+               "translate_text": sent_s + returned_s,
                "converse": sent_s + returned_s}[endpoint]
     return max(0.0, counted)                   # a length is never a credit, however it was measured
 
@@ -742,11 +746,13 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if {source, target} != {"ha", "fr"}:
             return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
         out, status, e = await call_upstream(upstream.translate_text, text, source, target, time_left(rec, t0))
+        said_s = len(text) / TEXT_CHARS_PER_SECOND
         if e:
             record(bg, rec, "translate", "kora", t0, status, chars=len(text))
             return e
         res = {"model": "kora", "source": source, "target": target, "source_text": text,
                "text": out.get("text", ""), "characters": len(text)}
+        spoken_s = 0.0
         spoken = str(body.get("include_audio", request.query_params.get("include_audio", ""))).lower() in ("1", "true", "yes")
         if spoken and res["text"]:
             voice = next(v for v in VOICES.values() if v["language"] == target)
@@ -754,7 +760,13 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                                               time_left(rec, t0), expect="audio")
             if reply is not None:
                 res["audio"] = base64.b64encode(reply.content).decode()
-        record(bg, rec, "translate", "kora", t0, 200, chars=len(text))
+                try:
+                    spoken_s = wav_seconds(reply.content)
+                except Exception:
+                    spoken_s = 0.0
+        # the row says "translate"; what it counts is billable_seconds("translate_text", ...)
+        seconds = billable_seconds("translate_text", 200, said_s, spoken_s)
+        record(bg, rec, "translate", "kora", t0, 200, sent_s=seconds, chars=len(text))
         return res
 
     @web.post("/v1/converse")

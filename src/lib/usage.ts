@@ -24,7 +24,10 @@ export type UsageData = { from: string; to: string; days: string[]; groups: Grou
 export async function usageFor(userId: string, range: Range, by: GroupBy, names: { playground: string; deleted: string }): Promise<UsageData> {
   const [from, to] = WINDOW[range];
   // The group: the model, or the key (the website's service key is the Playground; a missing key, a deleted one).
-  const g = by === "model" ? "e.endpoint" : "case when k.is_service then 'playground' else coalesce(k.id::text, 'deleted') end";
+  // An agent's text step (endpoint 'agents', lib/agent-meter) is Aïr's: it counts under converse, and as the Playground
+  // among keys, since it is the account's own use of the platform.
+  const g = by === "model" ? "case when e.endpoint = 'agents' then 'converse' else e.endpoint end"
+    : "case when k.is_service or e.endpoint = 'agents' then 'playground' else coalesce(k.id::text, 'deleted') end";
   const base = `from public.usage_events e left join public.api_keys k on k.id = e.key_id where e.user_id = $1 and e.created_at >= ${from} and e.created_at < ${to}`;
   const [[span], totals, daily, keys] = await Promise.all([
     sql<{ f: string; t: string }>(`select to_char((${from}) at time zone 'UTC', 'YYYY-MM-DD') as f, to_char(((${to}) - interval '1 second') at time zone 'UTC', 'YYYY-MM-DD') as t`),
