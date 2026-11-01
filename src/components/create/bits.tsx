@@ -125,16 +125,6 @@ export function MiniPlay({ src, label }: { src: string; label: string }) {
   );
 }
 
-/** A voice as a sphere you press to hear it. */
-export function VoiceOrb({ id, sample, label, size = 76 }: { id: string; sample: string; label: string; size?: number }) {
-  const { on, play } = usePlay();
-  return (
-    <button type="button" className={`cr-orb${on ? " on" : ""}`} aria-label={label} aria-pressed={on} onClick={() => play(sample)} style={{ width: size, height: size }}>
-      <VoiceAvatar v={{ id }} size={size} />
-      <span className="cr-orb-play"><Icon name={on ? "pause" : "play"} size={13} stroke={1.6} /></span>
-    </button>
-  );
-}
 
 /** The made sound, the way people receive it: a voice note with what says it beside it. */
 export function VoiceNote({ children, tail }: { children: ReactNode; tail?: ReactNode }) {

@@ -4,22 +4,21 @@ import { useMemo, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
 import { VoiceAvatar } from "../platform/pickers";
-import { ChipMenu, Making, MessageList, MiniPlay, VoiceNote, VoiceOrb } from "./bits";
+import { ChipMenu, Making, MessageList, MiniPlay, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
 import { createCopy } from "@/content/create";
 import { IDEAS, SECTORS, sampleOf, type Idea, type SectorId } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
-import { intlLocale } from "@/i18n/format";
-import { LOCAL, VOICES, WRITTEN, can, canTranslate, defaultVoice, language, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
+import { LOCAL, WRITTEN, can, canTranslate, defaultVoice, language, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
 
 /* Namu Create's home (mock-up v2, Namu/research/elevenlabs/redesign): one question and one box, where French (or a
-   local language) becomes a voice note in the local language, ready for WhatsApp; under it the tools, the voices,
-   and ideas from the Sahel's sectors or the messages already made. Languages and voices come from the catalog, so
+   local language) becomes a voice note in the local language, ready for WhatsApp; under it the tools, and ideas from
+   the Sahel's sectors or the messages already made. Languages and voices come from the catalog, so
    Zarma, Fulfulde and Tamajaq light up here when a model speaks them. */
 type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceId | null };
 
@@ -72,9 +71,6 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     { icon: "microphone", label: p.nav.voices, href: L("/create/voices") },
     { icon: "phone-voice", label: t.agents, href: L("/agents") },
   ];
-  const list = (xs: string[]) => new Intl.ListFormat(intlLocale(ui), { type: "conjunction" }).format(xs);
-  const shelfVoices = VOICES.filter(v => v.languages.some(l => spoken.includes(l)));
-  const soon = LOCAL.filter(l => !voicesFor(l).length || !can("speech", l));
   const ideas = useMemo(() => IDEAS.filter(i => !sector || i.sector === sector), [sector]);
 
   return (
@@ -121,19 +117,6 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
           {tools.map(x => <a key={x.href} href={x.href}><span className="cr-tool"><Icon name={x.icon} size={23} stroke={1.4} /></span>{x.label}</a>)}
         </nav>
       </div>
-
-      <section className="cr-shelf">
-        <div>
-          <h2>{t.shelf(list(spoken.map(l => language(l).name[ui])))}</h2>
-          <p>{t.shelfLine(list(shelfVoices.map(v => v.name)), list(soon.map(l => language(l).endonym)))}</p>
-        </div>
-        <ul>
-          {shelfVoices.map(v => (
-            <li key={v.id}><VoiceOrb id={v.id} sample={v.sample} label={`${p.play} ${v.name}`} /><span>{v.name}</span><small>{v.languages.map(l => language(l).endonym).join(" · ")}</small></li>
-          ))}
-          {soon.map(l => <li key={l} className="soon"><span className="cr-orb-ghost" aria-hidden="true" /><span>{language(l).endonym}</span><small>{p.soon}</small></li>)}
-        </ul>
-      </section>
 
       <section className="cr-below">
         <div className="cr-tabs" role="tablist">
