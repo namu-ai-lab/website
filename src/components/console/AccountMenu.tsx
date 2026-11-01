@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { authClient } from "@/lib/auth-client";
 import { forgetRecordings } from "@/lib/recordings";
 import { accountCopy } from "@/content/account";
 import { lp, type Lang } from "@/i18n/config";
@@ -33,7 +32,11 @@ export function AccountMenu({ lang, user, label, settings, compact }: { lang: La
         <div className="cx-menu" id="cx-account-menu">
           <p className="cx-menu-who"><span>{label}</span><em>{user.email}</em></p>
           {settings && <a href={settings.href}>{settings.label}</a>}
-          <button type="button" onClick={async () => { await authClient.signOut(); await forgetRecordings(); window.location.href = lp(lang, "/"); }}>{accountCopy[lang].nav.signOut}</button>
+          <button type="button" onClick={async () => {
+            // the sign-in library is loaded only to sign out, not with every page of the platform (72 KB)
+            const { authClient } = await import("@/lib/auth-client");
+            await authClient.signOut(); await forgetRecordings(); window.location.href = lp(lang, "/");
+          }}>{accountCopy[lang].nav.signOut}</button>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Icon } from "../Icon";
 import { SamplePlay, makeAgent } from "./bits";
@@ -57,7 +58,7 @@ function Card({ x, lang, busy, disabled, onPick }: { x: Template; lang: Lang; bu
   return (
     <div className="ag-tcard" role="button" tabIndex={0} aria-disabled={disabled || undefined} aria-label={x.name[lang]}
       onClick={() => { if (!disabled) onPick(); }} onKeyDown={e => { if (!disabled && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onPick(); } }}>
-      <figure><img src={photoOf(x)} alt="" loading="lazy" /></figure>
+      <figure><Image src={photoOf(x)} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 360px" /></figure>
       <div className="ag-tcard-body">
         <h3>{x.name[lang]}</h3>
         <p>{x.line[lang]}</p>

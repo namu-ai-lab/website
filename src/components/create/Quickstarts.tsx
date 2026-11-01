@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { MiniPlay } from "./bits";
@@ -49,8 +50,7 @@ export function Quickstarts({ lang: ui, voice, usable, onUse, onUseShow }: {
               <button type="button" className="cr-qs-tile" onClick={() => setOpen(x)}>
                 {x.kind === "show"
                   ? <Preview src={x.show.video} poster={x.show.poster} focus={x.show.focus} />
-                  // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={x.sector.photo} alt="" loading="lazy" />}
+                  : <Image src={x.sector.photo} alt="" fill sizes="(max-width: 640px) 50vw, (max-width: 1000px) 33vw, 300px" />}
                 <span className="cr-qs-name">
                   <em>{x.kind === "show" ? x.show.who[ui] : t.ideasIn(x.ideas.length)}</em>
                   <strong>{x.kind === "show" ? x.show.title[ui] : x.sector.name[ui]}</strong>
@@ -123,8 +123,7 @@ function Opened({ tile, ui, voice, usable, onClose, onUse, onUseShow }: {
         </>
       ) : (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <div className="cr-qs-photo"><img src={tile.sector.photo} alt="" /><h2>{tile.sector.name[ui]}</h2></div>
+          <div className="cr-qs-photo"><Image src={tile.sector.photo} alt="" fill sizes="(max-width: 640px) 100vw, 720px" /><h2>{tile.sector.name[ui]}</h2></div>
           <ul className="cr-qs-list">
             {tile.ideas.map(i => {
               const src = voice ? sampleOf(i, voice) : undefined;

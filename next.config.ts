@@ -53,14 +53,31 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
+/* How long a phone keeps the files in public/ (Vercel's default is max-age=0, so every visit asked again for each
+   font, poster and clip: a round trip each, 300 ms or more on a Nigerien 3G line). The font is kept a year and never
+   asked for again: give it a new file name whenever it changes. Media is kept a week, then used while it is checked
+   again in the background, for a month. */
+const FONT_CACHE = "public, max-age=31536000, immutable";
+const MEDIA_CACHE = "public, max-age=604800, stale-while-revalidate=2592000";
+const MEDIA_FILE = "(?:jpg|jpeg|png|webp|avif|mp4|webm|m4a|mp3|ogg|wav)";
+const MEDIA = ["showcase", "organisations", "demo", "usecases", "converse", "voices"];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // AVIF first: photographs about a fifth smaller than WebP at the same quality, for the phones that read it.
+  images: { formats: ["image/avif", "image/webp"] },
   // Lets a phone on the same Wi-Fi open the dev server (by the Mac's Bonjour name or its local address) with
   // scripts and hot reload working; Next blocks dev resources for other origins otherwise. Dev only.
   allowedDevOrigins: ["Mouhamads-MacBook-Pro-5.local", "*.local", "192.168.*.*", "10.*.*.*", "172.*.*.*"],
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/fonts/:file", headers: [{ key: "Cache-Control", value: FONT_CACHE }] },
+      ...MEDIA.map(dir => ({ source: `/${dir}/:file(.+\\.${MEDIA_FILE})`, headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] })),
+      // the console's pictures sit beside the site's API routes in /api: those files only
+      { source: "/api/:file(console-[a-z-]+\\.jpg)", headers: [{ key: "Cache-Control", value: MEDIA_CACHE }] },
+    ];
   },
 };
 

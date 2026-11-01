@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { NotConfigured } from "@/components/account/AccountShell";
 import { Icon } from "@/components/Icon";
 import { LocalTime } from "@/components/console/LocalTime";
@@ -68,6 +69,6 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
 function AgentMark({ template }: { template: string | null }) {
   const t = TEMPLATES.find(x => x.id === template);
   return t
-    ? <span className="ag-mark photo" aria-hidden="true"><img src={photoOf(t)} alt="" loading="lazy" /></span>
+    ? <span className="ag-mark photo" aria-hidden="true"><Image src={photoOf(t)} alt="" fill sizes="64px" /></span>
     : <span className="ag-mark" aria-hidden="true"><Icon name="phone-voice" size={18} stroke={1.5} /></span>;
 }
