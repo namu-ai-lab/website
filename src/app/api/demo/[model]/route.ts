@@ -1,11 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { setting } from "@/lib/env";
 import { apiBase } from "@/lib/public-config";
-import { clientIp, fail, sameOrigin } from "@/lib/http";
+import { demoVisitor, fail, sameOrigin } from "@/lib/http";
+import { isVoice } from "@/lib/voices";
 
 /* The home page console's live demos. The browser never sees an API key: this route adds the server-held
-   demo key and the visitor's IP, and the gateway applies the demo limits (15 s of audio, 300 characters,
-   30 requests per IP per hour) on top of the demo key's own quota. Converse stays a preview. */
+   demo key and the visitor (IPv4 address or IPv6 /64), and the gateway applies the demo limits (15 s of audio,
+   300 characters, 30 requests per visitor per hour) on top of the demo key's own quota. Converse stays a preview.
+   Only the voices the API serves are offered (lib/voices): any other is a 400, never another voice. A translation
+   into French is text only (French speech is withdrawn), so its audio is asked for only into Hausa. */
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;            // a cold GPU can take a minute to wake
 
@@ -20,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": clientIp(req) };
+  const headers: Record<string, string> = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": demoVisitor(req) };
   let body: BodyInit;
   let url = `${apiBase}${MODELS[model as keyof typeof MODELS]}`;
 
@@ -28,7 +31,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     const j = await req.json().catch(() => null) as { text?: unknown; voice?: unknown } | null;
     const text = typeof j?.text === "string" ? j.text.trim() : "";
     if (!text || text.length > MAX_TEXT) return fail(413, "text_too_long", `Up to ${MAX_TEXT} characters in the demo.`);
-    const voice = j?.voice === "salim" ? "salim" : "nadia";
+    const voice = j?.voice || "nadia";
+    if (!isVoice(voice)) return fail(400, "unknown_voice", "Unknown voice. The demo speaks with nadia.");
     body = JSON.stringify({ text, voice });
     headers["Content-Type"] = "application/json";
   } else {
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     headers["Content-Type"] = "application/octet-stream";
     if (model === "translate") {
       const target = req.nextUrl.searchParams.get("target") === "ha" ? "ha" : "fr";
-      url += `?target=${target}&include_audio=1`;
+      url += target === "ha" ? "?target=ha&include_audio=1" : "?target=fr";
     }
   }
 

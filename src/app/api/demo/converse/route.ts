@@ -1,7 +1,8 @@
 import { after, type NextRequest } from "next/server";
 import { setting } from "@/lib/env";
 import { apiBase } from "@/lib/public-config";
-import { clientIp, fail, sameOrigin } from "@/lib/http";
+import { demoVisitor, fail, sameOrigin } from "@/lib/http";
+import { isPersona } from "@/lib/voices";
 
 /* The home page's live conversation with Aïr. Aïr is a chain, not one speech-to-speech model: Tatsuniya writes down
    what was said, a language model writes the reply (Aïr's agent service, Gemini through OpenRouter), and Tafiya speaks
@@ -20,13 +21,16 @@ import { clientIp, fail, sameOrigin } from "@/lib/http";
      {"t":"error","status"} 422 when nothing was heard, 429 at the demo's limit, otherwise a failure
    Transcription and speech go through the gateway with the server-held demo key, so the demo's per-visitor limits
    apply; only the text step calls Aïr's agent service directly, and only after the gateway has accepted the turn.
-   If that step fails, the turn falls back to the gateway's own /v1/converse. */
+   If that step fails, the turn falls back to the gateway's own /v1/converse.
+
+   Each turn stands alone: Aïr answers this turn's words only, and no conversation is kept, here or by the agent (no
+   session id is sent). The heard text goes to the language model provider to write the reply. ?persona= must be one
+   the API serves (lib/voices); any other is a 400, never another voice. */
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const AGENT = (setting("NAMU_AGENT_URL") ?? "https://namu-ai-lab--namu-agent-api.modal.run").replace(/\/+$/, "");
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;        // 15 s of 16 kHz WAV is under 500 KB
-const PERSONAS = ["nadia", "salim"] as const;
 
 /* Modal proxy auth, for when the model services stop answering the open internet (set both in Vercel) */
 const agentHeaders = (): Record<string, string> => {
@@ -69,8 +73,9 @@ export async function GET(req: NextRequest) {
   if (!sameOrigin(req) && req.headers.get("sec-fetch-site") !== "same-origin") return fail(403, "bad_origin", "The demo runs from the Namu site only.");
   const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
-  const voice = req.nextUrl.searchParams.get("persona") === "salim" ? "salim" : "nadia";
-  const h = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": clientIp(req) };
+  const voice = req.nextUrl.searchParams.get("persona") || "nadia";
+  if (!isPersona(voice)) return fail(400, "unknown_persona", "Unknown persona. Aïr speaks as nadia.");
+  const h = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": demoVisitor(req) };
   const quiet = (p: Promise<Response>) => p.then(r => r.body?.cancel()).catch(() => {});
   after(() => Promise.all([
     quiet(fetch(`${apiBase}/v1/transcribe`, { method: "POST", headers: { ...h, "Content-Type": "application/octet-stream" }, body: silence(), signal: AbortSignal.timeout(100_000) })),
@@ -84,14 +89,13 @@ export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return fail(403, "bad_origin", "The demo runs from the Namu site only.");
   const key = setting("NAMU_DEMO_KEY");
   if (!key) return fail(503, "demo_unavailable", "The live demo is not configured.");
-  const q = req.nextUrl.searchParams;
-  const persona = PERSONAS.find(p => p === q.get("persona")) ?? "nadia";
-  const sid = (q.get("sid") ?? "").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64);
+  const persona = req.nextUrl.searchParams.get("persona") || "nadia";
+  if (!isPersona(persona)) return fail(400, "unknown_persona", "Unknown persona. Aïr speaks as nadia.");
   if (Number(req.headers.get("content-length") ?? "0") > MAX_AUDIO_BYTES) return fail(413, "payload_too_large", "Keep the turn short.");
   const audio = await req.arrayBuffer();
   if (!audio.byteLength || audio.byteLength > MAX_AUDIO_BYTES) return fail(413, "payload_too_large", "Keep the turn short.");
 
-  const auth = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": clientIp(req) };
+  const auth = { Authorization: `Bearer ${key}`, "X-Namu-Client-IP": demoVisitor(req) };
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(ctl) {
@@ -105,11 +109,11 @@ export async function POST(req: NextRequest) {
         if (!heard) { send({ t: "error", status: 422 }); return; }
         send({ t: "heard", text: heard });
 
-        /* 2. what Aïr says back, with the conversation's memory kept under this call's id */
+        /* 2. what Aïr says back, to this turn alone */
         let reply = "";
         try {
           const ch = await fetch(`${AGENT}/v1/chat`, { method: "POST", headers: { ...agentHeaders(), "Content-Type": "application/json" },
-            body: JSON.stringify({ text: heard, persona, session_id: sid ? `site-${sid}` : undefined }), signal: AbortSignal.timeout(40_000) });
+            body: JSON.stringify({ text: heard, persona }), signal: AbortSignal.timeout(40_000) });
           if (ch.ok) reply = String(((await ch.json()) as { reply?: string }).reply ?? "").trim();
         } catch { reply = ""; }
         if (!reply) {
@@ -117,7 +121,6 @@ export async function POST(req: NextRequest) {
           const form = new FormData();
           form.append("file", new Blob([audio], { type: "audio/wav" }), "turn.wav");
           form.append("persona", persona);
-          if (sid) form.append("session_id", `site-${sid}`);
           const cv = await fetch(`${apiBase}/v1/converse`, { method: "POST", headers: auth, body: form, signal: AbortSignal.timeout(110_000) });
           if (!cv.ok) { send({ t: "error", status: cv.status }); return; }
           const j = (await cv.json()) as { reply?: string; audio?: string };

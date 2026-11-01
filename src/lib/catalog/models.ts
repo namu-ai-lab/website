@@ -24,7 +24,7 @@ export type Model = {
 };
 
 export const MODELS = [
-  { id: "tafiya", name: "Tafiya", task: "speech", endpoint: "/v1/speech", languages: ["ha", "fr"], status: "preview", icon: "volume" },
+  { id: "tafiya", name: "Tafiya", task: "speech", endpoint: "/v1/speech", languages: ["ha"], status: "preview", icon: "volume" },
   { id: "tatsuniya", name: "Tatsuniya", task: "transcribe", endpoint: "/v1/transcribe", languages: ["ha"], status: "preview", icon: "transcript" },
   { id: "kora", name: "Kora", task: "translate", endpoint: "/v1/translate", languages: ["ha", "fr"], pairs: [["ha", "fr"], ["fr", "ha"]], status: "preview", icon: "translate" },
   { id: "air", name: "Aïr", task: "converse", endpoint: "/v1/converse", languages: ["ha"], status: "research", icon: "phone-voice" },

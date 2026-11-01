@@ -61,14 +61,16 @@ export async function translateSpeech(userId: string, audio: ArrayBuffer, type: 
     (JSON { text, source, target }); until then a gateway that only takes speech answers 400 or 415, and the text is
     spoken in its own language and that speech translated instead, which reaches the same model by its speech door.
     Both runs count against the user's allowance. */
-export async function translateText(userId: string, text: string, source: LangCode, target: LangCode, sourceVoice: string): Promise<Translation> {
+export async function translateText(userId: string, text: string, source: LangCode, target: LangCode, sourceVoice: string | null): Promise<Translation> {
   try {
     const res = await gateway(userId, "/v1/translate", { body: JSON.stringify({ text, source, target }), type: "application/json", query: { include_audio: "1" } });
     const j = await res.json() as { source_text?: string; text?: string; audio?: string };
     if (typeof j.text === "string" && j.text) return { sourceText: text, text: j.text, audio: j.audio ?? null };
   } catch (e) {
-    if (!(e instanceof GatewayError) || ![400, 415, 422].includes(e.status)) throw e;
+    if (!(e instanceof GatewayError) || ![400, 415, 422].includes(e.status) || !sourceVoice) throw e;
   }
+  // A gateway without text translation: say the text, then translate the speech. French has no voice, so it cannot.
+  if (!sourceVoice) throw new GatewayError(502, "upstream_error", "The model could not answer.");
   const spoken = await speak(userId, text, sourceVoice);
   const out = await translateSpeech(userId, spoken, "audio/wav", source, target);
   return { ...out, sourceText: text };

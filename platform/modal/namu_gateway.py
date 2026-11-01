@@ -13,13 +13,14 @@ text step for the home demo, with the proxy token; see platform/README.md.)
     POST /v1/transcribe   Tatsuniya  speech -> text
     POST /v1/speech       Tafiya     text   -> speech (WAV, MP3 or Ogg Opus)
     POST /v1/translate    Kora       speech or text -> translated text (+ speech)
-    POST /v1/converse     Air        speech -> spoken reply, with session memory
+    POST /v1/converse     Air        speech -> spoken reply, one turn, nothing kept
     GET  /v1/models  /v1/voices  /v1/usage  /v1/health
 
 Keys look like `namu_sk_<43 chars>`. Only HMAC-SHA256(pepper, key) is stored,
 by the website when the key is created; the plaintext exists once, in the
 developer's hands. Nothing here stores audio or text: usage rows carry seconds,
-characters and status codes, never content.
+characters and status codes, never content, and converse keeps no conversation
+between calls.
 
 The FastAPI app is built by `create_app(store, upstream, limiter)` so the
 security rules can be tested with fakes (platform/tests/test_gateway.py),
@@ -68,20 +69,25 @@ MODELS = [
     {"id": "tatsuniya", "task": "speech-recognition", "endpoint": "/v1/transcribe",
      "scope": "transcribe", "languages": ["ha"], "status": "beta"},
     {"id": "tafiya", "task": "speech-synthesis", "endpoint": "/v1/speech",
-     "scope": "speech", "languages": ["ha", "fr"], "status": "beta"},
+     "scope": "speech", "languages": ["ha"], "status": "beta"},
     {"id": "kora", "task": "speech-translation", "endpoint": "/v1/translate",
      "scope": "translate", "languages": ["ha", "fr"], "status": "beta"},
     {"id": "air", "task": "conversation", "endpoint": "/v1/converse",
      "scope": "converse", "languages": ["ha"], "status": "research"},
 ]
-# "warm" is the name the website's examples use; it is Nadia.
+# The voices and Air personas the API serves. "warm" is the name the website's examples use; it is Nadia.
+# Withdrawn on 2026-10-31 (ROADMAP S3), with no consent record for either speaker: "salim", a cloned Hausa voice
+# (and Air's persona of that name), and "fr", the French reference voice. A request naming one is refused with 400
+# like any unknown voice or persona; nothing falls back to another voice. The website keeps the same two lists in
+# src/lib/voices.ts, and test_gateway.py checks that they agree.
 VOICES = {
     "nadia": {"language": "ha", "upstream": "nadia", "description": "Warm and patient (female)"},
-    "salim": {"language": "ha", "upstream": "salim", "description": "Direct and practical (male)"},
     "warm": {"language": "ha", "upstream": "nadia", "description": "Alias of nadia"},
-    "fr": {"language": "fr", "upstream": "fr", "description": "French reference voice"},
 }
-PERSONAS = {"nadia", "salim"}
+PERSONAS = ("nadia",)
+# Translate speaks its translation only in these languages. French speech went with the fr voice, so a French
+# translation is text: "audio" is null when include_audio asks for it.
+SPOKEN_TARGETS = ("ha",)
 
 # Limits. Demo keys are the server-held key behind the website's live demos.
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -186,11 +192,16 @@ class UpstreamTimeout(TimeoutError):
 
 def address_bucket(host: str | None) -> str:
     """Who a per-address limit counts: the IPv4 address, or the IPv6 /64, which one customer
-    usually holds whole (a limit per IPv6 address would be no limit)."""
+    usually holds whole (a limit per IPv6 address would be no limit). Takes an address, or a
+    network that was already narrowed (the website's demo routes send an IPv6 visitor as its /64);
+    either way the answer is the same string for every address in one /64."""
     try:
         ip = ipaddress.ip_address(host or "")
     except ValueError:
-        return host or "unknown"
+        try:
+            ip = ipaddress.ip_network(host or "", strict=False).network_address
+        except ValueError:
+            return host or "unknown"
     if ip.version == 6 and ip.ipv4_mapped:     # ::ffff:a.b.c.d is an IPv4 caller on a dual-stack socket
         ip = ip.ipv4_mapped
     if ip.version == 6:
@@ -498,7 +509,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if rec.is_demo:
             # Only demo keys may name an end-user IP: the website's demo route
             # sets it, and it is what keeps one visitor from draining the demo.
-            ip = request.headers.get("x-namu-client-ip") or "unknown"
+            # Counted per IPv4 address or per IPv6 /64: one host holds a whole
+            # /64, and could otherwise take a fresh address for every request.
+            ip = address_bucket(request.headers.get("x-namu-client-ip") or "unknown")
             ok, retry = await off_loop(limiter.hit, f"demo-ip:{ip}", DEMO_IP_PER_HOUR, 3600)
             if not ok:
                 return None, err(429, "rate_limited",
@@ -723,7 +736,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                "source_text": out.get("source_text", ""), "text": out.get("target_text", ""),
                "audio_seconds": round(secs, 2)}
         if str(fields.get("include_audio", "")).lower() in ("1", "true", "yes"):
-            res["audio"] = out.get("audio")
+            # Text only where speech is withdrawn (French), whatever the model service sent.
+            res["audio"] = out.get("audio") if target in SPOKEN_TARGETS else None
         return res
 
     async def translate_text(request: Request, bg: BackgroundTasks, rec: KeyRecord, t0: float):
@@ -754,7 +768,10 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                "text": out.get("text", ""), "characters": len(text)}
         spoken_s = 0.0
         spoken = str(body.get("include_audio", request.query_params.get("include_audio", ""))).lower() in ("1", "true", "yes")
-        if spoken and res["text"]:
+        if spoken:
+            # Text only where speech is withdrawn (French), as for audio in.
+            res["audio"] = None
+        if spoken and res["text"] and target in SPOKEN_TARGETS:
             voice = next(v for v in VOICES.values() if v["language"] == target)
             reply, _, e = await call_upstream(upstream.speak, res["text"], target, voice["upstream"],
                                               time_left(rec, t0), expect="audio")
@@ -780,12 +797,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             return e
         persona = fields.get("persona", "nadia")
         if persona not in PERSONAS:
-            return err(400, "unknown_persona", "persona must be 'nadia' or 'salim'.")
+            return err(400, "unknown_persona", f"Unknown persona. Try one of: {', '.join(PERSONAS)}.")
+        # Stateless: the reply is to this turn's audio alone, and no conversation is kept. A session_id is still
+        # accepted and echoed back, so existing clients keep working; it is never sent on or stored.
         client_sid = (fields.get("session_id") or "")[:100] or None
-        # Namespaced by account: one developer can never read or extend
-        # another developer's conversation by guessing a session id.
-        sid = f"{rec.user_id}:{client_sid}" if client_sid else None
-        out, status, e = await call_upstream(upstream.converse, data, persona, sid,
+        out, status, e = await call_upstream(upstream.converse, data, persona,
                                              time_left(rec, t0), silence_is_422=True)
         if e:
             record(bg, rec, "converse", "air", t0, status, sent_s=secs)
@@ -931,12 +947,10 @@ class ModalUpstream:
             f"{self.urls['interpret']}/v1/translate", timeout,
             json={"text": text, "source": source, "target": target})
 
-    def converse(self, data: bytes, persona: str, session_id: str | None, timeout: float) -> UpstreamReply:
-        params = {"persona": persona}
-        if session_id:
-            params["session_id"] = session_id
+    def converse(self, data: bytes, persona: str, timeout: float) -> UpstreamReply:
+        # No session id goes to the agent: converse is one turn, and nothing names a conversation to keep.
         return self._post(
-            f"{self.urls['agent']}/v1/speech", timeout, params=params, content=data,
+            f"{self.urls['agent']}/v1/speech", timeout, params={"persona": persona}, content=data,
             headers={"Content-Type": "application/octet-stream"})
 
 

@@ -73,9 +73,24 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   the gateway then applies that account's status, allowance and a per-account limit (20/min), and meters the request
   to it. Its runs appear in the developer's Usage and Logs as "Playground".
 - **Demo**: the website holds one ordinary key marked `is_demo`. Only demo keys may pass the visitor's IP
-  (`X-Namu-Client-IP`); the gateway limits each IP to 30 requests per hour, 15 s of audio and 300 characters.
-- **Conversation memory** is namespaced by account (`user_id:session_id`).
-- **No content is stored**: `usage_events` holds durations, character counts, status codes and latency.
+  (`X-Namu-Client-IP`); the gateway limits each visitor to 30 requests per hour, 15 s of audio and 300 characters.
+  A visitor is an IPv4 address or an IPv6 /64 (one host holds a whole /64): the website sends the /64, and the
+  gateway narrows a raw address the same way (`address_bucket`).
+- **Voices**: the API serves `nadia` (alias `warm`) and the Air persona `nadia`. `salim` (a cloned Hausa voice and
+  persona) and `fr` (the French reference voice) were withdrawn on 2026-10-31, with no consent record for either
+  speaker: naming one is a 400 (`unknown_voice`, `unknown_persona`), and translate returns a French translation as
+  text with `"audio": null`. The gateway enforces this; namu-voice and namu-interpret also refuse French speech.
+  `src/lib/voices.ts` is the website's copy of the list (a gateway test checks they agree).
+- **No conversation is kept.** Converse is stateless: each turn uses only what its request carries (namu-agent's
+  `/v1/chat` takes earlier turns in `messages`). A `session_id` is accepted and echoed back; it is never sent on or
+  stored. Until 2026-10-31 namu-agent kept recent turns in the Modal Dict `namu-agent-sessions`; nothing writes it
+  now, and deleting what it still holds is the owner's step (count the keys, never read the content, then delete).
+- **What is stored, and where content goes.** Namu's database holds metadata only: `usage_events` has the endpoint,
+  model, audio seconds, character count, status code and latency of each request, never audio or text. The rate-limit
+  counters (Modal Dict `namu-gateway-ratelimit`) are keyed by key, account and demo visitor (IPv4 address or IPv6 /64).
+  Content passes through without being kept by Namu, except that some of it is sent to the language model provider
+  (Google Gemini through OpenRouter) to do the work: the words heard in a converse turn, to write the reply; the text
+  to translate; and French audio, to recognise it. That provider's retention is set on the provider's side.
 - **What counts** against the allowance is one function, `billable_seconds` in the gateway: transcribe and translate
   count the audio sent, speech the audio returned, converse both. A request that fails (any non-2xx, including a
   502 or 504 the docs call safe to retry) is recorded with its status and 0 s. *Open question for the founder:*
@@ -180,6 +195,13 @@ curl -i $API/v1/speech -H "Authorization: Bearer namu_sk_nope" -d '{}' # 401 inv
 curl $API/v1/speech -H "Authorization: Bearer $NAMU_API_KEY" -H "Content-Type: application/json" \
   -d '{"text": "Barka da safiya!", "voice": "nadia"}' -o out.wav       # a WAV
 # revoke the key in the dashboard → within 30 s the same call returns 401 key_revoked
+
+# withdrawn voices: only nadia and warm are listed, and salim or fr is refused, not swapped for another voice
+curl -s $API/v1/voices                                                  # ids: nadia, warm
+for v in salim fr; do
+  curl -s -o /dev/null -w "$v %{http_code}\n" $API/v1/speech -H "Authorization: Bearer $NAMU_API_KEY" \
+    -H "Content-Type: application/json" -d "{\"text\": \"Sannu\", \"voice\": \"$v\"}"   # 400 unknown_voice
+done
 
 # the model services answer only callers with the proxy token; the gateway stays open
 for s in namu-transcribe-transcribe-api namu-voice-voice-api namu-interpret-api namu-agent-api; do

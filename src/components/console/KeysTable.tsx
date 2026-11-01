@@ -2,16 +2,16 @@
 
 /* The API keys page, after platform.openai.com's: a table of keys (name, the secret's visible start, permissions,
    created, last used, then edit and revoke) with the revoked ones folded away below it, and four dialogs: create (a
-   name, then all models or a chosen few), the secret shown exactly once with a copy button and the line to put it in
-   an environment variable, edit (name and permissions), and a revoke that says what will break. Keys are created,
-   edited and revoked through /api/keys; the server keeps only a fingerprint of each secret. ?create=1 opens the
-   create dialog (the console's Home links here). */
+   name, then the models it may call: DEFAULT_SCOPES ticked, Aïr's converse only if chosen), the secret shown exactly
+   once with a copy button and the line to put it in an environment variable, edit (name and permissions), and a revoke
+   that says what will break. Keys are created, edited and revoked through /api/keys; the server keeps only a
+   fingerprint of each secret. ?create=1 opens the create dialog (the console's Home links here). */
 import { useEffect, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
-import { MAX_ACTIVE_KEYS, SCOPES, type KeyRow, type Scope } from "@/lib/key-shape";
+import { DEFAULT_SCOPES, MAX_ACTIVE_KEYS, SCOPES, type KeyRow, type Scope } from "@/lib/key-shape";
 import type { Lang } from "@/i18n/config";
 
 const ENDPOINT: Record<Scope, string> = { transcribe: "/v1/transcribe", speech: "/v1/speech", translate: "/v1/translate", converse: "/v1/converse" };
@@ -60,8 +60,9 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
   const [keys, setKeys] = useState(initial);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
-  const [all, setAll] = useState(true);
-  const [chosen, setChosen] = useState<Scope[]>(["speech", "transcribe"]);
+  /* a new key starts with every model but converse ticked; "All models" (converse included) is a deliberate choice */
+  const [all, setAll] = useState(false);
+  const [chosen, setChosen] = useState<Scope[]>([...DEFAULT_SCOPES]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ key: string; name: string; scopes: Scope[] } | null>(null);
@@ -101,7 +102,7 @@ export function KeysTable({ lang, initial, apiBase }: { lang: Lang; initial: Key
     } catch { setError(t.error); }
     finally { setBusy(false); }
   }
-  const closeCreate = () => { setCreating(false); setSecret(null); setError(null); setAll(true); setLeaving(false); };
+  const closeCreate = () => { setCreating(false); setSecret(null); setError(null); setAll(false); setChosen([...DEFAULT_SCOPES]); setLeaving(false); };
   /* The secret is shown once, so nothing but Done (or "Yes, close" after the question) may throw it away. Escape
      fires `cancel`: refused while the key is on screen, and the question shown instead. Chrome lets a repeated Escape
      close a dialog without a cancelable event, so a close that slips through reopens the dialog on the question. */

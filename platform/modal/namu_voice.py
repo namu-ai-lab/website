@@ -18,6 +18,11 @@ so it lives here rather than in a second service.
 The French load is wrapped in try/except on purpose: if the weights volume or a
 reference clip is missing, the service degrades to Hausa-only instead of failing
 to boot. Hausa is the primary product; French is the interpreter's second half.
+
+Withdrawn voices (2026-10-31, ROADMAP S3): the cloned Hausa voice "salim" and
+every French voice, until a signed consent record exists for the speaker. load()
+still finds their files; /v1/speak and speak() refuse them (served() below) and
+/v1/health no longer lists them. The gateway refuses them before they get here.
 """
 
 import modal
@@ -51,6 +56,16 @@ def clamp_num_step(requested, default: int) -> int:
         return default
     low, high = NUM_STEP_RANGE
     return max(low, min(high, steps))
+
+# See the module docstring. A refused request is a 400: never another voice in its place.
+WITHDRAWN_VOICES = frozenset({"salim", "fr"})
+WITHDRAWN_LANGUAGES = frozenset({"fr"})
+
+
+def served(language: str | None, voice: str | None) -> bool:
+    """Whether a request may be spoken: not in a withdrawn language, not in a withdrawn voice."""
+    return str(language or "ha") not in WITHDRAWN_LANGUAGES and str(voice or "") not in WITHDRAWN_VOICES
+
 
 app = modal.App("namu-voice")
 
@@ -209,8 +224,14 @@ class Voice:
         sf.write(buf, a, SAMPLE_RATE, format="WAV")
         return buf.getvalue(), secs, steps
 
+    def _listed(self) -> dict:
+        """The voices this container will speak in: what loaded, less what is withdrawn."""
+        return {"ha": [v for v in sorted(self.ha_voices) if served("ha", v)], "fr": []}
+
     @modal.method()
     def speak(self, text: str, language: str = "ha", voice: str | None = None) -> bytes:
+        if not served(language, voice):
+            raise ValueError(f"voice {voice or language!r} is withdrawn")
         return self._say(text, language, voice)[0]
 
     @modal.asgi_app(requires_proxy_auth=REQUIRE_PROXY_AUTH)
@@ -229,9 +250,8 @@ class Voice:
                     "sample_rate": SAMPLE_RATE,
                     "models": {"ha": KURA,
                                "fr": BASE if self.base else None},
-                    "voices": {"ha": sorted(self.ha_voices),
-                               "fr": sorted(self.fr_voices)},
-                    "default_voice": {"ha": self.ha_default, "fr": "fr"},
+                    "voices": self._listed(),
+                    "default_voice": {"ha": self.ha_default},
                     "num_step_default": self.ha_steps,
                     "container": os.environ.get("MODAL_TASK_ID", "?")}
 
@@ -245,9 +265,10 @@ class Voice:
             body = await request.json() if await request.body() else {}
             text = (body.get("text") or "").strip()
             if not text:
-                return JSONResponse({"status": "warm",
-                                     "voices": {"ha": sorted(self.ha_voices),
-                                                "fr": sorted(self.fr_voices)}})
+                return JSONResponse({"status": "warm", "voices": self._listed()})
+            if not served(body.get("language", "ha"), body.get("voice")):
+                return JSONResponse({"error": "unknown voice: this voice or language is not served"},
+                                    status_code=400)
             try:
                 wav, secs, steps = self._say(
                     text, body.get("language", "ha"),

@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { hasAccounts } from "@/lib/env";
+import { visitorBucket } from "@/lib/ip";
 
 /* Shared bits for the site's route handlers. Errors use the gateway's shape: { error: { type, message } }. */
 export const fail = (status: number, type: string, message: string, headers?: HeadersInit) =>
@@ -17,6 +18,10 @@ export function sameOrigin(req: NextRequest): boolean {
 /** The visitor's IP as seen by the hosting edge (Vercel sets x-forwarded-for; the first entry is the client). */
 export const clientIp = (req: NextRequest) =>
   req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+/** Who the demo's per-visitor limit counts, sent to the gateway as X-Namu-Client-IP: the IPv4 address, or the IPv6 /64
+    (lib/ip). The gateway narrows a raw address the same way; sending the /64 also keeps the full address out of it. */
+export const demoVisitor = (req: NextRequest) => visitorBucket(clientIp(req));
 
 /** The signed-in user for a route handler, or the error response to return. */
 export async function signedIn(req: NextRequest, write: boolean) {

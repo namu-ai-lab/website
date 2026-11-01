@@ -6,7 +6,7 @@
      Converse         a live call with Aïr, a research preview (lib/call, /api/demo/converse); the console opens on it
      Text to speech   Tafiya reads what you type, live (/api/demo/speech); the examples play recordings at once
      Transcribe       Tatsuniya writes down what you record, upload or pick (/api/demo/transcribe)
-     Translate        Kora answers Hausa in French or French in Hausa, in writing and aloud (/api/demo/translate)
+     Translate        Kora answers Hausa in French or French in Hausa, in writing, and aloud into Hausa (/api/demo/translate)
      API              the code, run on the demo
    The browser never holds a key: /api/demo adds the server-held demo key, and the gateway caps the demo at 300
    characters and 15 seconds of audio and limits each visitor. The models are woken at the visitor's first scroll or
@@ -505,7 +505,7 @@ function Converse({ lang, cta }: { lang: Lang; cta: Cta }) {
         <p className={error && !live ? "pg-error" : "pg-call-state"} aria-live="polite">{line}</p>
       </div>
       <Bar cta={cta}>
-        <Pills items={vs.map(v => ({ id: v.id as Persona, label: v.name }))} value={persona} onPick={id => { if (id !== persona) { end(); setPersona(id); } }} label={t.voice} />
+        {vs.length > 1 && <Pills items={vs.map(v => ({ id: v.id as Persona, label: v.name }))} value={persona} onPick={id => { if (id !== persona) { end(); setPersona(id); } }} label={t.voice} />}
       </Bar>
     </>
   );

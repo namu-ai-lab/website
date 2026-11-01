@@ -42,7 +42,7 @@ const clips = {
   education: [{ src: "/usecases/education.m4a", text: HA.education, lang: "ha", by: "Tafiya" }],
   health: [{ src: "/demo/clinic-nadia.m4a", text: HA.health, lang: "ha", by: "Tafiya" }],
   translation: [{ src: "/usecases/translation-ha.m4a", text: HA.translation, lang: "ha", by: "Tafiya" }, { src: "/usecases/translation-fr.m4a", text: FR_TRANSLATION, lang: "fr", by: "Kora" }],
-  farming: [{ src: "/demo/farm-salim.m4a", text: HA.farming, lang: "ha", by: "Tafiya" }],
+  farming: [{ src: "/demo/farm-nadia.m4a", text: HA.farming, lang: "ha", by: "Tafiya" }],
   public: [{ src: "/usecases/public.m4a", text: HA.public, lang: "ha", by: "Tafiya" }],
   heritage: [{ src: "/usecases/heritage.m4a", text: HA.heritage, lang: "ha", by: "Tafiya" }],
 } satisfies Record<string, Clip[]>;

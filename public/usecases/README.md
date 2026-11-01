@@ -2,7 +2,12 @@
 
 The lines the home page's use cases play (`src/content/usecases.ts`), made through the Namu API on 2026-10-20 and chosen
 the way the demo recordings are (`public/demo/README.md`): five takes each, the one Tatsuniya transcribed most
-faithfully kept. Healthcare and Farming reuse `public/demo/clinic-nadia.m4a` and `public/demo/farm-salim.m4a`.
+faithfully kept. Healthcare and Farming reuse `public/demo/clinic-nadia.m4a` and `public/demo/farm-nadia.m4a`.
+
+**To replace.** The voices `salim` (male) and `fr` (French) were withdrawn on 2026-10-31: there is no consent record
+for either speaker. `translation-ha.m4a` and `heritage.m4a` are in the male voice, and the three `translation-fr*.m4a`
+clips in the French voice. They are fixed sentences, not a voice anyone can make say something else, but the site
+still plays those speakers until the clips are remade in a cleared voice or removed.
 
 | File | Model and voice | Says | Meaning |
 |---|---|---|---|

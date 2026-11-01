@@ -2,10 +2,18 @@
 export const KEY_PREFIX = "namu_sk_";
 export const SCOPES = ["transcribe", "speech", "translate", "converse"] as const;
 export type Scope = (typeof SCOPES)[number];
+/** What a new key may call unless its creator ticks more: every model but Aïr (converse), which is in research and
+    is opted into one key at a time. Set explicitly on every new key, never left to the database's column default. */
+export const DEFAULT_SCOPES: readonly Scope[] = ["transcribe", "speech", "translate"];
 export const MAX_ACTIVE_KEYS = 10;
 
 export const isScopeList = (x: unknown): x is Scope[] =>
   Array.isArray(x) && x.length > 0 && x.length <= SCOPES.length && x.every(s => (SCOPES as readonly string[]).includes(s));
+
+/** The scopes a new key is created with: the ones asked for (each once), or DEFAULT_SCOPES when none are named;
+    null when the request names something that is not a scope list. */
+export const scopesForNewKey = (requested: unknown): Scope[] | null =>
+  requested === undefined ? [...DEFAULT_SCOPES] : isScopeList(requested) ? [...new Set(requested)] : null;
 
 /** The api_keys columns signed-in roles may read (the migration withholds key_hash). */
 export const KEY_COLUMNS = "id, name, prefix, scopes, is_demo, created_at, last_used_at, revoked_at";

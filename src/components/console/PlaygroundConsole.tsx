@@ -10,25 +10,27 @@ import type { Lang } from "@/i18n/config";
 import { formatNumber, formatSeconds, numberFormat } from "@/i18n/format";
 import { b64ToBlob, peaksOfBlob, Recorder, toClip, type Clip } from "@/lib/audio";
 import { LIMITS } from "@/lib/limits";
+import { PERSONAS, type PersonaId } from "@/lib/voices";
 
 /* The console Playground, after platform.openai.com's playground and ElevenLabs' text-to-speech page: the four
    models as modes across the top; the input and what came back in the middle; Settings | History on the right; and
    View code, the same request written out for cURL, Python and JavaScript. Every run goes through
    /api/playground/<model>, which calls the gateway as the signed-in developer (their allowance, their logs).
-   Each mode keeps its input and result while you look at another. */
+   Each mode keeps its input and result while you look at another. Converse is one turn per call and the API keeps no
+   conversation: the thread shown is this page's own, and Clear empties it. */
 
 export type Mode = "speech" | "transcribe" | "translate" | "converse";
 const MODES: Mode[] = ["speech", "transcribe", "translate", "converse"];
 const NAME: Record<Mode, string> = { speech: "Tafiya", transcribe: "Tatsuniya", translate: "Kora", converse: "Aïr" };
 const PATH: Record<Mode, string> = { speech: "/v1/speech", transcribe: "/v1/transcribe", translate: "/v1/translate", converse: "/v1/converse" };
-type Voice = "nadia" | "salim" | "fr";
+/* the voices offered here: nadia (the API also takes its alias warm; salim and fr were withdrawn, lib/voices) */
+const VOICE_CHOICES = ["nadia"] as const;
+type Voice = (typeof VOICE_CHOICES)[number];
 type Stats = { status: number; latencyMs: number; audioS?: number; chars?: number };
 type Turn = { heard: string; reply: string; audio?: Blob };
 type Out = { stats: Stats; error?: string; audio?: Blob; text?: string; source?: string; turns?: Turn[] };
 type Run = { id: number; mode: Mode; label: string; out: Out };
 type T = (typeof consoleCopy)["en"]["playground"];
-
-const newSession = () => `pg-${Math.random().toString(36).slice(2, 10)}`;
 
 /* What a clip sends to /api/playground, which takes LIMITS.playgroundUploadMb (Vercel refuses larger bodies before the
    route runs): the 16 kHz WAV while it fits, about the first two minutes (every model reads it, and the gateway
@@ -59,7 +61,7 @@ async function call(mode: Mode, body: BodyInit, type: string, query = ""): Promi
 }
 
 /* ---------------------------------------------------------------- the code a developer would write */
-function codeFor(mode: Mode, base: string, o: { text: string; voice: Voice; target: "fr" | "ha"; persona: "nadia" | "salim"; session: string }) {
+function codeFor(mode: Mode, base: string, o: { text: string; voice: Voice; target: "fr" | "ha"; persona: PersonaId }) {
   const url = `${base}${PATH[mode]}`;
   if (mode === "speech") {
     const json = JSON.stringify({ text: o.text || "Sannu da zuwa!", voice: o.voice });
@@ -69,8 +71,9 @@ function codeFor(mode: Mode, base: string, o: { text: string; voice: Voice; targ
       JavaScript: `import { writeFile } from "node:fs/promises";\n\nconst r = await fetch("${url}", {\n  method: "POST",\n  headers: {\n    Authorization: \`Bearer \${process.env.NAMU_API_KEY}\`,\n    "Content-Type": "application/json",\n  },\n  body: JSON.stringify(${json.replace(/":/g, '": ').replace(/,"/g, ', "')}),\n});\nif (!r.ok) throw new Error((await r.json()).error.message);\nawait writeFile("speech.wav", Buffer.from(await r.arrayBuffer()));`,
     };
   }
-  const fields: [string, string][] = mode === "translate" ? [["target", o.target], ["include_audio", "1"]]
-    : mode === "converse" ? [["persona", o.persona], ["session_id", o.session]] : [];
+  /* French speech is withdrawn: only a translation into Hausa asks for audio */
+  const fields: [string, string][] = mode === "translate" ? (o.target === "ha" ? [["target", "ha"], ["include_audio", "1"]] : [["target", "fr"]])
+    : mode === "converse" ? [["persona", o.persona]] : [];
   const read = mode === "transcribe" ? `out["text"]` : mode === "translate" ? `out["text"]` : `out["reply"]`;
   return {
     cURL: `curl ${url} \\\n  -H "Authorization: Bearer $NAMU_API_KEY" \\\n  -F file=@audio.wav${fields.map(([k, v]) => ` \\\n  -F ${k}=${v}`).join("")}`,
@@ -227,8 +230,8 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   const [mode, setMode] = useState<Mode>(initial);
   const [side, setSide] = useState<"settings" | "history">("settings");
   const [text, setText] = useState(""), [voice, setVoice] = useState<Voice>("nadia");
-  const [target, setTarget] = useState<"fr" | "ha">("fr"), [persona, setPersona] = useState<"nadia" | "salim">("nadia");
-  const [session, setSession] = useState(newSession);
+  const [target, setTarget] = useState<"fr" | "ha">("fr"), [persona, setPersona] = useState<PersonaId>("nadia");
+  const [thread, setThread] = useState(0);                      // bumped by Clear; never sent anywhere
   const [clips, setClips] = useState<Record<Mode, Clip | null>>({ speech: null, transcribe: null, translate: null, converse: null });
   const [outs, setOuts] = useState<Partial<Record<Mode, Out>>>({});
   const [busy, setBusy] = useState<Mode | null>(null), [slow, setSlow] = useState(false);
@@ -237,8 +240,8 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   const codeRef = useRef<HTMLDialogElement>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const runId = useRef(0);
-  /* read after a run's await: the thread and the session as they are now, not as they were when the run began */
-  const latest = useRef({ outs, session }); latest.current = { outs, session };
+  /* read after a run's await: the outputs and the thread as they are now, not as they were when the run began */
+  const latest = useRef({ outs, thread }); latest.current = { outs, thread };
 
   useEffect(() => {
     const u = new URL(window.location.href); u.searchParams.set("model", mode);
@@ -286,9 +289,9 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
         record(m, clip.name, { ...r, source: r.json?.source_text as string | undefined, text: r.json?.text as string | undefined,
           audio: a ? b64ToBlob(a) : undefined, stats: { ...r.stats, audioS } });
       } else {
-        const sid = session;
-        const r = await call("converse", audio, type, `?persona=${persona}&session_id=${sid}`);
-        if (latest.current.session !== sid) return;              // "New session" came while this turn was out: it belongs to the old one
+        const at = thread;
+        const r = await call("converse", audio, type, `?persona=${persona}`);
+        if (latest.current.thread !== at) return;                // Clear came while this turn was out: it belongs to the old thread
         const a = r.json?.audio as string | undefined;
         const turn: Turn | null = r.json ? { heard: String(r.json.heard ?? ""), reply: String(r.json.reply ?? ""), audio: a ? b64ToBlob(a) : undefined } : null;
         const prev = latest.current.outs.converse?.turns ?? [];
@@ -298,7 +301,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
     } finally { setBusy(null); }
   }
 
-  const code = codeFor(mode, apiBase, { text, voice, target, persona, session });
+  const code = codeFor(mode, apiBase, { text, voice, target, persona });
   const out = outs[mode];
   const ready = mode === "speech" ? text.trim().length > 0 : Boolean(clips[mode]);
   const action = { speech: [t.generate, t.generating], transcribe: [t.transcribe, t.transcribing], translate: [t.translate, t.translating], converse: [t.send, t.sending] }[mode];
@@ -386,7 +389,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
                 <p className="cx-pg-model"><i style={{ background: MODEL_ORB[mode] }} />{NAME[mode]}<code>POST {PATH[mode]}</code></p>
                 <p className="cx-muted cx-small">{models[mode].task}</p></div>
               {mode === "speech" && <div className="cx-pg-set"><p className="cx-label">{t.voice}</p>
-                <Choice value={voice} onPick={setVoice} label={t.voice} options={(["nadia", "salim", "fr"] as Voice[]).map(v => ({ v, title: t.voices[v][0], sub: t.voices[v][1] }))} /></div>}
+                <Choice value={voice} onPick={setVoice} label={t.voice} options={VOICE_CHOICES.map(v => ({ v, title: t.voices[v][0], sub: t.voices[v][1] }))} /></div>}
               {mode === "transcribe" && <div className="cx-pg-set"><p className="cx-label">{t.language}</p>
                 <Choice value="ha" onPick={() => {}} label={t.language} options={[{ v: "ha", title: t.hausa, sub: "ha" }]} /></div>}
               {mode === "translate" && <div className="cx-pg-set"><p className="cx-label">{t.direction}</p>
@@ -394,11 +397,10 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
                   options={[{ v: "fr", title: t.haFr, sub: "target=fr" }, { v: "ha", title: t.frHa, sub: "target=ha" }]} /></div>}
               {mode === "converse" && <>
                 <div className="cx-pg-set"><p className="cx-label">{t.persona}</p>
-                  <Choice value={persona} onPick={setPersona} label={t.persona} options={(["nadia", "salim"] as const).map(v => ({ v, title: t.voices[v][0], sub: t.voices[v][1] }))} /></div>
+                  <Choice value={persona} onPick={setPersona} label={t.persona} options={PERSONAS.map(v => ({ v, title: t.voices[v][0], sub: t.voices[v][1] }))} /></div>
                 <div className="cx-pg-set"><p className="cx-label">{t.session}</p>
-                  <p className="cx-pg-model"><code>session_id={session}</code></p>
                   <p className="cx-muted cx-small">{t.sessionNote}</p>
-                  <button type="button" className="cx-btn" onClick={() => { setSession(newSession()); setOuts(o => ({ ...o, converse: undefined })); }}><Icon name="refresh" size={15} stroke={1.6} />{t.newSession}</button>
+                  <button type="button" className="cx-btn" onClick={() => { setThread(n => n + 1); setOuts(o => ({ ...o, converse: undefined })); }}><Icon name="refresh" size={15} stroke={1.6} />{t.newSession}</button>
                 </div>
               </>}
             </div>

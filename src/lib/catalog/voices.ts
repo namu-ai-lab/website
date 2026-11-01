@@ -1,7 +1,8 @@
 /* The voices the platform offers: one entry each, as the gateway's VOICES dict has them ("warm" is the gateway's alias
    of nadia, so it is not listed twice). Every picker (Speak, projects, agents, the API's Voices page) reads this list,
-   and a new voice is one entry here plus one in the gateway. Consent for each voice is on file with the founder.
-   Browser-safe.
+   and a new voice is one entry here plus one in the gateway, with its signed consent record. Withdrawn on 2026-10-31,
+   with no consent record on file (see lib/voices): salim, a cloned Hausa voice, and fr, the French reference voice;
+   French is text only until a French voice has one. Browser-safe.
 
    uses     what the voice suits, for the library's filters (keys of USES)
    sample   a recording of the voice, made through the API */
@@ -23,8 +24,6 @@ export type Voice = {
 
 export const VOICES = [
   { id: "nadia", name: "Nadia", languages: ["ha"], gender: "female", uses: ["health", "education", "public", "stories"], sample: "/converse/nadia/hello.m4a", persona: "nadia" },
-  { id: "salim", name: "Salim", languages: ["ha"], gender: "male", uses: ["radio", "stories", "business", "public"], sample: "/converse/salim/hello.m4a", persona: "salim" },
-  { id: "fr", name: "Français", languages: ["fr"], uses: ["public", "education", "business"], sample: "/usecases/translation-fr-story.m4a" },
 ] as const satisfies readonly Voice[];
 
 export type VoiceId = (typeof VOICES)[number]["id"];

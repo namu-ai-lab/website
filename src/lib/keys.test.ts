@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { KEY_PREFIX, SCOPES, displayPrefix, generateKey, hashKey, isScopeList } from "@/lib/keys";
+import { DEFAULT_SCOPES, KEY_PREFIX, SCOPES, displayPrefix, generateKey, hashKey, isScopeList, scopesForNewKey } from "@/lib/keys";
 
 afterEach(() => { vi.unstubAllEnvs(); });
 
@@ -51,5 +51,25 @@ describe("isScopeList", () => {
     expect(isScopeList("transcribe")).toBe(false);
     expect(isScopeList(null)).toBe(false);
     expect(isScopeList([1])).toBe(false);
+  });
+});
+
+/* Aïr (converse) is in research: a new key may call it only when its creator asks (ROADMAP S3). */
+describe("scopesForNewKey", () => {
+  it("gives a key that names no scopes every model but converse", () => {
+    expect(DEFAULT_SCOPES).toEqual(["transcribe", "speech", "translate"]);
+    expect(scopesForNewKey(undefined)).toEqual(["transcribe", "speech", "translate"]);
+    expect(scopesForNewKey(undefined)).not.toContain("converse");
+  });
+
+  it("keeps the scopes asked for, each once, converse only when asked", () => {
+    expect(scopesForNewKey(["speech", "speech"])).toEqual(["speech"]);
+    expect(scopesForNewKey([...SCOPES])).toContain("converse");
+  });
+
+  it("refuses anything that is not a scope list", () => {
+    expect(scopesForNewKey([])).toBeNull();
+    expect(scopesForNewKey(["admin"])).toBeNull();
+    expect(scopesForNewKey(null)).toBeNull();
   });
 });

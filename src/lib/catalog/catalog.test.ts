@@ -32,9 +32,17 @@ describe("catalog", () => {
 
   it("picks the organisation's voice when it fits the language", () => {
     expect(defaultVoice("ha")).toBe("nadia");
-    expect(defaultVoice("ha", { ha: "salim" })).toBe("salim");
+    expect(defaultVoice("ha", { ha: "nadia" })).toBe("nadia");
     expect(defaultVoice("ha", { ha: "fr" })).toBe("nadia");
     expect(defaultVoice("dje")).toBeNull();
+  });
+
+  it("offers no withdrawn voice, and French is text only", () => {
+    expect(VOICES.map(v => v.id)).toEqual(["nadia"]);
+    expect(defaultVoice("ha", { ha: "salim" })).toBe("nadia");
+    expect(can("speech", "fr")).toBe(false);
+    expect(defaultVoice("fr")).toBeNull();
+    expect(canTranslate("fr", "ha")).toBe(true);
   });
 });
 
