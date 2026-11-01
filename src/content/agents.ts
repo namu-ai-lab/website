@@ -15,7 +15,8 @@ export type AgentsCopy = {
   agent: { name: string; greeting: string; greetingPh: string; instructions: string; instructionsPh: string; languages: string; voice: string; remove: string; removeAsk: string };
   knowledge: { add: string; write: string; name: string; namePh: string; text: string; textPh: string; save: string; cancel: string; chars: (n: string) => string; emptyH: string; tooBig: string; heard: string };
   whatsapp: { title: string; phoneId: string; phoneIdPh: string; webhook: string; verify: string; verifySet: string; waiting: string; serverOff: string; copy: string; copied: string; request: string; number: string };
-  talk: { label: string; start: string; speak: string; stop: string; again: string };
+  talk: { label: string; start: string; speak: string; stop: string; again: string; end: string;
+    callWith: (name: string, lang: string) => string; wait: string; tap: string; listening: string; speaking: string };
   convs: { title: string; emptyH: string; flag: string; unflag: string; flagged: string; all: string; turns: (n: number) => string; channels: Record<"test" | "whatsapp" | "web", string>; back: string; caller: string; agent: string; french: string; hide: string };
   saved: string; saving: string; failed: string; delete: string;
   errors: { mic: string; nothing: string; tooMany: string; generic: string };
@@ -41,7 +42,8 @@ export const agentsCopy: Record<Lang, AgentsCopy> = {
       title: "WhatsApp", phoneId: "Phone number ID", phoneIdPh: "From Meta’s WhatsApp Manager", webhook: "Webhook URL", verify: "Verify token",
       verifySet: "Set on the server", waiting: "No number yet", serverOff: "Not set up on this server yet", copy: "Copy", copied: "Copied", request: "Connect a number", number: "Number",
     },
-    talk: { label: "Talk to your agent", start: "Talk to it", speak: "Speak", stop: "Stop", again: "Start again" },
+    talk: { label: "Talk to your agent", start: "Talk to it", speak: "Speak", stop: "Stop", again: "Start again", end: "Hang up",
+      callWith: (a, l) => `Talk with ${a}, in ${l}`, wait: "One moment…", tap: "Tap to speak", listening: "Listening… tap to send", speaking: "Speaking…" },
     convs: {
       title: "Conversations", emptyH: "No conversations yet", flag: "Flag", unflag: "Unflag", flagged: "Flagged", all: "All", turns: k => `${k} turn${k === 1 ? "" : "s"}`,
       channels: { test: "Test", whatsapp: "WhatsApp", web: "Website" }, back: "Conversations", caller: "Caller", agent: "Agent", french: "French", hide: "Hide",
@@ -68,7 +70,8 @@ export const agentsCopy: Record<Lang, AgentsCopy> = {
       title: "WhatsApp", phoneId: "ID du numéro", phoneIdPh: "Dans le WhatsApp Manager de Meta", webhook: "URL du webhook", verify: "Jeton de vérification",
       verifySet: "Défini sur le serveur", waiting: "Pas encore de numéro", serverOff: "Pas encore configuré sur ce serveur", copy: "Copier", copied: "Copié", request: "Connecter un numéro", number: "Numéro",
     },
-    talk: { label: "Parler à votre agent", start: "Lui parler", speak: "Parler", stop: "Arrêter", again: "Recommencer" },
+    talk: { label: "Parler à votre agent", start: "Lui parler", speak: "Parler", stop: "Arrêter", again: "Recommencer", end: "Raccrocher",
+      callWith: (a, l) => `Parlez avec ${a}, en ${l.toLowerCase()}`, wait: "Un instant…", tap: "Appuyez pour parler", listening: "À l’écoute… appuyez pour envoyer", speaking: "L’agent parle…" },
     convs: {
       title: "Conversations", emptyH: "Aucune conversation pour l’instant", flag: "Signaler", unflag: "Retirer", flagged: "Signalées", all: "Toutes", turns: k => `${k} échange${k > 1 ? "s" : ""}`,
       channels: { test: "Test", whatsapp: "WhatsApp", web: "Site web" }, back: "Conversations", caller: "Appelant", agent: "Agent", french: "Français", hide: "Masquer",

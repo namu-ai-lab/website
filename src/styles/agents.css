@@ -102,7 +102,7 @@
   box-shadow: inset 0 -2px 0 transparent; transition: color .2s var(--ease); }
 .ag-tabs button:hover { color: var(--ink); }
 .ag-tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
-.ag-work { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.ag-work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 
 /* the Agent tab: labelled rows on one card */
 .ag-form { display: grid; }
@@ -146,15 +146,21 @@
 .ag-copyrow code { overflow: hidden; flex: 1; font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
 
 /* the talk panel: an orb, the voice, one button */
-.ag-talk { position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; padding: 28px 22px 24px; border-radius: 28px; background: var(--surface);
-  text-align: center; }
-.ag-line { --a: var(--kola); --b: var(--kola); width: 240px; height: auto; margin-bottom: 14px; }
-.ag-talk h3 { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -.005em; }
-.ag-talk-sub { display: flex; align-items: center; gap: 8px; margin: 6px 0 18px; color: var(--ink-3); font-size: 14.5px; }
-.ag-talk-btn { min-width: 150px; justify-content: center; }
-.pf .cx-btn.primary.ag-talk-btn.on { background: var(--ink); }
-.ag-talk .ag-link { margin-top: 12px; font-size: 14px; }
+/* the talk panel as a phone call: tall, the name at the top, the home page's orb and call button in the middle (lab.css
+   .pg-agent, .pg-call), what is happening under it, Start again and Hang up at the foot */
+.ag-talk { --disc: 216px; position: sticky; top: 88px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center;
+  height: min(680px, calc(100dvh - 112px)); min-height: 560px; padding: 30px 22px 24px; border-radius: 40px; background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line), 0 40px 80px -60px rgba(28, 20, 16, .4); text-align: center; }
+.ag-talk-top { display: grid; gap: 4px; }
+.ag-talk h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+.ag-talk-sub { margin: 0; color: var(--ink-3); font-size: 14.5px; }
+.ag-talk-mid { display: grid; justify-items: center; align-content: center; }
+.ag-talk .pg-call-state { margin-top: 20px; font-size: 15.5px; }
 .ag-talk .cx-error { margin: 12px 0 0; }
+.ag-talk-foot { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: 44px; }
+.ag-talk-end { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border: 0; border-radius: 9999px; background: var(--ink); color: #FFFAF1;
+  font: inherit; font-size: 15px; cursor: pointer; transition: background-color .2s var(--ease); }
+.ag-talk-end:hover { background: var(--kola); }
 
 /* ---- one conversation, turn by turn */
 .ag-conv { max-width: 760px; }
@@ -172,17 +178,13 @@
 /* ---- smaller screens */
 @media (max-width: 1100px) {
   .ag-tgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ag-work { grid-template-columns: minmax(0, 1fr) 280px; }
+  .ag-work { grid-template-columns: minmax(0, 1fr) 300px; }
+  .ag-talk { --disc: 190px; }
 }
 @media (max-width: 860px) {
   .ag-work { grid-template-columns: minmax(0, 1fr); }
-  /* the talk panel on one line: the orb beside the name, the voice and the button */
-  .ag-talk { position: static; order: -1; display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; justify-items: start;
-    column-gap: 16px; row-gap: 4px; padding: 16px 18px; text-align: left; }
-  .ag-talk-sub { margin: 0 0 6px; }
-  .ag-talk .ag-link { margin-top: 2px; }
-  .ag-talk .cx-error { grid-column: 1 / -1; }
-  .ag-talk-btn { min-width: 0; }
+  /* the call comes first, still a phone screen, a little shorter */
+  .ag-talk { --disc: 200px; position: static; order: -1; height: auto; min-height: 500px; border-radius: 32px; }
   .ag-tabs { gap: 20px; }
   .ag-agent-row { grid-template-columns: 40px minmax(0, 1fr) auto 18px; }
   .ag-conv-row { grid-template-columns: 40px minmax(0, 1fr) auto; }
