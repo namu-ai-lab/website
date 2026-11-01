@@ -3,6 +3,7 @@ import { Icon } from "../Icon";
 import { Logo } from "../Logo";
 import { LangSwitch } from "../Header";
 import { PlatformBar } from "../platform/PlatformBar";
+import { ScrollRow } from "../platform/ScrollRow";
 import { consoleCopy } from "@/content/console";
 import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
@@ -35,7 +36,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
     <div className="cx-frame">
       <PlatformBar lang={lang} area="api" user={user} />
       <div className="cx">
-      <aside className="cx-side">
+      <ScrollRow as="aside" className="cx-side">
         <div className="cx-side-top"><span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span></div>
         <nav className="cx-nav" aria-label={t.menu}>
           <ul>{items.map(x => (
@@ -46,7 +47,7 @@ export function ConsoleShell({ lang, page, admin, user, access, title, lede, act
           <a className="cx-side-doc" href={L("/docs")}>{t.nav.docs}<Icon name="external" size={14} stroke={1.5} /></a>
           <a className="cx-side-doc" href={L("/docs#speech")}>{t.nav.reference}<Icon name="external" size={14} stroke={1.5} /></a>
         </div>
-      </aside>
+      </ScrollRow>
       <section className="cx-page">
         <header className="cx-head">
           <div>

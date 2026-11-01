@@ -41,7 +41,7 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
                 <a className="ag-row ag-agent-row" href={L(`/agents/${a.id}`)}>
                   <VoiceDot id={v} name={v ? voice(v).name : a.name} size={40} />
                   <span className="ag-row-main"><strong>{a.name}</strong><em>{language(a.languages[0] ?? "ha").endonym}{v ? ` · ${voice(v).name}` : ""}</em></span>
-                  <span className="hide-sm"><span className={`ag-tag${bound ? " live" : ""}`}>{bound ? t.list.live : t.list.draft}</span></span>
+                  <span className="ag-row-status"><span className={`ag-tag${bound ? " live" : ""}`}>{bound ? t.list.live : t.list.draft}</span></span>
                   <span className="ag-row-meta hide-sm"><LocalTime iso={a.updated_at} lang={lang} style="dayMonth" rel /></span>
                   <Icon name="chevron" size={16} stroke={1.6} className="ag-go" />
                 </a>

@@ -8,7 +8,7 @@ import type { DoorId, PlatformCopy } from "@/content/platform";
 export type { DoorId };
 type NavKey = keyof PlatformCopy["nav"];
 
-export type NavItem = { id: string; href: string; icon: IconName; label: NavKey };
+export type NavItem = { id: string; href: string; icon: IconName; label: NavKey & keyof PlatformCopy["short"] };
 
 export const AREAS: { id: DoorId; home: string }[] = [
   { id: "create", home: "/create" },

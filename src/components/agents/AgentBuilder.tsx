@@ -6,6 +6,7 @@ import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
 import { SamplePlay, VoiceDot } from "./bits";
 import { ConversationList } from "./Conversations";
+import { ScrollRow } from "../platform/ScrollRow";
 import { TalkPanel } from "./TalkPanel";
 import { TABS, type Tab } from "./tabs";
 import { agentsCopy, type AgentsCopy } from "@/content/agents";
@@ -71,9 +72,9 @@ export function AgentBuilder({ lang, initial, docs, conversations, tab: tab0, wh
         </div>
         <button type="button" className="cx-btn" onClick={() => pick("whatsapp")}><Icon name="phone-voice" size={16} stroke={1.6} />{bound ? t.whatsapp.title : t.whatsapp.request}</button>
       </header>
-      <nav className="ag-tabs" role="tablist" aria-label={a.name}>
+      <ScrollRow className="ag-tabs" role="tablist" aria-label={a.name}>
         {TABS.map(x => <button key={x} type="button" role="tab" aria-selected={tab === x} onClick={() => pick(x)}>{t.tabs[x]}</button>)}
-      </nav>
+      </ScrollRow>
 
       <div className="ag-work">
         <div className="ag-pane" role="tabpanel">
