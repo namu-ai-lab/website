@@ -1,6 +1,6 @@
 /* Copy for Namu Create (src/components/create): Home, Voice message, Read a voice note, Translate and Voices. Names
    and actions only; the platform does not explain itself. The pages' names are in content/platform.ts (nav).
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
+   French: read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 import type { OutputId } from "@/lib/catalog";
 

@@ -2,7 +2,7 @@
    them. "Use" puts the French in the box; Namu says it in the local language. Where Tafiya has already said one, its
    Hausa and the recording are real (public/demo and public/usecases, made through the API; the founder checked the
    Hausa). Each sector has a photograph from the Lab's licensed set (public/organisations/CREDITS.md).
-   Scenes of use are examples, not running deployments. FR-REVIEW: drafted French. */
+   Scenes of use are examples, not running deployments. French read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 
 const n = " ";   // narrow no-break space before French high punctuation and inside numbers

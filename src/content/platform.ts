@@ -2,7 +2,7 @@
    words every door uses (tasks, voice uses, output targets, common actions). Each door's own pages keep their copy in
    content/create.ts, content/agents.ts and content/console.ts. Short on purpose: the platform names things and
    does not describe them. The doors' names are product names, the same in every language.
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
+   French: read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 import type { OutputId, Task, Use } from "@/lib/catalog";
 
