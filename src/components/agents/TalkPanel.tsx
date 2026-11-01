@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
-import { VoiceDot } from "./bits";
-import { Orb } from "../platform/Orb";
+import { VoiceLine, type LineSide } from "../platform/VoiceLine";
 import { agentsCopy } from "@/content/agents";
 import type { Lang } from "@/i18n/config";
 import { Recorder, b64ToBlob, toClip } from "@/lib/audio";
 import { language, voice as voiceOf, type LangCode, type VoiceId } from "@/lib/catalog";
 
-/* Talking to an agent from its page, as ElevenAgents' test call, and as a voice interface on Namu's brand: an orb,
-   one button, no transcript and no status words. "Talk to it" asks for the greeting (/api/agents/<id>/greet) and
+/* Talking to an agent from its page, as ElevenAgents' test call, and as a voice interface on Namu's brand: a voice
+   line, one button, no transcript and no status words. "Talk to it" asks for the greeting (/api/agents/<id>/greet) and
    plays it; then "Speak" records the caller, "Stop" sends the turn (/api/agents/<id>/turn) and the reply plays. The
-   orb's voice lines move with the agent's voice, and rest when it is quiet. The conversation's text is kept on the
+   line's bars rise with the agent's voice, and rest when it is quiet. The conversation's text is kept on the
    server, where Conversations shows it. */
 type Phase = "idle" | "busy" | "ready" | "recording";
 
@@ -27,7 +26,7 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
   const current = useRef<HTMLAudioElement | null>(null);
   useEffect(() => () => { current.current?.pause(); void rec.current?.stop(); void graph.current?.ctx.close(); }, []);
 
-  /* the agent's voice goes through an analyser, so the orb can follow it */
+  /* the agent's voice goes through an analyser, so the voice line can follow it */
   const hush = () => { current.current?.pause(); current.current?.dispatchEvent(new Event("ended")); };
   const play = (b: Blob) => {
     hush();
@@ -77,7 +76,7 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
     } catch { setErr(t.errors.nothing); setPhase("ready"); }
   };
 
-  /* how loud the agent is right now, from its voice's analyser, for the orb */
+  /* how loud the agent is right now, from its voice's analyser, for the voice line */
   const buf = useRef(new Uint8Array(256));
   const loudness = useCallback(() => {
     const a = graph.current?.analyser;
@@ -87,15 +86,16 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
     return Math.sqrt(sum / buf.current.length) * 5;
   }, []);
 
+  const both = useCallback((): LineSide => "both", []);
   const v = voice ? voiceOf(voice) : null;
   const button = phase === "idle" ? { label: t.talk.start, run: start, icon: "microphone" as const }
     : phase === "recording" ? { label: t.talk.stop, run: send, icon: "stop" as const }
     : { label: t.talk.speak, run: listen, icon: "microphone" as const };
   return (
     <section className="ag-talk" aria-label={t.talk.label}>
-      <Orb level={loudness} active={speakingNow} className="ag-orb" />
+      <VoiceLine level={loudness} side={both} active={speakingNow} className="ag-line" />
       <h3>{name}</h3>
-      <p className="ag-talk-sub"><VoiceDot id={v?.id ?? null} name={v?.name} size={22} /><span>{language(speaking).endonym}{v ? ` · ${v.name}` : ""}</span></p>
+      <p className="ag-talk-sub"><span>{language(speaking).endonym}{v ? ` · ${v.name}` : ""}</span></p>
       <button type="button" className={`cx-btn primary ag-talk-btn${phase === "recording" ? " on" : ""}`} onClick={() => void button.run()} disabled={phase === "busy"}>
         {phase === "busy" ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={button.icon} size={16} stroke={1.6} />}{button.label}
       </button>

@@ -28,18 +28,6 @@ export function BlankAgentButton({ lang, label, busyLabel, className = "cx-btn",
   );
 }
 
-const TONES: Record<string, [string, string, string]> = {
-  nadia: ["#ffe6cf", "#f2b07f", "#c9773f"],
-};
-/** A voice's sphere with its initial, the tone fixed by the voice. */
-export function VoiceDot({ id, name, size = 26 }: { id: string | null; name?: string; size?: number }) {
-  const [a, b, c] = (id && TONES[id]) || ["#fffaf1", "#f3e7d1", "#d9c7ad"];
-  return (
-    <span className="ag-dot" aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * .42), color: "#1c1410",
-      background: `radial-gradient(circle at 34% 30%, ${a} 0, ${b} 55%, ${c} 100%)` }}>{name?.charAt(0)}</span>
-  );
-}
-
 /* one sample at a time across the page */
 let playing: { audio: HTMLAudioElement; stop: () => void } | null = null;
 /** Plays a recording; a second press, or another sample, stops it. Shows its length once known. */

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "../Icon";
-import { SamplePlay, VoiceDot, makeAgent } from "./bits";
+import { SamplePlay, makeAgent } from "./bits";
 import { SECTORS, TEMPLATES, photoOf, type Sector, type Template } from "@/content/agent-templates";
 import { agentsCopy } from "@/content/agents";
 import type { Lang } from "@/i18n/config";
@@ -62,7 +62,7 @@ function Card({ x, lang, busy, disabled, onPick }: { x: Template; lang: Lang; bu
         <h3>{x.name[lang]}</h3>
         <p>{x.line[lang]}</p>
         <div className="ag-tcard-foot">
-          <VoiceDot id={v.id} name={v.name} size={24} /><span className="ag-quiet">{busy ? t.templates.using : v.name}</span>
+          <span className="ag-quiet">{busy ? t.templates.using : v.name}</span>
           <SamplePlay src={x.sample} label={`${t.templates.listen} · ${x.name[lang]}`} />
         </div>
       </div>

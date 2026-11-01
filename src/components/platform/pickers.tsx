@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
+import { resample } from "./media";
 import { language, voicesFor, type LangCode, type Voice, type VoiceId } from "@/lib/catalog";
 
 /* Choosing on the platform, shared by every door: a language (only those that work today, from the catalog), a voice
@@ -36,14 +37,14 @@ export function VoicePicker({ lang, value, onPick, label, playLabel }: { lang: L
   return (
     <div className="pf-voice-pick" ref={box}>
       <button ref={btn} type="button" className="pf-voice-btn" aria-expanded={open} aria-label={`${label}: ${chosen.name}`} onClick={() => setOpen(o => !o)}>
-        <VoiceAvatar v={chosen} /><span>{chosen.name}</span><Icon name="chevron" size={16} stroke={1.6} />
+        <span>{chosen.name}</span><Icon name="chevron" size={16} stroke={1.6} />
       </button>
       {open && (
         <ul className="pf-voice-list">
           {list.map(v => (
             <li key={v.id}>
               <button type="button" aria-pressed={v.id === chosen.id} onClick={() => { onPick(v.id as VoiceId); setOpen(false); btn.current?.focus(); }}>
-                <VoiceAvatar v={v} /><span>{v.name}</span>{v.id === chosen.id && <Icon name="check" size={15} stroke={1.8} />}
+                <span>{v.name}</span>{v.id === chosen.id && <Icon name="check" size={15} stroke={1.8} />}
               </button>
               <SampleButton src={v.sample} label={`${playLabel} ${v.name}`} />
             </li>
@@ -54,11 +55,13 @@ export function VoicePicker({ lang, value, onPick, label, playLabel }: { lang: L
   );
 }
 
-const TONES: [string, string, string][] = [["#f4ece2", "#c9b8a6", "#5e5148"], ["#ffd8b8", "#e8935a", "#b4552a"], ["#f6e6d6", "#c4865a", "#5e3418"], ["#f4dcc4", "#d97a6c", "#7a3125"]];
-/** A voice's sphere: warm glass in Namu's colours (never blue or green), its tone fixed by the voice's id. */
-export function VoiceAvatar({ v, size = 26 }: { v: Pick<Voice, "id">; size?: number }) {
-  const [a, b, c] = TONES[[...v.id].reduce((s, ch) => s + ch.charCodeAt(0), 0) % TONES.length];
-  return <i className="pf-voice-orb" style={{ width: size, height: size, background: `radial-gradient(circle at 34% 30%, ${a} 0, ${b} 50%, ${c} 100%)` }} aria-hidden="true" />;
+/** A voice drawn by its own sound: the outline of its sample, as bars, in its language's colour (platform.css). */
+export function VoiceOutline({ v, bars = 40 }: { v: Pick<Voice, "outline" | "languages">; bars?: number }) {
+  return (
+    <span className="pf-outline" data-lang={v.languages[0]} aria-hidden="true">
+      {resample([...v.outline], bars).map((h, i) => <i key={i} style={{ height: `${Math.max(6, h)}%` }} />)}
+    </span>
+  );
 }
 
 /* one sample at a time across the page */
