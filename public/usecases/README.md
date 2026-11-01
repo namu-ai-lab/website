@@ -38,23 +38,20 @@ non-word, so those takes were not used. Heritage shows Tatsuniya's own transcrip
 
 ## Earlier recordings
 
-The lines the home page's use cases play (`src/content/usecases.ts`), made through the Namu API on 2026-10-20 and chosen
-the way the demo recordings are (`public/demo/README.md`): five takes each, the one Tatsuniya transcribed most
-faithfully kept. Healthcare and Farming reuse `public/demo/clinic-nadia.m4a` and `public/demo/farm-nadia.m4a`.
+What the home page's use cases played until 2026-11-01, made through the Namu API on 2026-10-20 and chosen the way the
+demo recordings are (`public/demo/README.md`): five takes each, the one Tatsuniya transcribed most faithfully kept.
+Other pages still use the ones below (the console Playground, Create's ideas, the agent templates, the Interpreter).
 
-**To replace.** The voice `salim` (male) was withdrawn on 2026-10-31: there is no consent record for its speaker.
-`translation-ha.m4a` and `heritage.m4a` are in that voice. (The French voice `fr`, withdrawn the same day, is back since
-2026-11-01, when the founder confirmed its consent: the three `translation-fr*.m4a` clips stay.) The two `salim` clips
-are fixed sentences, not a voice anyone can make say something else, but the site still plays that speaker until they
-are remade in a cleared voice or removed.
+**Removed on 2026-11-01:** `translation-ha.m4a` and `heritage.m4a`, in the voice `salim`, withdrawn on 2026-10-31 with
+no consent record for its speaker. The home playground's Translate samples and the console Playground's Aïr sample
+now use Mouhamad's clips above (`translation/mouhamad-ha.m4a`, `heritage/mouhamad-ha.m4a`). The French voice's clips
+(`translation-fr*.m4a`, Kora's own French output) stay: that voice's consent was confirmed on 2026-11-01.
 
 | File | Model and voice | Says | Meaning |
 |---|---|---|---|
 | `education.m4a` | Tafiya, female | Bari mu koyi ƙidaya tare: ɗaya, biyu, uku, huɗu, biyar. | Let's learn to count together: one, two, three, four, five. |
-| `translation-ha.m4a` | Tafiya, male | Nawa ne farashin buhun gero? | How much is a sack of millet? |
-| `translation-fr.m4a` | Kora, from `translation-ha.m4a` | Quel est le prix du sac de mil ? | Kora's own output (`POST /v1/translate`, target fr), heard and spoken by the model |
+| `translation-fr.m4a` | Kora, from the removed `translation-ha.m4a` ("Nawa ne farashin buhun gero?") | Quel est le prix du sac de mil ? | Kora's own output (`POST /v1/translate`, target fr), heard and spoken by the model |
 | `public.m4a` | Tafiya, female | Za mu taimaka muku ku cike fom ɗin, mataki-mataki. | We will help you fill in the form, step by step. |
-| `heritage.m4a` | Tafiya, male | Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari. | Once, in a village, there lived an old storyteller. |
 
 The home page playground's French samples (Translate, French → Hausa) were made on 2026-10-21 the same way as
 `translation-fr.m4a`: Kora's own spoken output (`POST /v1/translate`, target fr, `include_audio`), loudness-normalised
@@ -65,5 +62,5 @@ to −18 LUFS. Each was checked by sending it back (target ha): Kora heard the F
 | `translation-fr-story.m4a` | `heritage.m4a` | Un jour, dans un village, il y avait un vieux conteur. | the same sentence |
 | `translation-fr-form.m4a` | `public.m4a` | Nous allons vous aider à remplir le formulaire étape par étape. | the same sentence |
 
-The heritage card also shows what Tatsuniya wrote down from `heritage.m4a`: "wata rana a wani ƙauye akwai wani tsoho
-mai bada labari." The Hausa has not yet been reviewed by a native speaker.
+`translation-fr-story.m4a` is Kora's French, in the French voice, from the removed `heritage.m4a`; the Hausa it was
+made from is no longer played anywhere.
