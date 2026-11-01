@@ -5,7 +5,7 @@
    smaller towards the edges (sizes 1, .79, .57, .43), and it goes round without end. It moves on a spring,
    so a run of clicks glides instead of stopping and starting, and it can be dragged or swiped and flicked.
    A click on a side orb brings it to the middle; a click on the middle one plays it. */
-import { useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { Icon } from "./Icon";
 import { createOrbRenderer, type OrbDraw, type OrbRenderer } from "@/lib/orbGL";
 import type { Voice } from "@/content/playground";
@@ -16,23 +16,35 @@ const lerpAt = (table: number[], d: number) => { const a = Math.min(Math.abs(d),
 const mod = (a: number, n: number) => ((a % n) + n) % n;
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/* Runs `frame(dt)` every animation frame while the element is on screen and the page is visible; off screen
-   the loop only checks, so a hidden console costs next to nothing. */
-function useFrames(el: MutableRefObject<HTMLElement | null>, frame: (dt: number, now: number) => void) {
+/* Runs `frame(dt)` on animation frames while the element is on screen and the page is visible, and not at all
+   otherwise. `frame` says whether anything is moving (a drag, the spring, a voice speaking, a hover easing); while
+   nothing is, the orbs' slow flow is drawn 30 times a second, which looks the same and halves the work of a phone's
+   GPU, and with reduced motion, where nothing flows, four times a second. The function returned makes the next
+   frame draw at once: call it when a pointer or a key arrives. */
+function useFrames(el: MutableRefObject<HTMLElement | null>, frame: (dt: number, now: number) => boolean) {
   const ref = useRef(frame); ref.current = frame;
+  const lively = useRef(true);
   useEffect(() => {
     const node = el.current; if (!node) return;
-    let raf = 0, last = 0;
+    const idle = (reducedMotion() ? 250 : 1000 / 30) - 4;   // a little early, so screen timing never skips a frame
+    let raf = 0, last = 0, seen = false;
     const loop = (now: number) => {
-      const r = node.getBoundingClientRect();
-      if (!document.hidden && r.bottom > 0 && r.top < window.innerHeight && r.width > 0) {
-        const dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now; ref.current(dt, now);
-      } else last = 0;
       raf = requestAnimationFrame(loop);
+      if (!lively.current && last && now - last < idle) return;
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
+      lively.current = ref.current(dt, now);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    const run = () => {
+      const on = seen && !document.hidden;
+      if (on && !raf) { last = 0; lively.current = true; raf = requestAnimationFrame(loop); }
+      else if (!on && raf) { cancelAnimationFrame(raf); raf = 0; }
+    };
+    const io = new IntersectionObserver(([e]) => { seen = e.isIntersecting; run(); });
+    io.observe(node);
+    document.addEventListener("visibilitychange", run);
+    return () => { io.disconnect(); document.removeEventListener("visibilitychange", run); cancelAnimationFrame(raf); };
   }, [el]);
+  return useCallback(() => { lively.current = true; }, []);
 }
 
 /* A canvas that keeps its renderer sized to its box. */
@@ -98,8 +110,9 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     alpha: 1 - Math.max(0, Math.min(1, (Math.abs(d) - 3) / 0.8)),
   });
 
-  useFrames(host, (dt) => {
+  const wake = useFrames(host, (dt) => {
     const st = s.current, g = geometry();
+    let easing = false;    // a hover still leaning in or out
     if (!st.drag) {
       if (reduce.current) { st.pos = st.target; st.vel = 0; }
       else {   /* a critically damped spring: quick to start, no overshoot */
@@ -121,7 +134,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
         const d = v - st.pos, f = Math.max(0, 1 - Math.abs(d)), x = P.x[v], mid = Math.abs(d) < 0.5, speaking = mid && playing ? a : 0;
         const rad = (P.D / 2) * (0.76 + 0.24 * f), pt = st.pointer, over = !st.drag && !mid && pt && Math.hypot(pt.x - x, pt.y - g.cy) < rad ? 1 : 0;
         const h = (st.hover.get(v) ?? 0) + (over - (st.hover.get(v) ?? 0)) * Math.min(1, dt * 10);
-        st.hover.set(v, h);
+        st.hover.set(v, h); if (Math.abs(over - h) > 0.002) easing = true;
         const breathe = mid && !playing && !reduce.current ? 0.008 * Math.sin(st.breath * 1.6) : 0;
         orbs.push({ x, y: g.cy, r: rad * (1 + 0.04 * h + breathe + 0.025 * speaking), palette: voices[v].palette, seed: v * 7.31 + 1.7, time: st.clocks[v], amp: speaking,
           focus: Math.max(f, 0.6 * h), alpha: 1 });
@@ -131,7 +144,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
       orbs.sort((p, q) => p.r - q.r);
       r.current?.draw(orbs);
       if (playEl.current) { playEl.current.style.left = `${P.x[Math.round(st.target)].toFixed(1)}px`; playEl.current.classList.toggle("on", Math.abs(st.pos - st.target) < 0.12); }
-      return;
+      return moving() || easing;
     }
     for (let v = b - 4; v <= b + 4; v++) {
       if (!inReel(v)) { const label = labelEls.current.get(v); if (label) label.style.opacity = "0"; continue; }
@@ -140,7 +153,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
       /* a side orb under the pointer leans forward a little: larger, fuller in colour */
       const rad = (g.D / 2) * L.scale, pt = st.pointer, over = !st.drag && !mid && pt && Math.hypot(pt.x - L.x, pt.y - g.cy) < rad ? 1 : 0;
       const h = (st.hover.get(v) ?? 0) + (over - (st.hover.get(v) ?? 0)) * Math.min(1, dt * 10);
-      st.hover.set(v, h);
+      st.hover.set(v, h); if (Math.abs(over - h) > 0.002) easing = true;
       const breathe = mid && !playing && !reduce.current ? 0.008 * Math.sin(st.breath * 1.6) : 0;   // the voice in the middle breathes while it waits
       orbs.push({ x: L.x, y: g.cy, r: rad * (1 + 0.035 * h + breathe + 0.025 * speaking), palette: voices[vi].palette, seed: vi * 7.31 + 1.7, time: st.clocks[vi], amp: speaking,
         focus: Math.max(1 - Math.min(1, Math.abs(d)), 0.6 * h), alpha: L.alpha });
@@ -156,16 +169,22 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     r.current?.draw(orbs);
     const settled = Math.abs(st.pos - st.target) < 0.12 && !st.drag;
     playEl.current?.classList.toggle("on", settled);
+    return moving() || easing;
   });
+  /* something moves: a drag, the spring still travelling, or a voice speaking */
+  const moving = () => { const st = s.current; return Boolean(st.drag) || st.pos !== st.target || st.vel !== 0 || playing; };
+  useEffect(() => { wake(); }, [index, playing, wake]);
 
   /* dragging and flicking; a click without a drag picks the orb under the pointer */
   const onDown = (e: React.PointerEvent) => {
+    wake();
     if ((e.target as HTMLElement).closest("button")) return;
     const st = s.current;
     st.drag = { x: e.clientX, pos: st.pos, moved: 0, t: performance.now(), v: 0 };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
+    wake();
     const st = s.current, dr = st.drag;
     const rect = host.current?.getBoundingClientRect();
     if (rect) st.pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -203,7 +222,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
       }
     }
   };
-  const turn = (d: number) => { const st = s.current; st.target = clampT(Math.round(st.target) + d); onIndex(mod(st.target, n)); };
+  const turn = (d: number) => { wake(); const st = s.current; st.target = clampT(Math.round(st.target) + d); onIndex(mod(st.target, n)); };
 
   const items = [];
   for (let v = base - 3; v <= base + 3; v++) if (inReel(v)) items.push(v);
@@ -213,7 +232,7 @@ export function VoiceReel({ voices, index, onIndex, playing, onPlay, amp, labels
     <div className={`vr${duo ? " duo" : ""}`} role="group" aria-roledescription="carousel" aria-label={labels.voices}
       tabIndex={0} onKeyDown={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); turn(-1); } if (e.key === "ArrowRight") { e.preventDefault(); turn(1); } }}>
       <div className="vr-sizer" ref={sizer} aria-hidden="true" />
-      <div className="vr-stage" ref={host} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { s.current.pointer = null; }}>
+      <div className="vr-stage" ref={host} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { s.current.pointer = null; wake(); }}>
         <canvas ref={canvas} className="vr-canvas" aria-hidden="true" />
         <button ref={playEl} type="button" className="vr-play" aria-label={playing ? labels.stop : `${labels.play}: ${chosen.name}`} onClick={onPlay}>
           <Icon name={playing ? "pause" : "play"} size={22} stroke={1.8} />
@@ -241,11 +260,13 @@ export function AgentOrb({ palette, amp, live, style }: { palette: Voice["palett
   const { r, box } = useRenderer(canvas);
   const clock = useRef(2.4), reduce = useRef(false);
   useEffect(() => { reduce.current = reducedMotion(); }, []);
-  useFrames(host, (dt) => {
+  const wake = useFrames(host, (dt) => {
     const a = amp.current, { w, h } = box.current;
-    if (!w) return;
+    if (!w) return true;
     if (!reduce.current) clock.current += dt * (0.2 + (live ? 0.12 + 0.6 * a : 0));
     r.current?.draw([{ x: w / 2, y: h / 2, r: (Math.min(w, h) / 2) * (0.94 + 0.04 * a), palette, seed: 11.3, time: clock.current, amp: a }]);
+    return live;     // on a call or speaking: every frame, for the voice's loudness
   });
+  useEffect(() => { wake(); }, [live, wake]);
   return <div className="vr-agent" ref={host} style={style}><canvas ref={canvas} className="vr-canvas" aria-hidden="true" /></div>;
 }
