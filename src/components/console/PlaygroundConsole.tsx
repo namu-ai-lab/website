@@ -306,7 +306,7 @@ export function PlaygroundConsole({ lang, apiBase, initial }: { lang: Lang; apiB
   const action = { speech: [t.generate, t.generating], transcribe: [t.transcribe, t.transcribing], translate: [t.translate, t.translating], converse: [t.send, t.sending] }[mode];
   const samples = (m: Mode) => m === "translate" && target === "ha"
     ? [{ label: t.samples.fr, src: "/usecases/translation-fr.m4a" }]
-    : [{ label: t.samples.ha, src: m === "converse" ? "/usecases/translation-ha.m4a" : "/usecases/education.m4a" }];
+    : [{ label: t.samples.ha, src: m === "converse" ? "/usecases/translation/mouhamad-ha.m4a" : "/usecases/education.m4a" }];
 
   let output: ReactNode = <p className="cx-pg-empty">{t.empty[mode]}</p>;
   if (out?.error) output = <p className="cx-error" role="alert">{out.error === "network" ? t.errors.generic : out.error === "too_large" ? t.errors.big(LIMITS.playgroundUploadMb) : out.error}</p>;

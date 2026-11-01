@@ -26,7 +26,8 @@ export function ApiShowcase({ lang, signup, liveHref }: { lang: Lang; signup: st
 
   const vs = voices[lang], ex = scripts[lang];
   const cases = useCases[lang].cases;
-  const heard = cases.find(c => c.id === "heritage")!, asked = cases.find(c => c.id === "translation")!;
+  // each case in its first voicing (Nadia, in Hausa)
+  const heard = cases.find(c => c.id === "heritage")!.voicings[0], asked = cases.find(c => c.id === "translation")!.voicings[0];
   const model = a.models.find(m => m.task === task)!;
 
   const speechSrc = (si: number, v: number) => [`/demo/${ex[si].id}-${vs[v].id}.m4a`];

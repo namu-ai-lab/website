@@ -351,6 +351,14 @@ a:hover .metarow .go svg { transform: translateX(calc(3px * var(--motion))); }
 .cs-more { display: grid; gap: 10px; margin: 14px 14px 0; padding-top: 14px; border-top: 1px solid rgba(21, 18, 15, .1); animation: cs-open .45s var(--ease) both; }
 .cs-more[hidden] { display: none; }
 @keyframes cs-open { from { opacity: 0; transform: translateY(-6px); } }
+/* the voice a use case is heard in: a native select dressed as the play button's twin, its chevron drawn over it */
+.cs-voice { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; }
+.cs-voice span { color: var(--ink-3); font-size: 12px; letter-spacing: .02em; }
+.cs-voice select { appearance: none; -webkit-appearance: none; width: 100%; height: 40px; padding: 0 34px 0 14px; border: 0; border-radius: 12px; text-overflow: ellipsis;
+  background: #fff; color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; box-shadow: 0 0 0 1px rgba(21, 18, 15, .06); }
+.cs-voice select:hover { box-shadow: 0 0 0 1px rgba(21, 18, 15, .16); }
+.cs-voice select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cs-voice svg { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-2); pointer-events: none; }
 .cs-play { display: flex; align-items: center; gap: 12px; width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 14px; background: #fff; color: var(--ink); cursor: pointer;
   box-shadow: 0 0 0 1px rgba(21, 18, 15, .06); }
 .cs-play:hover { box-shadow: 0 0 0 1px rgba(21, 18, 15, .16); }

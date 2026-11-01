@@ -17,8 +17,8 @@ type Events = {
   demo_run: { mode: DemoMode; result: string };
   /** the visitor refused, or has no, microphone */
   mic_denied: { mode: DemoMode };
-  /** a use case's spoken example played */
-  example_play: { page: "home" | "organisations"; case: string };
+  /** a use case's spoken example played; voice is the voice and language, as "mouhamad-dje" */
+  example_play: { page: "home" | "organisations"; case: string; voice?: string };
   /** how far into a research post a reader got */
   post_read: { post: string; depth: "half" | "end" };
   /** a link off the site; to is its host, or email */

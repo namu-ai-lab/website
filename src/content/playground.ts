@@ -70,10 +70,11 @@ export const translation = {
 };
 
 /* Clips for Translate, so a visitor without a microphone can still try it (public/usecases/README.md):
-   Hausa spoken by Tafiya, and French spoken by Kora when it translated two of those Hausa clips. */
+   Hausa spoken by Tafiya in Mouhamad's voice (the use cases' own clips), and French spoken by Kora when it translated
+   two Hausa clips. Kora was checked on both Hausa clips: it hears every word and translates them right. */
 const SAMPLES = {
-  market: { src: "/usecases/translation-ha.m4a", says: "Nawa ne farashin buhun gero?" },
-  story: { src: "/usecases/heritage.m4a", says: "Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari." },
+  market: { src: "/usecases/translation/mouhamad-ha.m4a", says: "Sannu! Nawa ne farashin buhun gero a kasuwa yau?" },
+  story: { src: "/usecases/heritage/mouhamad-ha.m4a", says: "Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari. Kowa yana son jin labaransa." },
   storyFr: { src: "/usecases/translation-fr-story.m4a", says: "Un jour, dans un village, il y avait un vieux conteur." },
   formFr: { src: "/usecases/translation-fr-form.m4a", says: "Nous allons vous aider à remplir le formulaire étape par étape." },
 };
@@ -81,8 +82,8 @@ const SAMPLES = {
 export const samples: Record<Lang, { fr: Sample[]; ha: Sample[] }> = {
   en: {
     fr: [
-      { id: "market", label: "At the market", ...SAMPLES.market, meaning: "How much is a sack of millet?" },
-      { id: "story", label: "A storyteller", ...SAMPLES.story, meaning: "Once, in a village, there lived an old storyteller." },
+      { id: "market", label: "At the market", ...SAMPLES.market, meaning: "Hello! How much is a sack of millet at the market today?" },
+      { id: "story", label: "A storyteller", ...SAMPLES.story, meaning: "Once, in a village, there lived an old storyteller. Everyone loved to hear his stories." },
     ],
     ha: [
       { id: "story-fr", label: "A storyteller", ...SAMPLES.storyFr, meaning: "One day, in a village, there was an old storyteller." },
@@ -91,8 +92,8 @@ export const samples: Record<Lang, { fr: Sample[]; ha: Sample[] }> = {
   },
   fr: {
     fr: [
-      { id: "market", label: "Au marché", ...SAMPLES.market, meaning: `Combien coûte un sac de mil${n}?` },
-      { id: "story", label: "Un conteur", ...SAMPLES.story, meaning: "Un jour, dans un village, vivait un vieux conteur." },
+      { id: "market", label: "Au marché", ...SAMPLES.market, meaning: `Bonjour${n}! Combien coûte le sac de mil au marché aujourd’hui${n}?` },
+      { id: "story", label: "Un conteur", ...SAMPLES.story, meaning: "Un jour, dans un village, vivait un vieux conteur. Tout le monde aimait écouter ses histoires." },
     ],
     ha: [
       { id: "story-fr", label: "Un conteur", ...SAMPLES.storyFr, meaning: "Un jour, dans un village, il y avait un vieux conteur." },
