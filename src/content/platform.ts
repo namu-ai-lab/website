@@ -15,8 +15,7 @@ export type PlatformCopy = {
   nav: {
     home: string; voices: string; projects: string; kit: string; tools: string; speak: string; transcribe: string; video: string;
     agents: string; templates: string; conversations: string; knowledge: string;
-    keys: string; limits: string; models: string; products: string; monitoring: string; usage: string; logs: string;
-    playground: string; settings: string; admin: string; docs: string; reference: string;
+    settings: string;
   };
   tasks: Record<Task, string>;
   uses: Record<Use, string>;
@@ -39,8 +38,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     nav: {
       home: "Home", voices: "Voices", projects: "Projects", kit: "Kit", tools: "Tools", speak: "Speak", transcribe: "Transcribe", video: "Translate a video",
       agents: "Agents", templates: "Templates", conversations: "Conversations", knowledge: "Knowledge",
-      keys: "API keys", limits: "Plan and limits", models: "Models", products: "Products", monitoring: "Monitoring", usage: "Usage", logs: "Logs",
-      playground: "Playground", settings: "Settings", admin: "Accounts", docs: "Docs", reference: "API reference",
+      settings: "Settings",
     },
     tasks: { speech: "Speech", transcribe: "Transcription", translate: "Translation", converse: "Conversation" },
     uses: { health: "Health", education: "Education", radio: "Radio", stories: "Stories", public: "Public information", business: "Business" },
@@ -61,8 +59,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     nav: {
       home: "Accueil", voices: "Voix", projects: "Projets", kit: "Kit", tools: "Outils", speak: "Parler", transcribe: "Transcrire", video: "Traduire une vidéo",
       agents: "Agents", templates: "Modèles", conversations: "Conversations", knowledge: "Connaissances",
-      keys: "Clés d’API", limits: "Offre et limites", models: "Modèles", products: "Produits", monitoring: "Suivi", usage: "Consommation", logs: "Journaux",
-      playground: "Bac à sable", settings: "Paramètres", admin: "Comptes", docs: "Documentation", reference: "Référence de l’API",
+      settings: "Paramètres",
     },
     tasks: { speech: "Synthèse vocale", transcribe: "Transcription", translate: "Traduction", converse: "Conversation" },
     uses: { health: "Santé", education: "Éducation", radio: "Radio", stories: "Contes", public: "Information publique", business: "Entreprise" },

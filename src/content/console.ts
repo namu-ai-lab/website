@@ -10,17 +10,6 @@ export type ConsoleCopy = {
   api: string; menu: string; openMenu: string; closeMenu: string; signedIn: string;
   nav: { manage: string; monitor: string; overview: string; keys: string; usage: string; logs: string; limits: string; settings: string; build: string; playground: string; docs: string; reference: string; admin: string };
   access: { approved: string; pending: string; denied: string };
-  /* the API door's first visit, after ElevenAPI's "Get started": one prompt for a coding agent, or the code */
-  start: {
-    title: string; skip: string; agent: string; pasteH: string; prompt: string; copyPrompt: string; copy: string; copied: string; copyFailed: string;
-    keyH: string; keyCta: string; codeH: string; listening: string; landed: string; toLogs: string; toDashboard: string;
-    near: (pct: number) => string; over: (date: string) => string; limitsLink: string;
-  };
-  /* a model's page in the API door */
-  model: {
-    endpoint: string; languages: string; voices: string; limits: string; status: Record<"preview" | "research", string>; tryIt: string; docs: string;
-    request: string; soon: string; text: string; audio: string; rateLabel: string; textLimit: (n: string) => string; audioLimit: (mb: number, min: number) => string; rate: (n: number) => string;
-  };
   overview: {
     meta: [string, string]; h1: (name: string) => string; lede: string;
     audio: string; minutes: (used: string, limit: string) => string; requests: string; keys: string; keysOf: (n: number, max: number) => string;
@@ -117,20 +106,6 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
     api: "API", menu: "Menu", openMenu: "Open menu", closeMenu: "Close menu", signedIn: "Signed in as",
     nav: { manage: "Manage", monitor: "Monitor", overview: "Home", keys: "API keys", usage: "Usage", logs: "Logs", limits: "Limits", settings: "Settings", build: "Build", playground: "Playground", docs: "Docs", reference: "API reference", admin: "Accounts" },
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
-    start: {
-      title: "Get started with Namu API", skip: "Skip to dashboard", agent: "Coding agent",
-      pasteH: "Paste this into your coding agent",
-      prompt: "Add Namu speech to my project. Read https://www.namuai-lab.com/llms.txt, use my key from the NAMU_API_KEY environment variable, and make a first request that turns a Hausa sentence into speech with POST /v1/speech.",
-      copyPrompt: "Copy prompt", copy: "Copy", copied: "Copied", copyFailed: "Copy failed",
-      keyH: "Create a key", keyCta: "Create a key", codeH: "Make your first request",
-      listening: "Listening for your first request", landed: "Your first request", toLogs: "Logs", toDashboard: "Go to dashboard",
-      near: pct => `${pct}% of this month’s audio is used.`, over: date => `This month’s audio is used up. It resets on ${date}.`, limitsLink: "Plan and limits",
-    },
-    model: {
-      endpoint: "Endpoint", languages: "Languages", voices: "Voices", limits: "Limits", status: { preview: "Preview", research: "Research" },
-      tryIt: "Try it", docs: "Docs", request: "Request", soon: "Soon", text: "Text", audio: "Audio", rateLabel: "Rate",
-      textLimit: n => `${n} characters`, audioLimit: (mb, min) => `${mb} MB · ${min} min`, rate: n => `${n} requests a minute per key`,
-    },
     overview: {
       meta: ["Home", "Your Namu API account: keys, usage and a first request."],
       h1: name => (name ? `Welcome, ${name}` : "Welcome"), lede: "Speech models for the languages of the Sahel, behind one API.",
@@ -227,7 +202,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       err: { generic: "Something went wrong. Try again.", wrong: "The current password is not right.", short: "Use at least 8 characters.", name: "Enter a name." },
     },
     limits: {
-      meta: ["Plan and limits", "Your Namu API allowance, rate limits and request limits."],
+      meta: ["Limits", "Your Namu API allowance, rate limits and request limits."],
       lede: "What your account may use, and what the API answers when a limit is reached.",
       allowanceH: "Monthly audio", allowanceLede: "Free during the beta. Transcription and translation count the audio you send, speech counts the audio it returns, and a conversation counts both. A request that fails counts nothing.",
       used: (u, l) => `${u} of ${l} minutes used`, resets: d => `Resets on ${d} (UTC)`, more: "Need more? Write to us",
@@ -264,20 +239,6 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
     api: "API", menu: "Menu", openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", signedIn: "Connecté en tant que",
     nav: { manage: "Gérer", monitor: "Suivre", overview: "Accueil", keys: "Clés d’API", usage: "Consommation", logs: "Journaux", limits: "Limites", settings: "Paramètres", build: "Construire", playground: "Bac à sable", docs: "Documentation", reference: "Référence de l’API", admin: "Comptes" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
-    start: {
-      title: "Démarrer avec Namu API", skip: "Passer au tableau de bord", agent: "Agent de code",
-      pasteH: "Collez ceci dans votre agent de code",
-      prompt: "Ajoute la parole de Namu à mon projet. Lis https://www.namuai-lab.com/llms.txt, utilise ma clé dans la variable d’environnement NAMU_API_KEY et fais une première requête qui transforme une phrase en haoussa en parole avec POST /v1/speech.",
-      copyPrompt: "Copier le prompt", copy: "Copier", copied: "Copié", copyFailed: "Échec de la copie",
-      keyH: "Créer une clé", keyCta: "Créer une clé", codeH: "Faire votre première requête",
-      listening: "En attente de votre première requête", landed: "Votre première requête", toLogs: "Journaux", toDashboard: "Aller au tableau de bord",
-      near: pct => `${pct}${n}% de l’audio de ce mois est utilisé.`, over: date => `L’audio de ce mois est épuisé. Il se renouvelle le ${date}.`, limitsLink: "Offre et limites",
-    },
-    model: {
-      endpoint: "Point d’accès", languages: "Langues", voices: "Voix", limits: "Limites", status: { preview: "Aperçu", research: "Recherche" },
-      tryIt: "Essayer", docs: "Documentation", request: "Requête", soon: "Bientôt", text: "Texte", audio: "Audio", rateLabel: "Débit",
-      textLimit: n => `${n} caractères`, audioLimit: (mb, min) => `${mb} Mo · ${min} min`, rate: n => `${n} requêtes par minute et par clé`,
-    },
     overview: {
       meta: ["Accueil", "Votre compte API Namu : clés, consommation et une première requête.".replace(" :", `${n}:`)],
       h1: name => (name ? `Bienvenue, ${name}` : "Bienvenue"), lede: "Des modèles de parole pour les langues du Sahel, derrière une seule API.",
@@ -374,7 +335,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       err: { generic: "Une erreur s’est produite. Réessayez.", wrong: "Le mot de passe actuel est incorrect.", short: "Utilisez au moins 8 caractères.", name: "Indiquez un nom." },
     },
     limits: {
-      meta: ["Offre et limites", "Votre allocation, vos limites de débit et de requête sur l’API Namu."],
+      meta: ["Limites", "Votre allocation, vos limites de débit et de requête sur l’API Namu."],
       lede: "Ce que votre compte peut utiliser, et ce que l’API répond quand une limite est atteinte.",
       allowanceH: "Audio mensuel", allowanceLede: "Gratuit pendant la bêta. La transcription et la traduction comptent l’audio envoyé, la synthèse compte l’audio renvoyé, et une conversation compte les deux. Une requête qui échoue ne compte pas.",
       used: (u, l) => `${u} sur ${l} minutes utilisées`, resets: d => `Remise à zéro le ${d} (UTC)`, more: `Besoin de plus${n}? Écrivez-nous`,

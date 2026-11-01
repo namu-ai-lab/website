@@ -1,8 +1,7 @@
 /* The platform's three doors and each one's sidebar, as ElevenLabs has ElevenCreative, ElevenAgents and ElevenAPI:
    Namu Create (/create), Namu Agents (/agents) and Namu API (/account, the developer console). A page names its door
-   and its item id; the shell draws the rest. A new page is one item here; a new model appears under API → Models by
-   itself, from the catalog. */
-import { MODELS } from "@/lib/catalog";
+   and its item id; the shell draws the rest. A new page is one item here. */
+import type { MODELS } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import type { DoorId, PlatformCopy } from "@/content/platform";
 
@@ -52,31 +51,9 @@ export const DOORS: Door[] = [
       ] },
     ],
   },
-  {
-    id: "api", home: "/account", orb: orb("#c9b8a6", "#5e5148", "#15120f"),
-    groups: [
-      { items: [
-        { id: "overview", href: "/account", icon: "home", label: "home" },
-        { id: "keys", href: "/account/keys", icon: "key", label: "keys" },
-        { id: "limits", href: "/account/limits", icon: "gauge", label: "limits" },
-      ] },
-      { label: "models", items: MODELS.map(m => ({ id: `model-${m.id}`, href: `/account/models/${m.id}`, icon: m.icon, label: { task: m.task } })) },
-      { label: "products", items: [
-        { id: "voices", href: "/account/voices", icon: "microphone", label: "voices" },
-        { id: "agents", href: "/agents", icon: "phone-voice", label: "agents" },
-      ] },
-      { label: "monitoring", items: [
-        { id: "usage", href: "/account/usage", icon: "chart", label: "usage" },
-        { id: "logs", href: "/account/logs", icon: "logs", label: "logs" },
-      ] },
-      { items: [
-        { id: "playground", href: "/account/playground", icon: "waveform", label: "playground" },
-        { id: "settings", href: "/account/settings", icon: "sliders", label: "settings" },
-        { id: "admin", href: "/account/admin", icon: "person", label: "admin", admin: true },
-      ] },
-    ],
-    foot: [{ label: "docs", href: "/docs" }, { label: "reference", href: "/docs#speech" }],
-  },
+  // Namu API is the developer console (components/console/ConsoleShell, its own flat sidebar); here it is only a door
+  // the switch leads to.
+  { id: "api", home: "/account", orb: orb("#c9b8a6", "#5e5148", "#15120f"), groups: [] },
 ];
 
 export const door = (id: DoorId): Door => DOORS.find(d => d.id === id)!;
