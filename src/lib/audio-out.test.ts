@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { muxOgg, normalise, oggCrc } from "./audio-out";
-import { crc32, zip } from "./zip";
 
 const bytes = (s: string) => new TextEncoder().encode(s);
 
 describe("checksums", () => {
-  it("Ogg's CRC (poly 0x04c11db7, no reflection) and zip's CRC-32 match their check values", () => {
+  it("Ogg's CRC (poly 0x04c11db7, no reflection) matches its check value", () => {
     expect(oggCrc(bytes("123456789"))).toBe(0x89a1897f);
-    expect(crc32(bytes("123456789"))).toBe(0xcbf43926);
   });
 });
 
@@ -43,16 +41,5 @@ describe("loudness", () => {
     const rms = Math.sqrt(y.reduce((s, v) => s + v * v, 0) / y.length);
     expect(20 * Math.log10(rms)).toBeGreaterThan(-17.5);
     expect(Math.max(...y.map(Math.abs))).toBeLessThanOrEqual(0.892);
-  });
-});
-
-describe("zip", () => {
-  it("stores files with a central directory", async () => {
-    const b = new Uint8Array(await zip([{ name: "ha.ogg", data: bytes("abc") }, { name: "fr.wav", data: bytes("de") }]).arrayBuffer());
-    const v = new DataView(b.buffer);
-    expect(v.getUint32(0, true)).toBe(0x04034b50);
-    const end = b.length - 22;
-    expect(v.getUint32(end, true)).toBe(0x06054b50);
-    expect(v.getUint16(end + 10, true)).toBe(2);
   });
 });

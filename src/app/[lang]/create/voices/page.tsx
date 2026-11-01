@@ -15,8 +15,8 @@ export default async function Voices({ params }: { params: Promise<{ lang: strin
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
   const { user, profile } = await requireAccount(lang, "/create/voices");
   return (
-    <PlatformShell lang={lang} door="create" page="voices" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={platformCopy[lang].nav.voices}>
-      <VoiceLibrary lang={lang} door="create" />
+    <PlatformShell lang={lang} door="create" page="voices" user={user} access={profile.beta_status} title={platformCopy[lang].nav.voices}>
+      <VoiceLibrary lang={lang} />
     </PlatformShell>
   );
 }

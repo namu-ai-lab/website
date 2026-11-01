@@ -1,14 +1,13 @@
 import { NotConfigured } from "@/components/account/AccountShell";
 import { Icon } from "@/components/Icon";
+import { LocalTime } from "@/components/console/LocalTime";
 import { NotReady } from "@/components/agents/NotReady";
-import { BlankAgentButton } from "@/components/agents/bits";
+import { TemplateGallery } from "@/components/agents/TemplateGallery";
+import { BlankAgentButton, VoiceDot } from "@/components/agents/bits";
 import { PlatformShell } from "@/components/platform/PlatformShell";
-import { VoiceAvatar } from "@/components/platform/pickers";
 import { platformMetadata } from "@/components/platform/meta";
-import { template } from "@/content/agent-templates";
 import { agentsCopy } from "@/content/agents";
 import { lp, type Lang } from "@/i18n/config";
-import { formatDate } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
 import { listAgents, type AgentSummary } from "@/lib/agents";
 import { voiceFor } from "@/lib/agent-turn";
@@ -19,7 +18,8 @@ import { hasAccounts } from "@/lib/env";
 export const dynamic = "force-dynamic";
 export const generateMetadata = ({ params }: { params: Promise<{ lang: string }> }) => platformMetadata(params, "agents", t => t.nav.agents);
 
-/* Namu Agents' home: the user's agents, or, before the first, one centred way in (templates, or a blank agent). */
+/* Namu Agents' home: the user's agents as rows (their voice, whether they are on WhatsApp, when they last changed),
+   or a calm first step; then three templates to start from. */
 export default async function Agents({ params }: { params: Promise<{ lang: string }> }) {
   const lang = (await params).lang as Lang;
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
@@ -28,39 +28,37 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
   let agents: AgentSummary[] | null = null;
   try { agents = await listAgents(user.id); } catch (e) { if (!isMissingTable(e)) throw e; }
   const shell = { lang, door: "agents" as const, page: "agents", admin: profile.role === "admin", user, access: profile.beta_status };
-
   if (agents === null) return <PlatformShell {...shell} layout="center"><NotReady lang={lang} /></PlatformShell>;
-  if (!agents.length) return (
-    <PlatformShell {...shell} layout="center">
-      <div className="pf-hero ag-first">
-        <span className="ag-orb still" aria-hidden="true"><Icon name="phone-voice" size={30} stroke={1.3} /></span>
-        <h1>{t.list.emptyH}</h1>
-        <div className="ag-first-acts">
-          <a className="cx-btn primary" href={L("/agents/templates")}>{t.list.browse}</a>
-          <BlankAgentButton lang={lang} label={t.list.blank} busyLabel={t.templates.using} />
-        </div>
-      </div>
-    </PlatformShell>
-  );
+
   return (
-    <PlatformShell {...shell} title={t.list.title} actions={<a className="cx-btn primary" href={L("/agents/templates")}><Icon name="plus" size={15} stroke={1.7} />{t.list.create}</a>}>
-      <ul className="ag-agents">
-        {agents.map(a => {
-          const v = voiceFor(a);
-          return (
-            <li key={a.id}>
-              <a className="ag-acard" href={L(`/agents/${a.id}`)}>
-                <span className="ag-acard-top">{v ? <VoiceAvatar v={{ id: v }} size={40} /> : <span className="ag-orb mini" aria-hidden="true" />}
-                  <span className="ag-when">{formatDate(lang, a.updated_at, { style: "dayMonth" })}</span></span>
-                <strong>{a.name}</strong>
-                <span className="ag-acard-meta">{template(a.template) && template(a.template)!.name[lang] !== a.name ? template(a.template)!.name[lang] : ""}</span>
-                <span className="ag-tags">{a.languages.map(l => <em key={l}>{language(l).endonym}</em>)}{v && <em>{voice(v).name}</em>}</span>
-                <span className="ag-acard-foot">{t.list.docs(a.docs)} · {t.list.convs(a.conversations)}</span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+    <PlatformShell {...shell} title={t.list.title} actions={<BlankAgentButton lang={lang} label={t.list.create} busyLabel={t.list.creating} className="cx-btn primary" icon />}>
+      {agents.length ? (
+        <ul className="ag-rows">
+          {agents.map(a => {
+            const v = voiceFor(a), bound = Boolean(a.channels.whatsapp?.phoneNumberId);
+            return (
+              <li key={a.id}>
+                <a className="ag-row ag-agent-row" href={L(`/agents/${a.id}`)}>
+                  <VoiceDot id={v} name={v ? voice(v).name : a.name} size={40} />
+                  <span className="ag-row-main"><strong>{a.name}</strong><em>{language(a.languages[0] ?? "ha").endonym}{v ? ` · ${voice(v).name}` : ""}</em></span>
+                  <span className="hide-sm"><span className={`ag-tag${bound ? " live" : ""}`}>{bound ? t.list.live : t.list.draft}</span></span>
+                  <span className="ag-row-meta hide-sm"><LocalTime iso={a.updated_at} lang={lang} style="dayMonth" rel /></span>
+                  <Icon name="chevron" size={16} stroke={1.6} className="ag-go" />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="ag-card ag-empty ag-first">
+          <span className="ag-first-orb" aria-hidden="true" />
+          <h2>{t.list.emptyH}</h2>
+        </div>
+      )}
+      <section className="ag-section">
+        <div className="ag-section-head"><h2>{t.list.fromTemplate}</h2><a className="ag-see" href={L("/agents/templates")}>{t.list.seeAll}</a></div>
+        <TemplateGallery lang={lang} limit={3} />
+      </section>
     </PlatformShell>
   );
 }

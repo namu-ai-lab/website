@@ -1,21 +1,65 @@
 import type { ReactNode } from "react";
+import { Icon } from "../Icon";
 import { Logo } from "../Logo";
 import { LangSwitch } from "../Header";
-import { PlatformShell, type Access, type PlatformUser } from "../platform/PlatformShell";
+import { PlatformBar } from "../platform/PlatformBar";
 import { consoleCopy } from "@/content/console";
-import type { ModelId } from "@/lib/catalog";
 import { lp, type Lang } from "@/i18n/config";
 import { copy } from "@/i18n/copy";
+import type { IconName } from "@/lib/icons";
 
-export type ConsoleUser = PlatformUser;
-export type { Access };
-export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limits" | "settings" | "admin" | "voices" | `model-${ModelId}`;
+export type ConsoleUser = { name?: string | null; email: string; image?: string | null };
+export type Access = "approved" | "pending" | "denied";
+export type Page = "overview" | "playground" | "usage" | "logs" | "keys" | "limits" | "settings" | "admin";
 
-/* The developer console is the platform's API door (Namu API, after ElevenAPI): its pages render in the platform's
-   shell (components/platform), under the API door's sidebar. */
+/* The developer console's frame, after platform.openai.com, under the platform's top bar (PlatformBar: the mark, the
+   three areas, EN/FR and the account): a sidebar with the Beta pill, one flat list of pages (Home, Playground, API
+   keys, Usage, Logs, Limits, Settings, and Accounts for an admin) and the docs at the foot; then the page under its
+   title. In the Lab's own type (Lab Sans, sentence case, no monospace outside code) and colours. On a phone the
+   list becomes a row of tabs under the bar. */
 export function ConsoleShell({ lang, page, admin, user, access, title, lede, actions, children }:
   { lang: Lang; page: Page; admin: boolean; user: ConsoleUser; access: Access; title: string; lede?: string; actions?: ReactNode; children: ReactNode }) {
-  return <PlatformShell lang={lang} door="api" page={page} admin={admin} user={user} access={access} title={title} lede={lede} actions={actions}>{children}</PlatformShell>;
+  const t = consoleCopy[lang], L = (p: string) => lp(lang, p);
+  type Item = { id: Page; label: string; href: string; icon: IconName };
+  const items: Item[] = [
+    { id: "overview", label: t.nav.overview, href: L("/account"), icon: "home" },
+    { id: "playground", label: t.nav.playground, href: L("/account/playground"), icon: "waveform" },
+    { id: "keys", label: t.nav.keys, href: L("/account/keys"), icon: "key" },
+    { id: "usage", label: t.nav.usage, href: L("/account/usage"), icon: "chart" },
+    { id: "logs", label: t.nav.logs, href: L("/account/logs"), icon: "logs" },
+    { id: "limits", label: t.nav.limits, href: L("/account/limits"), icon: "gauge" },
+    { id: "settings", label: t.nav.settings, href: L("/account/settings"), icon: "sliders" },
+    ...(admin ? [{ id: "admin", label: t.nav.admin, href: L("/account/admin"), icon: "person" } satisfies Item] : []),
+  ];
+  return (
+    <div className="cx-frame">
+      <PlatformBar lang={lang} area="api" user={user} />
+      <div className="cx">
+      <aside className="cx-side">
+        <div className="cx-side-top"><span className={`cx-access ${access}`}><i aria-hidden="true" />{t.access[access]}</span></div>
+        <nav className="cx-nav" aria-label={t.menu}>
+          <ul>{items.map(x => (
+            <li key={x.id}><a href={x.href} aria-current={x.id === page ? "page" : undefined}><Icon name={x.icon} size={18} stroke={1.4} />{x.label}</a></li>
+          ))}</ul>
+        </nav>
+        <div className="cx-side-foot">
+          <a className="cx-side-doc" href={L("/docs")}>{t.nav.docs}<Icon name="external" size={14} stroke={1.5} /></a>
+          <a className="cx-side-doc" href={L("/docs#speech")}>{t.nav.reference}<Icon name="external" size={14} stroke={1.5} /></a>
+        </div>
+      </aside>
+      <section className="cx-page">
+        <header className="cx-head">
+          <div>
+            <h1>{title}</h1>
+            {lede && <p>{lede}</p>}
+          </div>
+          {actions && <div className="cx-head-acts">{actions}</div>}
+        </header>
+        {children}
+      </section>
+      </div>
+    </div>
+  );
 }
 
 /* The frame for the console's doors (sign-in, and the notice when accounts are switched off): a slim bar with the

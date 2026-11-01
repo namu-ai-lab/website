@@ -1,8 +1,8 @@
-/* Copy shared by the platform's three doors (Namu Create, Namu Agents, Namu API): the sidebar, the switch, and the
+/* Copy shared by the platform's three areas (Namu Create, Namu Agents, Namu API): the top bar, the side menus, and the
    words every door uses (tasks, voice uses, output targets, common actions). Each door's own pages keep their copy in
    content/create.ts, content/agents.ts and content/console.ts. Short on purpose: the platform names things and
    does not describe them. The doors' names are product names, the same in every language.
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
+   French: read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 import type { OutputId, Task, Use } from "@/lib/catalog";
 
@@ -11,12 +11,11 @@ export type DoorId = "create" | "agents" | "api";
 export type PlatformCopy = {
   doors: Record<DoorId, string>;
   access: { approved: string; pending: string; denied: string };
-  switchTo: string; menu: string; openMenu: string; closeMenu: string; signedIn: string;
+  platform: string; menu: string; signedIn: string;
   nav: {
-    home: string; voices: string; projects: string; kit: string; tools: string; speak: string; transcribe: string; video: string;
-    agents: string; templates: string; conversations: string; knowledge: string;
-    keys: string; limits: string; models: string; products: string; monitoring: string; usage: string; logs: string;
-    playground: string; settings: string; admin: string; docs: string; reference: string;
+    home: string; voices: string; speak: string; read: string; translate: string;
+    agents: string; templates: string; conversations: string;
+    settings: string;
   };
   tasks: Record<Task, string>;
   uses: Record<Use, string>;
@@ -35,12 +34,11 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   en: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
-    switchTo: "Switch", menu: "Menu", openMenu: "Open menu", closeMenu: "Close menu", signedIn: "Signed in as",
+    platform: "Platform", menu: "Menu", signedIn: "Signed in as",
     nav: {
-      home: "Home", voices: "Voices", projects: "Projects", kit: "Kit", tools: "Tools", speak: "Speak", transcribe: "Transcribe", video: "Translate a video",
-      agents: "Agents", templates: "Templates", conversations: "Conversations", knowledge: "Knowledge",
-      keys: "API keys", limits: "Plan and limits", models: "Models", products: "Products", monitoring: "Monitoring", usage: "Usage", logs: "Logs",
-      playground: "Playground", settings: "Settings", admin: "Accounts", docs: "Docs", reference: "API reference",
+      home: "Home", voices: "Voices", speak: "Voice message", read: "Read a voice note", translate: "Translate",
+      agents: "Agents", templates: "Templates", conversations: "Conversations",
+      settings: "Settings",
     },
     tasks: { speech: "Speech", transcribe: "Transcription", translate: "Translation", converse: "Conversation" },
     uses: { health: "Health", education: "Education", radio: "Radio", stories: "Stories", public: "Public information", business: "Business" },
@@ -57,12 +55,11 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   fr: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
-    switchTo: "Changer", menu: "Menu", openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", signedIn: "Connecté en tant que",
+    platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que",
     nav: {
-      home: "Accueil", voices: "Voix", projects: "Projets", kit: "Kit", tools: "Outils", speak: "Parler", transcribe: "Transcrire", video: "Traduire une vidéo",
-      agents: "Agents", templates: "Modèles", conversations: "Conversations", knowledge: "Connaissances",
-      keys: "Clés d’API", limits: "Offre et limites", models: "Modèles", products: "Produits", monitoring: "Suivi", usage: "Consommation", logs: "Journaux",
-      playground: "Bac à sable", settings: "Paramètres", admin: "Comptes", docs: "Documentation", reference: "Référence de l’API",
+      home: "Accueil", voices: "Voix", speak: "Message vocal", read: "Lire un message vocal", translate: "Traduire",
+      agents: "Agents", templates: "Modèles", conversations: "Conversations",
+      settings: "Paramètres",
     },
     tasks: { speech: "Synthèse vocale", transcribe: "Transcription", translate: "Traduction", converse: "Conversation" },
     uses: { health: "Santé", education: "Éducation", radio: "Radio", stories: "Contes", public: "Information publique", business: "Entreprise" },

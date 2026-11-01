@@ -1,33 +1,81 @@
-/* The platform's shell, shared by its three doors (components/platform): the sidebar's groups, the switch between
-   doors at its foot, and the page layouts. Prefix pf-. Builds on console.css (cx-), which draws the sidebar, the
-   pills, cards and tables every door uses. Each door's own pages: create.css (cr-), agents.css (ag-). */
+/* The platform's frame (components/platform), shared by Create and Agents, and its top bar, shared with the console:
+   the bar with the three areas, a short side menu, and the page. Prefix pf-. Builds on console.css (cx-) for the
+   pills, cards and tables. Create and Agents stand on Namu's own ground (cream, a little Kola, never green), scoped
+   to .pf so the Lab's site and the console keep theirs. Each area's own pages: create.css (cr-), agents.css (ag-). */
+.pf { --bg: #FFFAF1; --surface: #F7F0E3; --surface-2: #F3E7D1; --dry-clay: #EDD9B0; --ink: #1C1410; --ink-2: #4A3D33; --ink-3: #7A6352;
+  --line: rgba(28, 20, 16, .1); --line-2: rgba(28, 20, 16, .14); --kola: #6B3E1E; --focus: #6B3E1E;
+  min-height: 100vh; background: var(--bg); color: var(--ink); font-size: 16px; letter-spacing: .005em; }
+.pf :focus-visible { outline-color: var(--kola); }
 
-/* ---- the sidebar: groups with a quiet label that scroll on their own, and a foot that stays put, ending with the
-   switch between doors (as ElevenLabs keeps Developers, Upgrade and Switch in view) */
-.pf .cx-side { overflow: hidden; }
-.pf-nav { display: grid; align-content: start; gap: 10px; min-height: 0; margin: 0 -6px; padding: 0 6px 12px; overflow-y: auto; scrollbar-width: thin; }
-.pf-nav a { height: 34px; }
-.pf-group-label { margin: 0 0 4px; padding: 0 12px; color: var(--ink-3); font-size: 13px; }
-.pf .cx-side-foot { gap: 2px; padding-top: 10px; }
-.pf .cx-side-foot .lang-switch { margin: 4px 0 0 8px; }
-.pf .cx-side-doc { height: 30px; }
-.pf-switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 10px 6px 0 10px;
-  border-top: 1px solid var(--line); }
-.pf-door { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); font-size: 14.5px; font-weight: 500; white-space: nowrap; }
-.pf-orb { flex: none; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(21, 18, 15, .12); }
-.pf-orb.lg { width: 22px; height: 22px; }
-.pf-switch-btn { height: 30px; padding: 0 12px; border: 0; border-radius: var(--r-pill); background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2);
-  font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; }
-.pf-switch-btn:hover, .pf-switch-btn[aria-expanded="true"] { background: var(--surface-2); }
-.pf-doors { position: absolute; left: 0; right: -6px; bottom: calc(100% + 8px); z-index: 45; display: grid; gap: 2px; margin: 0; padding: 6px; list-style: none;
-  border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 24px 48px -20px rgba(21, 18, 15, .3); }
-.pf-doors a { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; color: var(--ink); font-size: 15px; font-weight: 500; text-decoration: none; }
-.pf-doors a:hover { background: var(--surface); }
-.pf-doors a svg { margin-left: auto; color: var(--sahel-deep); }
+/* ---- the bar: the mark, the three areas in the middle, EN/FR and the account */
+.pf-bar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 64px; padding: 0 20px;
+  background: rgba(255, 250, 241, .78); -webkit-backdrop-filter: saturate(1.6) blur(20px); backdrop-filter: saturate(1.6) blur(20px); box-shadow: 0 1px 0 rgba(28, 20, 16, .08);
+  color: #1C1410; font-size: 15.5px; }
+.cx-frame .pf-bar { background: rgba(255, 255, 255, .86); box-shadow: 0 1px 0 var(--line); }
+.pf-brand { justify-self: start; display: flex; color: inherit; }
+.pf-brand .mark { display: block; height: 30px; width: auto; }
+.pf-areas { display: flex; gap: 4px; }
+.pf-areas a { position: relative; display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 9999px; color: #7A6352; text-decoration: none;
+  transition: color .2s var(--ease), background-color .2s var(--ease); }
+.pf-areas a:hover { color: #1C1410; background: rgba(28, 20, 16, .06); }
+.pf-areas a[aria-current="page"] { color: #1C1410; }
+.pf-areas a[aria-current="page"]::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+  background: var(--sahel); }
+.pf-me { justify-self: end; display: flex; align-items: center; gap: 10px; }
+.pf-me .lang-switch { margin: 0; }
+
+/* ---- the body: the side menu, then the page */
+.pf-body { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: calc(100vh - 64px); }
+.pf-side { position: sticky; top: 64px; display: flex; flex-direction: column; height: calc(100vh - 64px); padding: 20px 12px 16px; box-shadow: 1px 0 0 var(--line); }
+.pf-side ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.pf-side a { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border-radius: 12px; color: var(--ink-3); font-size: 15.5px; text-decoration: none;
+  white-space: nowrap; transition: background-color .2s var(--ease), color .2s var(--ease); }
+.pf-side a:hover { background: rgba(28, 20, 16, .05); color: var(--ink); }
+.pf-side a[aria-current="page"] { background: var(--surface); color: var(--ink); }
+.pf-side a svg { flex: none; }
+.pf-side a[aria-current="page"] svg { color: var(--sahel-deep); }
+.pf-side-foot { margin: auto 0 0; padding: 14px 12px 0; box-shadow: 0 -1px 0 var(--line); }
+.pf-access { display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 9999px; background: var(--surface-2); color: var(--ink); font-size: 13px; }
+.pf-access.pending, .pf-access.denied { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-3); }
 
 /* ---- the page */
-.pf-page.center { display: grid; align-content: start; justify-items: center; max-width: none; padding-top: clamp(56px, 12vh, 140px); text-align: center; }
+.pf-page { width: 100%; max-width: 1180px; margin: 0 auto; padding: clamp(32px, 5vw, 56px) clamp(16px, 4vw, 52px) 120px; }
+.pf-page.center { display: grid; align-content: start; justify-items: center; text-align: center; }
 .pf-page.full { max-width: none; padding: 0; }
+.pf-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 28px; }
+.pf-head h1 { margin: 0; font-size: clamp(28px, 2.4vw, 36px); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.pf-head p { margin: 8px 0 0; color: var(--ink-3); }
+.pf-head-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---- Namu's controls on its own ground: the primary pill is Kola (Ink on hover), the quiet pill Surface 2, the play
+   button Kola; everything else from console.css */
+.pf .cx-btn { height: 44px; padding: 0 20px; background: var(--surface-2); color: var(--ink); box-shadow: none; font-size: 15.5px; font-weight: 500; }
+.pf .cx-btn:hover { background: var(--dry-clay); }
+.pf .cx-btn.primary { background: var(--kola); color: #FFFAF1; }
+.pf .cx-btn.primary:hover { background: var(--ink); }
+.pf .cx-btn.ghost { background: transparent; }
+.pf .cx-btn.ghost:hover { background: rgba(28, 20, 16, .06); }
+.pf .cx-btn.sm { height: 36px; padding: 0 14px; font-size: 14.5px; }
+.pf .cx-play { background: var(--kola); color: #FFFAF1; }
+.pf .cx-play:hover { background: var(--ink); }
+
+/* ---- phones and small tablets: the side menu becomes a row of tabs under the bar */
+@media (max-width: 860px) {
+  .pf-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .pf-side { z-index: 40; height: auto; flex-direction: row; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; background: rgba(255, 250, 241, .9);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 1px 0 var(--line); }
+  .pf-side::-webkit-scrollbar { display: none; }
+  .pf-side ul { display: flex; gap: 4px; }
+  .pf-side a { height: 38px; font-size: 15px; }
+  .pf-side a svg, .pf-side-foot { display: none; }
+}
+@media (max-width: 600px) {
+  .pf-bar { grid-template-columns: auto 1fr auto; gap: 6px; padding: 0 12px; }
+  .pf-brand .mark { height: 26px; }
+  .pf-areas { justify-self: center; gap: 0; }
+  .pf-areas a { padding: 0 10px; font-size: 15px; }
+  .pf-me .lang-switch { display: none; }
+}
 
 /* ---- shared pieces every door uses */
 .pf-hero { display: grid; justify-items: center; gap: 22px; width: min(760px, 100%); }
@@ -102,8 +150,3 @@
 .pf-vid { padding: 4px 9px; border-radius: 8px; background: var(--surface); font-size: 13.5px; }
 .pf-coming-orb { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff 0, var(--surface-2) 55%, #d8cfc4 100%);
   box-shadow: inset 0 0 0 1px var(--line); }
-
-@media (max-width: 860px) {
-  .pf-page.center { padding-top: 40px; }
-  .pf-switch { padding-right: 0; }
-}

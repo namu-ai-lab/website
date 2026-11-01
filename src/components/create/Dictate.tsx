@@ -9,7 +9,7 @@ import { LIMITS } from "@/lib/limits";
 
 /* A microphone that writes: press, speak in `lang`, press again, and what was said arrives as text. Hidden for a
    language no model can hear yet. While listening it shows the voice's level; while the model works, a quiet pulse. */
-export function Dictate({ lang, onText, labels, onError, className = "pj-mic" }:
+export function Dictate({ lang, onText, labels, onError, className = "cr-mic" }:
   { lang: LangCode; onText: (t: string) => void; labels: { dictate: string; stop: string; listening: string; mic: string }; onError: (m: string) => void; className?: string }) {
   const rec = useRef<Recorder | null>(null);
   const [state, setState] = useState<"idle" | "rec" | "work">("idle"), [level, setLevel] = useState(0);

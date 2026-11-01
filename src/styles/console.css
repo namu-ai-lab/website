@@ -51,8 +51,16 @@
 .cx-menu button, .cx-menu a { display: block; width: 100%; margin-top: 4px; padding: 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 15px;
   text-align: left; text-decoration: none; cursor: pointer; }
 .cx-menu button:hover, .cx-menu a:hover { background: var(--surface); }
+/* compact: the avatar alone, in the platform's top bar; the panel drops down */
+.cx-account.compact { margin: 0; }
+.cx-account.compact .cx-me { width: auto; padding: 3px; border-radius: 50%; }
+.cx-account.compact .cx-menu { top: calc(100% + 10px); bottom: auto; left: auto; right: 0; width: 280px; }
 
-.cx-mbar, .cx-side-close, .cx-shade { display: none; }
+/* ---- under the platform's top bar (PlatformBar) */
+.cx-frame { min-height: 100vh; background: var(--bg); }
+.cx-frame .cx { min-height: calc(100vh - 64px); }
+.cx-frame .cx-side { top: 64px; height: calc(100vh - 64px); }
+.cx-frame .cx-side-top { padding: 4px 8px 16px; }
 
 /* ---- the doors' slim bar (sign-in, accounts switched off) */
 .cx-auth { display: block; background: none; }
@@ -435,22 +443,14 @@ a.cx-metric:hover { background: #fcfbf9; }
 /* ---- phones and small tablets: the sidebar becomes a bar with the pages as a row of tabs */
 @media (max-width: 860px) {
   .cx { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; background: none; }
-  /* the sidebar becomes a drawer behind a slim bar (ConsoleDrawer) */
-  .cx-mbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 8px; height: 60px; padding: 0 14px 0 8px; border-bottom: 1px solid var(--line);
-    background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
-  .cx-mbar .cx-access { margin-left: auto; }
-  .cx-mbar-btn { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 0; border-radius: 12px; background: none; color: var(--ink); cursor: pointer; }
-  .cx-mbar-btn:hover { background: rgba(21, 18, 15, .05); }
-  .cx-side { position: fixed; inset: 0 auto 0 0; z-index: 60; width: min(320px, 86vw); height: 100dvh; padding-top: 14px; transform: translateX(-104%);
-    transition: transform calc(.34s * var(--motion)) var(--ease-out), box-shadow .34s; }
-  .cx-side.open { transform: none; box-shadow: 0 40px 100px -20px rgba(21, 18, 15, .4); }
-  .cx-side-top { padding-right: 48px; }
-  .cx-side-close { position: absolute; top: 14px; right: 12px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 12px; background: none;
-    color: var(--ink-2); cursor: pointer; }
-  .cx-side-close:hover { background: rgba(21, 18, 15, .05); color: var(--ink); }
-  .cx-nav a { height: 46px; font-size: 16.5px; }
-  .cx-shade { position: fixed; inset: 0; z-index: 55; display: block; background: rgba(21, 18, 15, .32); opacity: 0; pointer-events: none; transition: opacity calc(.3s * var(--motion)); }
-  .cx-shade.on { opacity: 1; pointer-events: auto; }
+  /* the list becomes a row of tabs under the bar */
+  .cx-frame .cx-side { position: sticky; top: 64px; z-index: 40; flex-direction: row; height: auto; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; border-right: 0;
+    border-bottom: 1px solid var(--line); background: rgba(248, 246, 243, .94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .cx-frame .cx-side::-webkit-scrollbar { display: none; }
+  .cx-frame .cx-side-top, .cx-frame .cx-side-foot { display: none; }
+  .cx-frame .cx-nav ul { display: flex; gap: 4px; }
+  .cx-frame .cx-nav a { height: 38px; font-size: 15px; white-space: nowrap; }
+  .cx-frame .cx-nav a svg { display: none; }
   .cx-page { padding: 26px 16px 80px; }
   .cx-head h1 { font-size: 30px; }
   .cx-tiles, .cx-tiles.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -590,74 +590,3 @@ a.cx-metric:hover { background: #fcfbf9; }
   .cx-head-acts .cx-btn { justify-content: center; }
 }
 @media (hover: none), (pointer: coarse) { .cx-pg kbd { display: none; } }
-
-/* ---- API Home's first visit (GetStarted), after ElevenAPI: tabs, one step, the prompt or the code on ink, and a
-   line that waits for the first request */
-.cx-start { display: grid; gap: 18px; max-width: 920px; }
-.cx-start-tabs { margin-bottom: 6px; }
-.cx-start-step { display: flex; align-items: center; gap: 12px; margin: 4px 0 -4px; }
-.cx-start-step p { margin: 0; font-size: 16px; font-weight: 500; }
-.cx-start-step .cx-btn { margin-left: auto; }
-.cx-start-n { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--ink-2);
-  box-shadow: inset 0 0 0 1px var(--line-2); font-size: 13.5px; font-weight: 500; }
-.cx-start-code { position: relative; border-radius: 18px; background: var(--night); color: #f4ece2; }
-.cx-start-code pre { margin: 0; padding: 24px 150px 24px 26px; overflow-x: auto; font: 14px/1.7 ui-monospace, "SF Mono", Menlo, Consolas, monospace; white-space: pre-wrap;
-  overflow-wrap: anywhere; }
-.cx-start-code.prompt pre { font-size: 14.5px; }
-.cx-start-code .hl-c { color: rgba(244, 236, 226, .45); }
-.cx-start-code .hl-s { color: #f6c79f; }
-.cx-start-code .hl-w { color: #9fb6e8; }
-.cx-start-code .hl-k { color: #fff; }
-.cx-start-copy { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 0;
-  border-radius: var(--r-pill); background: #fff; color: var(--ink); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
-.cx-start-copy:hover { background: var(--surface-2); }
-.cx-start-listen { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; min-height: 58px; padding: 12px 20px; border: 1px solid var(--line);
-  border-radius: 16px; background: var(--surface); color: var(--ink-2); font-size: 15px; }
-.cx-start-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); animation: cx-listen 1.6s var(--ease) infinite; }
-@keyframes cx-listen { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
-@media (prefers-reduced-motion: reduce) { .cx-start-dot { animation: none; } }
-.cx-start-log { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--ink-2); font-size: 14.5px; text-decoration: underline;
-  text-decoration-color: var(--line-2); text-underline-offset: 3px; }
-.cx-start-listen.landed { background: #fff; color: var(--ink); }
-.cx-start-listen.landed code { padding: 3px 9px; border-radius: 8px; background: var(--surface); font-size: 13.5px; }
-.cx-start-listen.landed .cx-btn { margin-left: auto; }
-.cx-start-ok { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--sahel); color: var(--night); }
-@media (max-width: 640px) {
-  .cx-start-code pre { padding: 64px 18px 20px; }
-  .cx-start-tabs { max-width: 100%; overflow-x: auto; }
-  .cx-start-tabs button { padding: 0 11px; font-size: 14px; }
-  .cx-start-log, .cx-start-listen.landed .cx-btn { margin-left: 0; }
-}
-
-/* ---- a quiet line on API Home past 80% of the month's audio */
-.cx-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 22px; padding: 13px 18px; border-radius: 16px; background: #fdf1e7;
-  color: var(--ink-2); font-size: 15px; }
-.cx-notice svg { flex: none; color: var(--sahel-deep); }
-.cx-notice.over { background: #fbe6df; }
-.cx-notice a { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--ink); font-weight: 500; text-decoration: none; }
-
-/* ---- a model's page in the API door: its task and status, then its facts in a row of cards, then its request */
-.cx-model-task { display: flex; align-items: center; gap: 10px; margin: -18px 0 26px; color: var(--ink-2); font-size: 16px; }
-.cx-model-task svg { color: var(--sahel-deep); }
-.cx-model-status { padding: 3px 10px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 500; }
-.cx-model-status.research { background: rgba(143, 166, 214, .2); color: #3d4a78; }
-.cx-model-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-.cx-model-fact { padding: 20px 22px; border: 1px solid var(--line); border-radius: 20px; background: #fff; }
-.cx-model-route { display: inline-block; padding: 6px 12px; border-radius: 10px; background: var(--surface); font-size: 14.5px; }
-.cx-model-route b { margin-right: 6px; color: var(--sahel-deep); font-weight: 600; }
-.cx-model-langs { display: flex; flex-wrap: wrap; gap: 8px; }
-.cx-model-lang { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink);
-  font-size: 14.5px; }
-.cx-model-lang svg { color: var(--ink-3); }
-.cx-model-lang.off { background: none; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
-.cx-model-voices { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.cx-model-voices li { display: flex; align-items: center; gap: 10px; }
-.cx-model-voices li > span { display: grid; flex: 1; line-height: 1.25; }
-.cx-model-voices strong { font-size: 15px; font-weight: 500; }
-.cx-model-voices code { color: var(--ink-3); font-size: 13px; }
-.cx-model-limits { display: grid; gap: 12px; margin: 0; }
-.cx-model-limits div { display: grid; gap: 1px; }
-.cx-model-limits dt { color: var(--ink-3); font-size: 13.5px; }
-.cx-model-limits dd { margin: 0; font-size: 15px; }
-.cx-model-h { margin: 38px 0 14px; font-size: 19px; font-weight: 500; letter-spacing: -.012em; }
-.cx-model-sub { margin-top: 22px; }
