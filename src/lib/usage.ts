@@ -24,7 +24,10 @@ export type UsageData = { from: string; to: string; days: string[]; groups: Grou
 export async function usageFor(userId: string, range: Range, by: GroupBy, names: { playground: string; deleted: string }): Promise<UsageData> {
   const [from, to] = WINDOW[range];
   // The group: the model, or the key (the website's service key is the Playground; a missing key, a deleted one).
-  const g = by === "model" ? "e.endpoint" : "case when k.is_service then 'playground' else coalesce(k.id::text, 'deleted') end";
+  // An agent's text step (endpoint 'agents', lib/agent-meter) is Aïr's: it counts under converse, and as the Playground
+  // among keys, since it is the account's own use of the platform.
+  const g = by === "model" ? "case when e.endpoint = 'agents' then 'converse' else e.endpoint end"
+    : "case when k.is_service or e.endpoint = 'agents' then 'playground' else coalesce(k.id::text, 'deleted') end";
   const base = `from public.usage_events e left join public.api_keys k on k.id = e.key_id where e.user_id = $1 and e.created_at >= ${from} and e.created_at < ${to}`;
   const [[span], totals, daily, keys] = await Promise.all([
     sql<{ f: string; t: string }>(`select to_char((${from}) at time zone 'UTC', 'YYYY-MM-DD') as f, to_char(((${to}) - interval '1 second') at time zone 'UTC', 'YYYY-MM-DD') as t`),
@@ -47,4 +50,15 @@ export async function usageFor(userId: string, range: Range, by: GroupBy, names:
     from: span.f, to: span.t, days, groups, daily,
     totals: totals.map(t => ({ group: t.grp, requests: t.requests, errors: t.errors, audioMin: Number(t.audio) / 60, chars: t.chars, latencyMs: t.latency === null ? null : Number(t.latency) })),
   };
+}
+
+export type FirstRequest = { endpoint: string; status: number; at: string; latencyMs: number };
+
+/** The account's latest request through one of its own keys, not the Playground's: what the API door's first visit
+    waits for. */
+export async function latestApiRequest(userId: string): Promise<FirstRequest | null> {
+  const [r] = await sql<{ endpoint: string; status: number; created_at: Date; latency_ms: number }>(`select e.endpoint, e.status, e.created_at, e.latency_ms
+    from public.usage_events e join public.api_keys k on k.id = e.key_id
+    where e.user_id = $1 and not k.is_service order by e.created_at desc, e.id desc limit 1`, [userId]);
+  return r ? { endpoint: r.endpoint, status: r.status, at: r.created_at.toISOString(), latencyMs: r.latency_ms } : null;
 }

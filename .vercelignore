@@ -1,3 +1,4 @@
 # The Modal services and the database schema are deployed separately (see platform/README.md).
-platform/
-db/
+# Anchored to the root: an unanchored "platform/" also drops src/components/platform.
+/platform/
+/db/

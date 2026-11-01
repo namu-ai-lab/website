@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NotConfigured } from "@/components/account/AccountShell";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { consoleCopy } from "@/content/console";
+import { platformCopy } from "@/content/platform";
 import { isLang, type Lang } from "@/i18n/config";
 import { formatDate, numberFormat } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
@@ -18,7 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title, description, robots: { index: false } };
 }
 
-/* Limits, after platform.openai.com/settings/organization/limits: the month's audio allowance, the rate limit of each
+/* Plan and limits, after platform.openai.com/settings/organization/limits (the plan is the free beta allowance until
+   paid plans exist): the month's audio allowance, the rate limit of each
    active key and of the Playground, the request limits, and what the API answers at each. Numbers come from the
    account and from lib/limits (which mirrors the gateway). */
 export default async function Limits({ params }: { params: Promise<{ lang: string }> }) {
@@ -37,7 +39,7 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
   const resets = formatDate(lang, next, { style: "dayMonth" });
 
   return (
-    <ConsoleShell lang={lang} page="limits" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={consoleCopy[lang].nav.limits} lede={t.lede}>
+    <ConsoleShell lang={lang} page="limits" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={platformCopy[lang].nav.limits} lede={t.lede}>
       <div className="cx-card cx-allowance">
         <div className="cx-card-head"><div><h2>{t.allowanceH}</h2><p className="cx-muted">{t.allowanceLede}</p></div>
           <a className="cx-btn" href="mailto:contact@namuai.org?subject=Namu%20API%20allowance">{t.more}</a></div>

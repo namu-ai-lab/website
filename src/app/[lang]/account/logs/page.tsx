@@ -6,6 +6,8 @@ import { Filters } from "@/components/console/Filters";
 import { LocalTime } from "@/components/console/LocalTime";
 import { Icon } from "@/components/Icon";
 import { consoleCopy } from "@/content/console";
+import { platformCopy } from "@/content/platform";
+import { CHAT_ENDPOINT } from "@/lib/agent-meter";
 import { isLang, lp, type Lang } from "@/i18n/config";
 import { numberFormat } from "@/i18n/format";
 import { requireAccount } from "@/lib/account";
@@ -25,7 +27,7 @@ const RANGES = { "24h": "1 day", "7d": "7 days", "30d": "30 days" } as const;
 type Range = keyof typeof RANGES;
 const PAGE = 50;
 
-type Row = { id: string; created_at: Date; endpoint: Scope; status: number; audio_seconds: string; characters: number; latency_ms: number;
+type Row = { id: string; created_at: Date; endpoint: Scope | typeof CHAT_ENDPOINT; status: number; audio_seconds: string; characters: number; latency_ms: number;
   key_name: string | null; prefix: string | null; is_service: boolean | null };
 
 /* Logs, after platform.openai.com/logs: every request from this account, newest first, fifty at a time, filtered by
@@ -67,7 +69,9 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
   const keep = new URLSearchParams(Object.entries({ range: range === "7d" ? "" : range, model, status, key }).filter(([, v]) => v) as [string, string][]);
   const olderHref = last ? `?${new URLSearchParams([...keep, ["before", last.id]])}` : "";
   const nf = numberFormat(lang);
-  const keyLabel = (r: Row) => (r.is_service ? t.playground : r.key_name ?? t.deletedKey);
+  // an agent's text step (Namu Agents, lib/agent-meter) has no key: it is the agent's owner talking to it
+  const agents = platformCopy[lang].nav.agents;
+  const keyLabel = (r: Row) => (r.endpoint === CHAT_ENDPOINT ? agents : r.is_service ? t.playground : r.key_name ?? t.deletedKey);
 
   return (
     <ConsoleShell lang={lang} page="logs" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={consoleCopy[lang].nav.logs} lede={t.lede}>
@@ -95,7 +99,9 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
             <tbody>{page.map(r => (
               <tr key={r.id}>
                 <td className="cx-when" data-label={t.th.time}><LocalTime iso={r.created_at.toISOString()} lang={lang} /></td>
-                <td className="c-main c-first"><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></td>
+                <td className="c-main c-first">{r.endpoint === CHAT_ENDPOINT
+                  ? <><i className="cx-dot" style={{ background: MODEL_ORB.converse }} />{m.converse.name}<code className="cx-ep">{agents}</code></>
+                  : <><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></>}</td>
                 <td data-label={t.th.key}>{keyLabel(r)}{r.prefix && !r.is_service && <code className="cx-ep">{r.prefix}…</code>}</td>
                 <td className="c-corner"><span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span></td>
                 <td className="num" data-label={t.th.audio}>{Number(r.audio_seconds) ? `${nf.format(Number(r.audio_seconds))} s` : "–"}</td>

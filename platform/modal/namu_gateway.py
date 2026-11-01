@@ -11,8 +11,8 @@ file is the only public way in. (The website's server also calls namu-agent's
 text step for the home demo, with the proxy token; see platform/README.md.)
 
     POST /v1/transcribe   Tatsuniya  speech -> text
-    POST /v1/speech       Tafiya     text   -> speech (audio/wav)
-    POST /v1/translate    Kora       speech -> translated text (+ speech)
+    POST /v1/speech       Tafiya     text   -> speech (WAV, MP3 or Ogg Opus)
+    POST /v1/translate    Kora       speech or text -> translated text (+ speech)
     POST /v1/converse     Air        speech -> spoken reply, one turn, nothing kept
     GET  /v1/models  /v1/voices  /v1/usage  /v1/health
 
@@ -94,6 +94,7 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 MULTIPART_SLACK_BYTES = 1024 * 1024           # room for the multipart framing and the form's text fields
 MAX_AUDIO_SECONDS = 300.0
 MAX_TEXT_CHARS = 2000
+TEXT_CHARS_PER_SECOND = 15.0   # text translation is counted as speech of its length: about 15 characters a second
 DEMO_MAX_AUDIO_SECONDS = 15.0
 DEMO_MAX_TEXT_CHARS = 300
 DEMO_IP_PER_HOUR = 30
@@ -135,11 +136,14 @@ def billable_seconds(endpoint: str, status: int, sent_s: float = 0.0, returned_s
         speech      the audio returned
         translate   the audio sent; not the translated speech it can return, until the open billing
                     question in platform/README.md is decided
+        translate_text  a written request: its text counted as the time it takes to say
+                    (TEXT_CHARS_PER_SECOND), plus the translation spoken, when it was asked for
         converse    the audio sent and the spoken reply
     """
     if not 200 <= status < 300:
         return 0.0
     counted = {"transcribe": sent_s, "speech": returned_s, "translate": sent_s,
+               "translate_text": sent_s + returned_s,
                "converse": sent_s + returned_s}[endpoint]
     return max(0.0, counted)                   # a length is never a credit, however it was measured
 
@@ -314,12 +318,40 @@ def header_seconds(data: bytes) -> float | None:
         os.unlink(path)
 
 
+# What /v1/speech can answer, by "format": the model's own WAV, or the same speech encoded for where it will
+# be heard (MP3 for files and players, Ogg Opus for WhatsApp voice notes). "json" is WAV in base64.
+SPEECH_FORMATS = {"wav": "audio/wav", "mp3": "audio/mpeg", "opus": "audio/ogg"}
+ENCODE_ARGS = {"mp3": ["-c:a", "libmp3lame", "-b:a", "64k", "-ac", "1", "-f", "mp3"],
+               "opus": ["-c:a", "libopus", "-b:a", "32k", "-ar", "48000", "-ac", "1", "-application", "voip", "-f", "ogg"]}
+
+
+def encode_audio(data: bytes, fmt: str) -> bytes | None:
+    """The model's WAV in another format, by ffmpeg; None if it fails. The input is the voice service's
+    own output, but ffmpeg is still pinned to the WAV demuxer and to the one temporary file, as ffprobe is."""
+    if fmt not in ENCODE_ARGS:
+        return None
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
+        f.write(data)
+        path = f.name
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-v", "error", "-protocol_whitelist", "file,pipe", "-f", "wav", "-i", f"file:{path}",
+             *ENCODE_ARGS[fmt], "pipe:1"],
+            capture_output=True, timeout=60)
+        return r.stdout if r.returncode == 0 and r.stdout else None
+    except Exception:
+        return None
+    finally:
+        os.unlink(path)
+
+
 # ---------------------------------------------------------------- the app
 def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_seconds,
-               now=time.time):
+               encode=encode_audio, now=time.time):
     """store: lookup(hash)->KeyRecord|None, account(user_id)->(status, monthly_s, used_s)|None, record(Usage)
-    upstream: transcribe/speak/translate/converse(..., timeout_s)->UpstreamReply; may raise, and raises
-              TimeoutError (UpstreamTimeout) when the time runs out
+    upstream: transcribe/speak/translate/translate_text/converse(..., timeout_s)->UpstreamReply; may raise,
+              and raises TimeoutError (UpstreamTimeout) when the time runs out
+    encode: (wav_bytes, "mp3" | "opus") -> bytes | None, for /v1/speech's format
     limiter: hit(bucket, limit, window_s)->(allowed, retry_after_s)
     """
     import contextvars
@@ -643,8 +675,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         except Exception:
             body = None
         # A list, a string, or a text or voice that is not a string would fail further down as a 500.
-        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str) for k in ("text", "voice")):
+        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str) for k in ("text", "voice", "format")):
             return err(400, "invalid_json", 'Send JSON: {"text": "...", "voice": "nadia"}.')
+        fmt = body.get("format") or "wav"
+        if fmt not in SPEECH_FORMATS and fmt != "json":
+            return err(400, "invalid_request", "'format' must be wav, mp3, opus or json.")
         text = (body.get("text") or "").strip()
         if not text:
             return err(400, "missing_text", "'text' is required.")
@@ -664,11 +699,17 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             secs = wav_seconds(reply.content)
         except Exception:
             secs = 0.0
+        audio = reply.content
+        if fmt in ENCODE_ARGS:
+            audio = await off_loop(encode, reply.content, fmt)
+            if not audio:                      # a request that fails counts nothing, whatever failed
+                record(bg, rec, "speech", "tafiya", t0, 500, chars=len(text))
+                return err(500, "encode_failed", f"The speech could not be encoded as {fmt}. Try format wav.")
         record(bg, rec, "speech", "tafiya", t0, 200, returned_s=secs, chars=len(text))
-        if body.get("format") == "json":
+        if fmt == "json":
             return {"model": "tafiya", "voice": voice, "audio_seconds": round(secs, 2),
                     "audio": base64.b64encode(reply.content).decode(), "sample_rate": 24000}
-        return Response(reply.content, media_type="audio/wav",
+        return Response(audio, media_type=SPEECH_FORMATS[fmt],
                         headers={"X-Audio-Seconds": f"{secs:.2f}"})
 
     @web.post("/v1/translate")
@@ -677,6 +718,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         rec, e = await authorize(request, "translate")
         if e:
             return e
+        if request.headers.get("content-type", "").startswith("application/json"):
+            return await translate_text(request, bg, rec, t0)
         data, secs, fields, e = await read_audio(request, rec)
         if e:
             return e
@@ -695,6 +738,52 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if str(fields.get("include_audio", "")).lower() in ("1", "true", "yes"):
             # Text only where speech is withdrawn (French), whatever the model service sent.
             res["audio"] = out.get("audio") if target in SPOKEN_TARGETS else None
+        return res
+
+    async def translate_text(request: Request, bg: BackgroundTasks, rec: KeyRecord, t0: float):
+        """/v1/translate with JSON { text, source, target }: text in, text out (and, with include_audio, the
+        translation spoken in the target language's first voice). Counted by characters; no audio was sent."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str) for k in ("text", "source", "target")):
+            return err(400, "invalid_json", 'Send JSON: {"text": "...", "source": "fr", "target": "ha"}.')
+        text = (body.get("text") or "").strip()
+        if not text:
+            return err(400, "missing_text", "'text' is required.")
+        cap = DEMO_MAX_TEXT_CHARS if rec.is_demo else MAX_TEXT_CHARS
+        if len(text) > cap:
+            return err(413, "text_too_long", f"'text' must be {cap} characters or fewer.")
+        target = body.get("target") or "fr"
+        source = body.get("source") or ("ha" if target == "fr" else "fr")
+        if {source, target} != {"ha", "fr"}:
+            return err(400, "unsupported_pair", "Kora translates between Hausa and French.")
+        out, status, e = await call_upstream(upstream.translate_text, text, source, target, time_left(rec, t0))
+        said_s = len(text) / TEXT_CHARS_PER_SECOND
+        if e:
+            record(bg, rec, "translate", "kora", t0, status, chars=len(text))
+            return e
+        res = {"model": "kora", "source": source, "target": target, "source_text": text,
+               "text": out.get("text", ""), "characters": len(text)}
+        spoken_s = 0.0
+        spoken = str(body.get("include_audio", request.query_params.get("include_audio", ""))).lower() in ("1", "true", "yes")
+        if spoken:
+            # Text only where speech is withdrawn (French), as for audio in.
+            res["audio"] = None
+        if spoken and res["text"] and target in SPOKEN_TARGETS:
+            voice = next(v for v in VOICES.values() if v["language"] == target)
+            reply, _, e = await call_upstream(upstream.speak, res["text"], target, voice["upstream"],
+                                              time_left(rec, t0), expect="audio")
+            if reply is not None:
+                res["audio"] = base64.b64encode(reply.content).decode()
+                try:
+                    spoken_s = wav_seconds(reply.content)
+                except Exception:
+                    spoken_s = 0.0
+        # the row says "translate"; what it counts is billable_seconds("translate_text", ...)
+        seconds = billable_seconds("translate_text", 200, said_s, spoken_s)
+        record(bg, rec, "translate", "kora", t0, 200, sent_s=seconds, chars=len(text))
         return res
 
     @web.post("/v1/converse")
@@ -853,6 +942,11 @@ class ModalUpstream:
             f"{self.urls['interpret']}/v1/speech", timeout, params={"source": source, "target": target},
             content=data, headers={"Content-Type": "application/octet-stream"})
 
+    def translate_text(self, text: str, source: str, target: str, timeout: float) -> UpstreamReply:
+        return self._post(
+            f"{self.urls['interpret']}/v1/translate", timeout,
+            json={"text": text, "source": source, "target": target})
+
     def converse(self, data: bytes, persona: str, timeout: float) -> UpstreamReply:
         # No session id goes to the agent: converse is one turn, and nothing names a conversation to keep.
         return self._post(
@@ -884,7 +978,8 @@ class DictLimiter:
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    # ffprobe: audio length before any GPU work. It parses untrusted uploads, so
+    # ffprobe: audio length before any GPU work; ffmpeg: /v1/speech in MP3 or Ogg Opus. ffprobe parses
+    # untrusted uploads, so
     # rebuild the image now and then to take Debian's security fixes: Modal
     # caches this layer until forced (MODAL_FORCE_BUILD=1, platform/README.md).
     .apt_install("ffmpeg")
