@@ -3,7 +3,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
-import { VoiceAvatar } from "../platform/pickers";
 import { ChipMenu, Making, MessageList, MiniPlay, VoiceEntry, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
@@ -112,8 +111,8 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
               ? <ChipMenu label={t.to} value={language(to).endonym} onPick={id => setTo(id as LangCode)} options={spoken.map(l => ({ id: l, label: language(l).endonym }))} />
               : <span className="cr-chip static">{language(to).endonym}</span>}
             {voice && (
-              <ChipMenu label={p.voice} value={<><VoiceAvatar v={{ id: voice }} size={22} />{voiceOf(voice).name}</>} onPick={id => setVoices(v => ({ ...v, [to]: id as VoiceId }))}
-                options={voicesFor(to).map(v => ({ id: v.id, label: <><VoiceAvatar v={v} size={22} />{v.name}</>, end: <MiniPlay src={v.sample} label={`${p.play} ${v.name}`} /> }))} />
+              <ChipMenu label={p.voice} value={voiceOf(voice).name} onPick={id => setVoices(v => ({ ...v, [to]: id as VoiceId }))}
+                options={voicesFor(to).map(v => ({ id: v.id, label: v.name, end: <MiniPlay src={v.sample} label={`${p.play} ${v.name}`} /> }))} />
             )}
             <span className="cr-grow" />
             {typed && <Dictate lang={from} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
@@ -125,7 +124,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
         {phase !== "idle" && <Making label={phase === "translate" ? t.translating : t.speaking} />}
         {made && phase === "idle" && (
           <div className="cr-result">
-            <VoiceNote tail={<>{made.voice && <VoiceAvatar v={{ id: made.voice }} size={22} />}{language(made.lang).endonym}{made.voice ? ` · ${voiceOf(made.voice).name}` : ""}</>}>
+            <VoiceNote tail={<>{language(made.lang).endonym}{made.voice ? ` · ${voiceOf(made.voice).name}` : ""}</>}>
               <AudioPlayer src={made.wav} labels={{ play: p.play, pause: p.pause, download: p.download }} compact />
             </VoiceNote>
             <p className="cr-said" lang={made.lang}>{made.text}</p>

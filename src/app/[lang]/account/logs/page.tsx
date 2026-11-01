@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NotConfigured } from "@/components/account/AccountShell";
-import { MODEL_ORB } from "@/components/console/colours";
+import { ModelGlyph } from "@/components/console/ModelGlyph";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Filters } from "@/components/console/Filters";
 import { LocalTime } from "@/components/console/LocalTime";
@@ -100,8 +100,8 @@ export default async function Logs({ params, searchParams }: { params: Promise<{
               <tr key={r.id}>
                 <td className="cx-when" data-label={t.th.time}><LocalTime iso={r.created_at.toISOString()} lang={lang} /></td>
                 <td className="c-main c-first">{r.endpoint === CHAT_ENDPOINT
-                  ? <><i className="cx-dot" style={{ background: MODEL_ORB.converse }} />{m.converse.name}<code className="cx-ep">{agents}</code></>
-                  : <><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></>}</td>
+                  ? <><ModelGlyph scope="converse" />{m.converse.name}<code className="cx-ep">{agents}</code></>
+                  : <><ModelGlyph scope={r.endpoint} />{m[r.endpoint]?.name ?? r.endpoint}<code className="cx-ep">/v1/{r.endpoint}</code></>}</td>
                 <td data-label={t.th.key}>{keyLabel(r)}{r.prefix && !r.is_service && <code className="cx-ep">{r.prefix}…</code>}</td>
                 <td className="c-corner"><span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span></td>
                 <td className="num" data-label={t.th.audio}>{Number(r.audio_seconds) ? `${nf.format(Number(r.audio_seconds))} s` : "–"}</td>

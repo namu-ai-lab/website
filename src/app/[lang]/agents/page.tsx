@@ -3,10 +3,11 @@ import { Icon } from "@/components/Icon";
 import { LocalTime } from "@/components/console/LocalTime";
 import { NotReady } from "@/components/agents/NotReady";
 import { TemplateGallery } from "@/components/agents/TemplateGallery";
-import { BlankAgentButton, VoiceDot } from "@/components/agents/bits";
+import { BlankAgentButton } from "@/components/agents/bits";
 import { PlatformShell } from "@/components/platform/PlatformShell";
 import { platformMetadata } from "@/components/platform/meta";
 import { agentsCopy } from "@/content/agents";
+import { TEMPLATES, photoOf } from "@/content/agent-templates";
 import { lp, type Lang } from "@/i18n/config";
 import { requireAccount } from "@/lib/account";
 import { listAgents, type AgentSummary } from "@/lib/agents";
@@ -39,7 +40,7 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
             return (
               <li key={a.id}>
                 <a className="ag-row ag-agent-row" href={L(`/agents/${a.id}`)}>
-                  <VoiceDot id={v} name={v ? voice(v).name : a.name} size={40} />
+                  <AgentMark template={a.template} />
                   <span className="ag-row-main"><strong>{a.name}</strong><em>{language(a.languages[0] ?? "ha").endonym}{v ? ` · ${voice(v).name}` : ""}</em></span>
                   <span className="ag-row-status"><span className={`ag-tag${bound ? " live" : ""}`}>{bound ? t.list.live : t.list.draft}</span></span>
                   <span className="ag-row-meta hide-sm"><LocalTime iso={a.updated_at} lang={lang} style="dayMonth" rel /></span>
@@ -51,7 +52,7 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
         </ul>
       ) : (
         <div className="ag-card ag-empty ag-first">
-          <span className="ag-first-orb" aria-hidden="true" />
+          <span className="ag-mark" aria-hidden="true"><Icon name="phone-voice" size={26} stroke={1.4} /></span>
           <h2>{t.list.emptyH}</h2>
         </div>
       )}
@@ -61,4 +62,12 @@ export default async function Agents({ params }: { params: Promise<{ lang: strin
       </section>
     </PlatformShell>
   );
+}
+
+/** An agent at a glance: the photograph of the people its template serves, or for a blank agent, a plain tile. */
+function AgentMark({ template }: { template: string | null }) {
+  const t = TEMPLATES.find(x => x.id === template);
+  return t
+    ? <span className="ag-mark photo" aria-hidden="true"><img src={photoOf(t)} alt="" loading="lazy" /></span>
+    : <span className="ag-mark" aria-hidden="true"><Icon name="phone-voice" size={18} stroke={1.5} /></span>;
 }

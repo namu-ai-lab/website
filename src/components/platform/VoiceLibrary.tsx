@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "../Icon";
-import { VoiceAvatar } from "./pickers";
+import { VoiceOutline } from "./pickers";
 import { usePlay } from "../create/bits";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
@@ -37,7 +37,8 @@ function VoiceCard({ v, lang }: { v: Voice; lang: Lang }) {
   const { on, play } = usePlay();
   return (
     <li className="cr-vcard">
-      <span className="cr-vhead"><VoiceAvatar v={v} size={64} /><span><strong>{v.name}</strong><em>{v.languages.map(l => language(l).endonym).join(" · ")}</em></span></span>
+      <span className="cr-vhead"><span><strong>{v.name}</strong><em>{v.languages.map(l => language(l).endonym).join(" · ")}</em></span></span>
+      <VoiceOutline v={v} />
       <span className="cr-tags">
         {v.gender && <span>{p.gender[v.gender]}</span>}
         {v.uses.map(u => <span key={u}>{p.uses[u]}</span>)}

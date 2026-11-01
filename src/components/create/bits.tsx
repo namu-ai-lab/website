@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../Icon";
 import { LocalTime } from "../console/LocalTime";
-import { VoiceAvatar } from "../platform/pickers";
 import { fileFor, interpret, save, speak } from "./client";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
@@ -180,7 +179,7 @@ function MessageRow({ m, lang }: { m: Message; lang: Lang }) {
         {busy ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={on ? "pause" : "play"} size={14} stroke={1.6} />}
       </button>
       <span className="cr-row-main"><strong>{m.title}</strong><em lang={m.lang}>{m.text}</em></span>
-      <span className="cr-row-meta hide-sm">{voice && <VoiceAvatar v={voice} size={22} />}{language(m.lang).endonym}{voice ? ` · ${voice.name}` : ""}</span>
+      <span className="cr-row-meta hide-sm">{language(m.lang).endonym}{voice ? ` · ${voice.name}` : ""}</span>
       <span className="cr-row-meta hide-sm"><Icon name={OUTPUT_ICON[m.madeFor]} size={16} stroke={1.5} />{p.outputs[m.madeFor]}</span>
       <span className="cr-row-meta"><LocalTime iso={m.updatedAt} lang={lang} style="dayMonth" rel /></span>
       <button type="button" className="cr-round" aria-label={p.download} onClick={() => void download()} disabled={busy}><Icon name="download" size={15} stroke={1.6} /></button>

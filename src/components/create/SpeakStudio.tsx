@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
-import { Letters, SampleButton, VoiceAvatar } from "../platform/pickers";
+import { Letters, SampleButton } from "../platform/pickers";
 import { Making, MessageList, OUTPUT_ICON, VoiceEntry, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
@@ -105,7 +105,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
         {phase !== "idle" && <Making label={phase === "translate" ? c.home.translating : c.home.speaking} />}
         {made && phase === "idle" && (
           <div className="cr-result">
-            <VoiceNote tail={<><VoiceAvatar v={{ id: made.voice }} size={22} />{language(made.lang).endonym} · {voiceOf(made.voice).name}</>}>
+            <VoiceNote tail={<>{language(made.lang).endonym} · {voiceOf(made.voice).name}</>}>
               <AudioPlayer src={made.wav} labels={{ play: p.play, pause: p.pause, download: p.download }} compact />
             </VoiceNote>
             <div className="cr-acts">
@@ -150,7 +150,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
             {voicesFor(lang).map(v => (
               <div key={v.id} className="cr-option-row">
                 <button type="button" role="radio" className="cr-option" aria-checked={voice === v.id} onClick={() => setVoices(vs => ({ ...vs, [lang]: v.id as VoiceId }))}>
-                  <VoiceAvatar v={v} size={26} />{v.name}
+                  {v.name}
                 </button>
                 <SampleButton src={v.sample} label={`${p.play} ${v.name}`} />
               </div>

@@ -26,7 +26,7 @@
 .pf-me .cx-account { display: none; }     /* at the foot of the side menu, except on a phone */
 
 /* ---- the body: the side menu, then the page */
-.pf-body { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: calc(100vh - 64px); }
+.pf-body { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: calc(100vh - 64px); transition: grid-template-columns .28s var(--ease); }
 .pf-side { position: sticky; top: 64px; display: flex; flex-direction: column; height: calc(100vh - 64px); padding: 20px 12px 16px; box-shadow: 1px 0 0 var(--line); }
 .pf-side ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .pf-side a { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border-radius: 12px; color: var(--ink-3); font-size: 15.5px; text-decoration: none;
@@ -36,6 +36,22 @@
 .pf-side a svg { flex: none; }
 .pf-side a[aria-current="page"] svg { color: var(--sahel-deep); }
 .pf-short { display: none; }
+.pf-side-top { display: flex; justify-content: flex-end; margin: -10px 0 8px; }
+.pf-side-toggle { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 10px; background: none; color: var(--ink-3); cursor: pointer;
+  transition: background-color .2s var(--ease), color .2s var(--ease); }
+.pf-side-toggle:hover { background: rgba(28, 20, 16, .05); color: var(--ink); }
+.pf-side-toggle:focus-visible { outline: 2px solid var(--focus, #6B3E1E); outline-offset: 2px; }
+/* closed: a rail of icons, the names in their tooltips, the account as its initial */
+@media (min-width: 861px) {
+  .pf[data-side="closed"] .pf-body { grid-template-columns: 72px minmax(0, 1fr); }
+  .pf[data-side="closed"] .pf-side { padding-left: 12px; padding-right: 12px; }
+  .pf[data-side="closed"] .pf-side-top { justify-content: center; }
+  .pf[data-side="closed"] .pf-side a { justify-content: center; padding: 0; }
+  .pf[data-side="closed"] .pf-long, .pf[data-side="closed"] .pf-side-foot .pf-access, .pf[data-side="closed"] .pf-side-foot .cx-me-who { display: none; }
+  .pf[data-side="closed"] .pf-side-foot { justify-items: center; }
+  .pf[data-side="closed"] .pf-side-foot .cx-me { justify-content: center; padding: 6px; }
+  .pf[data-side="closed"] .pf-side-foot .cx-menu { right: auto; width: 260px; }
+}
 .pf-side-foot { display: grid; justify-items: start; gap: 8px; margin: auto 0 0; padding: 14px 0 0; box-shadow: 0 -1px 0 var(--line); }
 .pf-side-foot .pf-access { margin-left: 12px; }
 .pf-side-foot .cx-account { width: 100%; margin: 0; }
@@ -77,7 +93,7 @@
   .pf-side a { flex-direction: column; justify-content: center; gap: 4px; height: 56px; padding: 0 2px; border-radius: 14px; font-size: 12px; letter-spacing: .01em; }
   .pf-side a[aria-current="page"] { background: transparent; color: var(--ink); font-weight: 500; }
   .pf-side a:hover { background: transparent; }
-  .pf-long, .pf-side-foot { display: none; }
+  .pf-long, .pf-side-foot, .pf-side-top { display: none; }
   .pf-me .cx-account { display: block; }
   .pf-short { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .pf-page { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
@@ -92,6 +108,10 @@
 }
 
 /* ---- shared pieces every door uses */
+/* a voice drawn by its own sound: its sample's outline as bars, Kola for a local language, Sahel for French */
+.pf-outline { display: flex; align-items: center; gap: 2px; width: 100%; height: 36px; }
+.pf-outline i { flex: 1; min-width: 2px; max-width: 5px; border-radius: 2px; background: var(--kola); opacity: .8; }
+.pf-outline[data-lang="fr"] i { background: var(--sahel-deep); }
 .pf-hero { display: grid; justify-items: center; gap: 22px; width: min(760px, 100%); }
 .pf-hero h1 { margin: 0; font-size: clamp(30px, 3.2vw, 44px); font-weight: 500; letter-spacing: -.026em; line-height: 1.08; text-wrap: balance; }
 .pf-empty { display: grid; justify-items: center; gap: 14px; padding: clamp(48px, 10vh, 96px) 16px; text-align: center; }
@@ -131,7 +151,6 @@
 .pf-voice-list li > button:first-child:hover { background: var(--surface); }
 .pf-voice-list li > button:first-child span { flex: 1; }
 .pf-voice-list svg { color: var(--sahel-deep); }
-.pf-voice-orb { display: inline-block; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(21, 18, 15, .1); }
 .pf-sample { display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink);
   cursor: pointer; transition: background-color .2s var(--ease); }
 .pf-sample:hover, .pf-sample[aria-pressed="true"] { background: var(--surface-2); }
@@ -162,8 +181,6 @@
 .pf-vuses span { padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-2); font-size: 12.5px; }
 .pf-vcard-acts { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
 .pf-vid { padding: 4px 9px; border-radius: 8px; background: var(--surface); font-size: 13.5px; }
-.pf-coming-orb { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff 0, var(--surface-2) 55%, #d8cfc4 100%);
-  box-shadow: inset 0 0 0 1px var(--line); }
 
 /* ---- a row that scrolls sideways (components/platform/ScrollRow) fades where there is more */
 .scroll-row[data-right="true"] { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }

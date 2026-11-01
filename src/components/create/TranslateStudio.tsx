@@ -6,7 +6,6 @@ import { CopyButton } from "../ui/CopyButton";
 import { Making, SayIt, useRecorder } from "./bits";
 import { interpret, translate } from "./client";
 import { createCopy } from "@/content/create";
-import { TRY_NOTES } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatSeconds } from "@/i18n/format";
@@ -47,7 +46,6 @@ export function TranslateStudio({ lang: ui }: { lang: Lang }) {
   const rec = useRecorder(b => void heard(b), () => setErr(c.errors.mic));
   const swap = () => { if (!canTranslate(to, from)) return; setFrom(to); setTo(from); setText(out ?? ""); setOut(text.trim() ? text : null); };
   const typed = canTranslateText(from, to);             // else this side can only be spoken
-  const examples = typed ? TRY_NOTES.map(n => (from === "ha" ? n.ha : from === WRITTEN ? n.fr : null)).filter((x): x is string => !!x) : [];
   const labels = { copy: t.copy, copied: t.copied, failed: c.errors.generic };
 
   return (
@@ -102,11 +100,6 @@ export function TranslateStudio({ lang: ui }: { lang: Lang }) {
         </section>
       </div>
       {err && <p className="cx-error" role="alert">{err}</p>}
-      {examples.length > 0 && (
-        <div className="cr-examples">
-          {examples.map(x => <button key={x} type="button" className="cr-chip" lang={from} onClick={() => { setText(x); void go(x); }} disabled={busy}>{x}</button>)}
-        </div>
-      )}
     </div>
   );
 }
