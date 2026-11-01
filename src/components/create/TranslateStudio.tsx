@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
-import { Making, useRecorder } from "./bits";
+import { Making, SayIt, useRecorder } from "./bits";
 import { interpret, translate } from "./client";
-import { SayIt } from "./ReadStudio";
 import { createCopy } from "@/content/create";
 import { TRY_NOTES } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";

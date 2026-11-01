@@ -71,8 +71,7 @@ function codeFor(mode: Mode, base: string, o: { text: string; voice: Voice; targ
       JavaScript: `import { writeFile } from "node:fs/promises";\n\nconst r = await fetch("${url}", {\n  method: "POST",\n  headers: {\n    Authorization: \`Bearer \${process.env.NAMU_API_KEY}\`,\n    "Content-Type": "application/json",\n  },\n  body: JSON.stringify(${json.replace(/":/g, '": ').replace(/,"/g, ', "')}),\n});\nif (!r.ok) throw new Error((await r.json()).error.message);\nawait writeFile("speech.wav", Buffer.from(await r.arrayBuffer()));`,
     };
   }
-  /* French speech is withdrawn: only a translation into Hausa asks for audio */
-  const fields: [string, string][] = mode === "translate" ? (o.target === "ha" ? [["target", "ha"], ["include_audio", "1"]] : [["target", "fr"]])
+  const fields: [string, string][] = mode === "translate" ? [["target", o.target], ["include_audio", "1"]]
     : mode === "converse" ? [["persona", o.persona]] : [];
   const read = mode === "transcribe" ? `out["text"]` : mode === "translate" ? `out["text"]` : `out["reply"]`;
   return {

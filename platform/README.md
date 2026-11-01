@@ -26,6 +26,8 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
 | `db/migrations/0003_open_access.sql` | Open access: new accounts start active (`beta_status` `approved`); an admin can still pause one (`denied`) |
 | `db/migrations/0004_service_key.sql` | The console Playground's service key (`api_keys.is_service`) and two more gateway functions: `namu_key_lookup_v2` (the lookup plus `is_service`) and `namu_account_lookup` (an account's status, allowance and audio used this month) |
 | `db/migrations/0005_usage_key_index.sql` | An index on `usage_events(key_id)`, for deleting a key or an account and for the console's Logs filtered by key |
+| `db/migrations/0006_platform.sql`, `0007_agent_whatsapp_number.sql` | Create's messages and kit, Agents and their documents, tests and conversations; one WhatsApp number per agent |
+| `db/migrations/0008_interpretations.sql` | Create's Interpreter: each conversation and its turns (what was heard, the translation, the voice, the waveform's outline), text only |
 | `scripts/db-migrate.mjs` | Checks that Neon Auth is on, applies each new file in `db/migrations/` once, then sets up the `namu_gateway` role and its grants (see "Database migrations") |
 | `db/gateway-grants.sql` | What the gateway's database role may call; applied on every migrate |
 | `scripts/env-init.mjs`, `db-admin.mjs`, `modal-secrets.mjs` | Generate local secrets, make an admin / mark the demo key, copy secrets to Modal |
@@ -76,10 +78,11 @@ developer app ──────┴──► namu-gateway (Modal, CPU, the only 
   (`X-Namu-Client-IP`); the gateway limits each visitor to 30 requests per hour, 15 s of audio and 300 characters.
   A visitor is an IPv4 address or an IPv6 /64 (one host holds a whole /64): the website sends the /64, and the
   gateway narrows a raw address the same way (`address_bucket`).
-- **Voices**: the API serves `nadia` (alias `warm`) and the Air persona `nadia`. `salim` (a cloned Hausa voice and
-  persona) and `fr` (the French reference voice) were withdrawn on 2026-10-31, with no consent record for either
-  speaker: naming one is a 400 (`unknown_voice`, `unknown_persona`), and translate returns a French translation as
-  text with `"audio": null`. The gateway enforces this; namu-voice and namu-interpret also refuse French speech.
+- **Voices**: the API serves `nadia` (alias `warm`), `fr` (the French reference voice) and the Air persona `nadia`.
+  `salim` (a cloned Hausa voice and persona) was withdrawn on 2026-10-31, with no consent record for its speaker:
+  naming it is a 400 (`unknown_voice`, `unknown_persona`); the gateway enforces this and namu-voice refuses it too.
+  `fr` was withdrawn the same day and is back since 2026-11-01, when the founder confirmed its consent: translate
+  says a French translation aloud when `include_audio` asks.
   `src/lib/voices.ts` is the website's copy of the list (a gateway test checks they agree).
 - **No conversation is kept.** Converse is stateless: each turn uses only what its request carries (namu-agent's
   `/v1/chat` takes earlier turns in `messages`). A `session_id` is accepted and echoed back; it is never sent on or
@@ -196,9 +199,9 @@ curl $API/v1/speech -H "Authorization: Bearer $NAMU_API_KEY" -H "Content-Type: a
   -d '{"text": "Barka da safiya!", "voice": "nadia"}' -o out.wav       # a WAV
 # revoke the key in the dashboard → within 30 s the same call returns 401 key_revoked
 
-# withdrawn voices: only nadia and warm are listed, and salim or fr is refused, not swapped for another voice
-curl -s $API/v1/voices                                                  # ids: nadia, warm
-for v in salim fr; do
+# withdrawn voices: nadia, warm and fr are listed, and salim is refused, not swapped for another voice
+curl -s $API/v1/voices                                                  # ids: nadia, warm, fr
+for v in salim; do
   curl -s -o /dev/null -w "$v %{http_code}\n" $API/v1/speech -H "Authorization: Bearer $NAMU_API_KEY" \
     -H "Content-Type: application/json" -d "{\"text\": \"Sannu\", \"voice\": \"$v\"}"   # 400 unknown_voice
 done

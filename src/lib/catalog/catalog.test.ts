@@ -37,11 +37,11 @@ describe("catalog", () => {
     expect(defaultVoice("dje")).toBeNull();
   });
 
-  it("offers no withdrawn voice, and French is text only", () => {
-    expect(VOICES.map(v => v.id)).toEqual(["nadia"]);
+  it("offers no withdrawn voice, and speaks French in the French voice", () => {
+    expect(VOICES.map(v => v.id)).toEqual(["nadia", "fr"]);
     expect(defaultVoice("ha", { ha: "salim" })).toBe("nadia");
-    expect(can("speech", "fr")).toBe(false);
-    expect(defaultVoice("fr")).toBeNull();
+    expect(can("speech", "fr")).toBe(true);
+    expect(defaultVoice("fr")).toBe("fr");
     expect(canTranslate("fr", "ha")).toBe(true);
   });
 });
@@ -61,7 +61,7 @@ describe("text", () => {
   });
   it("types only what the API can translate as text", () => {
     expect(canTranslateText("ha", "fr")).toBe(true);    // said first in Nadia's voice, then translated
-    expect(canTranslateText("fr", "ha")).toBe(false);   // no French voice: French comes in by voice
+    expect(canTranslateText("fr", "ha")).toBe(true);    // said first in the French voice, until the API takes text
     expect(canTranslateText("ha", "ha")).toBe(true);
   });
 });

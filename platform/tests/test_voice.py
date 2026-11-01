@@ -34,10 +34,15 @@ def test_the_default_is_used_as_it_is():
 
 
 # ---------------------------------------------------------------- withdrawn voices (ROADMAP S3)
-@pytest.mark.parametrize("language, name", [("ha", "salim"), ("ha", "fr"), ("fr", None), ("fr", "fr"),
-                                            ("fr", "mine_fr"), ("fr", "nadia"), (None, "salim")])
-def test_withdrawn_voices_and_french_are_not_served(language, name):
+@pytest.mark.parametrize("language, name", [("ha", "salim"), (None, "salim")])
+def test_withdrawn_voices_are_not_served(language, name):
     assert not voice.served(language, name)
+
+
+@pytest.mark.parametrize("language, name", [("fr", None), ("fr", "fr"), ("fr", "mine_fr")])
+def test_french_is_served_again(language, name):
+    # back since 2026-11-01, when the founder confirmed the French voice's consent
+    assert voice.served(language, name)
 
 
 @pytest.mark.parametrize("language, name", [("ha", "nadia"), ("ha", None), (None, None), ("ha", "")])

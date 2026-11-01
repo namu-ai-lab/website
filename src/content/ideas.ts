@@ -71,7 +71,7 @@ export const IDEAS: Idea[] = [
 export const sampleOf = (i: Idea, voice: string): string | undefined => i.audio?.[voice as "nadia"] ?? Object.values(i.audio ?? {})[0];
 
 /* Voice notes to try on Read and Translate: real Hausa said by Tafiya in Nadia's voice (public/demo, public/usecases),
-   with its French. The recordings in the withdrawn voices (salim, fr; lib/voices) are not offered here. */
+   with its French. The recordings in the withdrawn voice (salim; lib/voices) are not offered here. */
 export type TryNote = { id: string; audio: string; ha: string; fr: string };
 export const TRY_NOTES: TryNote[] = [
   { id: "form", audio: "/usecases/public.m4a", ha: "Za mu taimaka muku ku cike fom ɗin, mataki-mataki.", fr: "Nous allons vous aider à remplir le formulaire étape par étape." },

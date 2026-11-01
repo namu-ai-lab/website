@@ -20,7 +20,7 @@ export const MENUS: Record<Exclude<DoorId, "api">, NavItem[]> = {
   create: [
     { id: "home", href: "/create", icon: "home", label: "home" },
     { id: "speak", href: "/create/speak", icon: "waveform", label: "speak" },
-    { id: "read", href: "/create/read", icon: "transcript", label: "read" },
+    { id: "interpret", href: "/create/interpret", icon: "turns", label: "interpret" },
     { id: "translate", href: "/create/translate", icon: "translate", label: "translate" },
     { id: "voices", href: "/create/voices", icon: "microphone", label: "voices" },
   ],

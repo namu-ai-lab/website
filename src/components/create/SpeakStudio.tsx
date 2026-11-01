@@ -94,7 +94,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
             <span className={tooLong ? "over" : undefined}>{t.chars(formatNumber(ui, text.length), formatNumber(ui, LIMITS.textChars))}</span>
             <span className="cr-grow" />
             {typed && <Dictate lang={written} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
-              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />}
+              labels={{ dictate: c.interpret.record, stop: c.interpret.stop, listening: c.interpret.listening, mic: c.errors.mic }} />}
             {/* phones: Make it right under the words; the settings card's own button is for wider screens */}
             <button type="button" className="cx-btn primary cr-make-here" onClick={() => void make()} disabled={!text.trim() || tooLong || phase !== "idle" || !voice}>
               {made && made.text === text.trim() ? t.again : t.make}

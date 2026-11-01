@@ -656,17 +656,16 @@ def test_translate_pair_and_optional_audio(env):
     assert post_audio(c, "/v1/translate", target="en").status_code == 400
 
 
-def test_a_french_translation_is_text_only(env):
-    # French speech is withdrawn with the fr voice: asked for, the audio is null, even if the model service sent some.
+def test_a_french_translation_is_spoken(env):
+    # The fr voice is back (2026-11-01): asked for, the French translation comes with its audio; not asked, without.
     c, store, up, *_ = env
     r = post_audio(c, "/v1/translate", target="fr", include_audio="true")
-    assert r.status_code == 200 and r.json()["text"] == "bonjour"
-    assert "audio" in r.json() and r.json()["audio"] is None
+    assert r.status_code == 200 and r.json()["text"] == "bonjour" and r.json()["audio"]
     assert "audio" not in post_audio(c, "/v1/translate", target="fr").json()
     assert store.usage[-1].audio_seconds == 1.0                    # still counted by the audio sent
 
 
-@pytest.mark.parametrize("voice", ["salim", "fr"])
+@pytest.mark.parametrize("voice", ["salim"])
 def test_withdrawn_voices_are_a_400_not_another_voice(env, voice):
     c, store, up, *_ = env
     r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": voice})
@@ -713,15 +712,21 @@ def test_the_agent_call_carries_the_persona_and_no_session():
 def test_public_catalogue_needs_no_key(env):
     c, *_ = env
     assert c.get("/v1/models").status_code == 200
-    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} == {"nadia", "warm"}
+    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} == {"nadia", "warm", "fr"}
 
 
-def test_the_catalogue_offers_no_withdrawn_voice_or_language(env):
+def test_the_catalogue_offers_no_withdrawn_voice(env):
     c, *_ = env
     tafiya = next(m for m in c.get("/v1/models").json()["data"] if m["id"] == "tafiya")
-    assert tafiya["languages"] == ["ha"]
-    assert all(v["language"] == "ha" for v in c.get("/v1/voices").json()["data"])
-    assert {"salim", "fr"}.isdisjoint(gw.VOICES) and gw.PERSONAS == ("nadia",)
+    assert tafiya["languages"] == ["ha", "fr"]
+    assert {v["language"] for v in c.get("/v1/voices").json()["data"]} == {"ha", "fr"}
+    assert "salim" not in gw.VOICES and gw.PERSONAS == ("nadia",)
+
+
+def test_the_french_voice_speaks(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Bonjour", "voice": "fr"})
+    assert r.status_code == 200 and up.calls[-1] == ("speak", "fr", "fr")
 
 
 def test_the_website_offers_the_voices_the_gateway_serves():
@@ -1122,13 +1127,11 @@ def test_translate_text_spoken(env):
     assert store.usage[-1].audio_seconds > 7 / 15
 
 
-def test_translate_text_to_french_stays_text(env):
-    # French speech is withdrawn: asking for audio gives "audio": null, and no voice is called.
+def test_translate_text_to_french_spoken(env):
     c, store, up, *_ = env
     r = c.post("/v1/translate?include_audio=1", headers=auth(), json={"text": "Sannu", "target": "fr"})
-    assert r.status_code == 200 and r.json()["audio"] is None
-    assert up.calls == [("translate_text", "ha", "fr")]
-    assert store.usage[-1].audio_seconds == pytest.approx(5 / 15, abs=1e-3)
+    assert r.status_code == 200 and r.json()["audio"]
+    assert up.calls == [("translate_text", "ha", "fr"), ("speak", "fr", "fr")]
 
 
 @pytest.mark.parametrize("body,status,kind", [

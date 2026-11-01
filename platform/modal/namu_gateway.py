@@ -69,25 +69,26 @@ MODELS = [
     {"id": "tatsuniya", "task": "speech-recognition", "endpoint": "/v1/transcribe",
      "scope": "transcribe", "languages": ["ha"], "status": "beta"},
     {"id": "tafiya", "task": "speech-synthesis", "endpoint": "/v1/speech",
-     "scope": "speech", "languages": ["ha"], "status": "beta"},
+     "scope": "speech", "languages": ["ha", "fr"], "status": "beta"},
     {"id": "kora", "task": "speech-translation", "endpoint": "/v1/translate",
      "scope": "translate", "languages": ["ha", "fr"], "status": "beta"},
     {"id": "air", "task": "conversation", "endpoint": "/v1/converse",
      "scope": "converse", "languages": ["ha"], "status": "research"},
 ]
 # The voices and Air personas the API serves. "warm" is the name the website's examples use; it is Nadia.
-# Withdrawn on 2026-10-31 (ROADMAP S3), with no consent record for either speaker: "salim", a cloned Hausa voice
-# (and Air's persona of that name), and "fr", the French reference voice. A request naming one is refused with 400
-# like any unknown voice or persona; nothing falls back to another voice. The website keeps the same two lists in
-# src/lib/voices.ts, and test_gateway.py checks that they agree.
+# Withdrawn on 2026-10-31 (ROADMAP S3), with no consent record for its speaker: "salim", a cloned Hausa voice (and
+# Air's persona of that name). A request naming it is refused with 400 like any unknown voice or persona; nothing
+# falls back to another voice. "fr", the French reference voice, went with it and is back since 2026-11-01, when the
+# founder confirmed its consent. The website keeps the same two lists in src/lib/voices.ts, and test_gateway.py
+# checks that they agree.
 VOICES = {
     "nadia": {"language": "ha", "upstream": "nadia", "description": "Warm and patient (female)"},
     "warm": {"language": "ha", "upstream": "nadia", "description": "Alias of nadia"},
+    "fr": {"language": "fr", "upstream": "fr", "description": "French reference voice"},
 }
 PERSONAS = ("nadia",)
-# Translate speaks its translation only in these languages. French speech went with the fr voice, so a French
-# translation is text: "audio" is null when include_audio asks for it.
-SPOKEN_TARGETS = ("ha",)
+# Translate speaks its translation in these languages when include_audio asks for it; elsewhere "audio" is null.
+SPOKEN_TARGETS = ("ha", "fr")
 
 # Limits. Demo keys are the server-held key behind the website's live demos.
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -736,7 +737,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                "source_text": out.get("source_text", ""), "text": out.get("target_text", ""),
                "audio_seconds": round(secs, 2)}
         if str(fields.get("include_audio", "")).lower() in ("1", "true", "yes"):
-            # Text only where speech is withdrawn (French), whatever the model service sent.
+            # Text only where the target language is not spoken, whatever the model service sent.
             res["audio"] = out.get("audio") if target in SPOKEN_TARGETS else None
         return res
 
@@ -769,7 +770,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         spoken_s = 0.0
         spoken = str(body.get("include_audio", request.query_params.get("include_audio", ""))).lower() in ("1", "true", "yes")
         if spoken:
-            # Text only where speech is withdrawn (French), as for audio in.
+            # Text only where the target language is not spoken, as for audio in.
             res["audio"] = None
         if spoken and res["text"] and target in SPOKEN_TARGETS:
             voice = next(v for v in VOICES.values() if v["language"] == target)

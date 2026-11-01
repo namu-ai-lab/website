@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { forgetRecordings } from "@/lib/recordings";
 import { accountCopy } from "@/content/account";
 import { lp, type Lang } from "@/i18n/config";
 import type { ConsoleUser } from "./ConsoleShell";
 
-/* The signed-in account, after platform.openai.com: the initial in a circle (with the name and email beside it, unless
-   compact, as in the platform's top bar); it opens a panel with who is signed in, Settings and the way out. Closes on a click
+/* The signed-in account, after platform.openai.com: the initial in a circle with the name and email beside it, at the
+   foot of the side menu (compact, the circle alone, in the top bar on a phone); it opens a panel with who is signed
+   in, Settings and the way out, which also forgets the Interpreter's recordings kept in this browser. Closes on a click
    outside or Escape (which hands focus back to the button). A disclosure, not an ARIA menu: two plain controls reached
    with Tab, so it does not promise the arrow-key behaviour role="menu" would. */
 export function AccountMenu({ lang, user, label, settings, compact }: { lang: Lang; user: ConsoleUser; label: string; settings?: { label: string; href: string }; compact?: boolean }) {
@@ -31,7 +33,7 @@ export function AccountMenu({ lang, user, label, settings, compact }: { lang: La
         <div className="cx-menu" id="cx-account-menu">
           <p className="cx-menu-who"><span>{label}</span><em>{user.email}</em></p>
           {settings && <a href={settings.href}>{settings.label}</a>}
-          <button type="button" onClick={async () => { await authClient.signOut(); window.location.href = lp(lang, "/"); }}>{accountCopy[lang].nav.signOut}</button>
+          <button type="button" onClick={async () => { await authClient.signOut(); await forgetRecordings(); window.location.href = lp(lang, "/"); }}>{accountCopy[lang].nav.signOut}</button>
         </div>
       )}
     </div>

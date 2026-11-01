@@ -15,6 +15,7 @@ const DATE_STYLES = {
   dayShort: { day: "numeric", month: "short", year: "numeric" },                   // 22 Oct 2026 · 22 oct. 2026
   dayMonth: { day: "numeric", month: "long" },                                     // 22 October
   dayMonthShort: { day: "numeric", month: "short" },                               // 22 Oct
+  time: { hour: "2-digit", minute: "2-digit" },                                    // 14:32 (in the reader's zone: zone "local")
   monthYear: { month: "long", year: "numeric" },                                   // October 2026
   dateTime: { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }, // 22 Oct, 14:05
   weekday: { weekday: "short" },                                                   // Thu · jeu.

@@ -69,7 +69,7 @@ export async function translateText(userId: string, text: string, source: LangCo
   } catch (e) {
     if (!(e instanceof GatewayError) || ![400, 415, 422].includes(e.status) || !sourceVoice) throw e;
   }
-  // A gateway without text translation: say the text, then translate the speech. French has no voice, so it cannot.
+  // A gateway without text translation: say the text, then translate the speech (a language with no voice cannot).
   if (!sourceVoice) throw new GatewayError(502, "upstream_error", "The model could not answer.");
   const spoken = await speak(userId, text, sourceVoice);
   const out = await translateSpeech(userId, spoken, "audio/wav", source, target);

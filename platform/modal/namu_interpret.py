@@ -19,9 +19,9 @@ because Namu-Transcribe is Hausa-only. The French half is not a Namu model and
 is labelled as such in /v1/health rather than quietly implied. Translation is
 Gemini through OpenRouter too.
 
-Only Hausa is spoken back. The French voice was withdrawn on 2026-10-31 (no
-consent record for its speaker, ROADMAP S3), so a translation into French is
-returned as text, with "audio": null, and namu-voice is not called for it.
+Both languages are spoken back. The French voice, withdrawn on 2026-10-31 (ROADMAP
+S3), is back since 2026-11-01, when the founder confirmed its consent. A target
+outside SPOKEN_TARGETS is returned as text, with "audio": null.
 
 The Hausa orthography block in the prompt is load bearing. The hooked consonants
 ɓ ɗ ƙ ƴ are separate phonemes, and a model that writes 'bude' for 'buɗe' hands
@@ -39,7 +39,7 @@ TEXT_MODEL = "google/gemini-3.5-flash-lite"   # translation, through OpenRouter
 FR_STT_MODEL = TEXT_MODEL                     # not a Namu model: French ASR only, audio in a chat turn
 
 # Target languages whose translation is spoken (see the module docstring).
-SPOKEN_TARGETS = ("ha",)
+SPOKEN_TARGETS = ("ha", "fr")
 
 app = modal.App("namu-interpret")
 
@@ -211,7 +211,7 @@ def api():
                 "pairs": ["ha->fr", "fr->ha"],
                 "asr": {"ha": "Namu-Transcribe", "fr": FR_STT_MODEL},
                 "translation_model": TEXT_MODEL,
-                "tts": "Namu-Voice (Hausa only)"}
+                "tts": "Namu-Voice"}
 
     @web.post("/v1/translate")
     async def translate(request: Request):

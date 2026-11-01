@@ -8,8 +8,9 @@ import { lp, type Lang } from "@/i18n/config";
 export type PlatformUser = { name?: string | null; email: string; image?: string | null };
 
 /* The bar across the top of every signed-in page, in all three areas: the Namu mark (it leads back to the Lab's home
-   page), Create, Agents and API in the middle, the current one marked with the Sahel dot, then EN/FR and the account.
-   ElevenLabs keeps this switch at the foot of its sidebar; here it is where everyone sees it. */
+   page), Create, Agents and API in the middle, the current one marked with the Sahel dot, then EN/FR. ElevenLabs
+   keeps this switch at the foot of its sidebar; here it is where everyone sees it. The account sits at the foot of
+   the side menu; on a phone, where that menu is a tab bar, its circle comes up here (platform.css). */
 export function PlatformBar({ lang, area, user }: { lang: Lang; area: DoorId; user: PlatformUser }) {
   const t = platformCopy[lang], L = (p: string) => lp(lang, p);
   return (

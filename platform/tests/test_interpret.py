@@ -2,8 +2,8 @@
 
     python3 -m pytest platform/tests -q
 
-French speech was withdrawn with the French voice (no consent record for its speaker, ROADMAP S3): a translation into
-French comes back as text with "audio": null, and namu-voice is never asked to speak it. Hausa is still spoken.
+Both directions are spoken: the French voice, withdrawn on 2026-10-31 (ROADMAP S3), is back since 2026-11-01, when the
+founder confirmed its consent. A translation into French is said by namu-voice in French, one into Hausa in Hausa.
 """
 
 import subprocess
@@ -69,13 +69,12 @@ def speak_calls(calls):
     return [j for url, j in calls if url.endswith("/v1/speak")]
 
 
-def test_a_translation_into_french_is_text_only(app):
+def test_a_translation_into_french_is_spoken(app):
     c, calls = app
     r = c.post("/v1/speech?source=ha&target=fr", content=b"RIFF-audio",
                headers={"Content-Type": "application/octet-stream"})
-    assert r.status_code == 200 and r.json()["target_text"]
-    assert r.json()["audio"] is None
-    assert speak_calls(calls) == []                                  # namu-voice was never asked
+    assert r.status_code == 200 and r.json()["target_text"] and r.json()["audio"]
+    assert [j["language"] for j in speak_calls(calls)] == ["fr"]
 
 
 def test_a_translation_into_hausa_is_still_spoken(app):
@@ -86,5 +85,5 @@ def test_a_translation_into_hausa_is_still_spoken(app):
     assert [j["language"] for j in speak_calls(calls)] == ["ha"]
 
 
-def test_only_hausa_is_spoken():
-    assert interpret.SPOKEN_TARGETS == ("ha",)
+def test_both_languages_are_spoken():
+    assert interpret.SPOKEN_TARGETS == ("ha", "fr")

@@ -2,6 +2,7 @@
    user; a failure throws an Error carrying the route's message. */
 import { LANGUAGES, can, canTranslate, type LangCode, type OutputId } from "@/lib/catalog";
 import { render } from "@/lib/audio-out";
+import type { Interpretation, InterpretationSummary, Turn } from "@/lib/interpretation-shape";
 import type { Message, NewMessage } from "@/lib/project-shape";
 
 async function ok(res: Response): Promise<Response> {
@@ -33,12 +34,29 @@ export function speak(text: string, lang: LangCode, voice: string | null): Promi
   while (spoken.size > KEEP) spoken.delete(spoken.keys().next().value!);
   return p;
 }
+/** A voice that came back with a translation, kept as if Speech had made it, so playing it again asks for nothing. */
+export function remember(text: string, lang: LangCode, voice: string | null, wav: Blob) {
+  spoken.set(`${lang}|${voice ?? ""}|${text}`, Promise.resolve(wav));
+  while (spoken.size > KEEP) spoken.delete(spoken.keys().next().value!);
+}
 
-export const interpret = async (audio: Blob, from: LangCode, to: LangCode) =>
-  (await (await ok(await fetch(`/api/create/interpret?from=${from}&to=${to}`, audioPost(audio)))).json()) as { sourceText: string; text: string };
+/** What a recording in `from` says, put into `to`; with `voice`, the translation said aloud too where `to` has a voice
+    (base64 WAV, left out when it is too long to come back in one answer). */
+export const interpret = async (audio: Blob, from: LangCode, to: LangCode, voice = false) =>
+  (await (await ok(await fetch(`/api/create/interpret?from=${from}&to=${to}${voice ? "&voice=1" : ""}`, audioPost(audio)))).json()) as { sourceText: string; text: string; audio?: string };
 
 export const listen = async (audio: Blob, lang: LangCode, to?: LangCode) =>
   (await (await ok(await fetch(`/api/create/listen?lang=${lang}${to ? `&to=${to}` : ""}`, audioPost(audio)))).json()) as { text: string; translation?: string };
+
+/** The Interpreter's conversations: the list, one with its turns, a turn kept (in a new conversation when `id` is
+    null), and a conversation deleted. */
+export const interpretations = {
+  list: async () => ((await (await ok(await fetch("/api/create/interpretations"))).json()) as { conversations: InterpretationSummary[] }).conversations,
+  get: async (id: string) => ((await (await ok(await fetch(`/api/create/interpretations/${id}`))).json()) as { conversation: Interpretation }).conversation,
+  add: async (id: string | null, turn: Omit<Turn, "at">) =>
+    (await (await ok(await fetch("/api/create/interpretations", json("POST", { id, turn })))).json()) as { id: string; turn: Turn },
+  remove: async (id: string) => { await ok(await fetch(`/api/create/interpretations/${id}`, { method: "DELETE" })); },
+};
 
 export const keep = async (m: NewMessage) =>
   ((await (await ok(await fetch("/api/create/messages", json("POST", m)))).json()) as { message: Message }).message;
