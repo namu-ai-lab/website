@@ -24,7 +24,9 @@ between calls.
 
 The FastAPI app is built by `create_app(store, upstream, limiter)` so the
 security rules can be tested with fakes (platform/tests/test_gateway.py),
-without Modal, a database or a GPU.
+without Modal, a database or a GPU. The same app runs on AWS behind the API's
+own hostname (platform/aws/gateway): there `modal` is not installed, the Modal
+entry point below is skipped, and MemoryLimiter replaces DictLimiter.
 """
 
 # No `from __future__ import annotations` here: it turns `request: Request` into
@@ -45,9 +47,12 @@ import time
 import wave
 from dataclasses import dataclass, field, replace
 
-import modal
+try:
+    import modal
+except ImportError:                            # the AWS container (platform/aws/gateway) has no Modal
+    modal = None
 
-app = modal.App("namu-gateway")
+app = modal.App("namu-gateway") if modal else None
 
 # The gateway itself is public: its @modal.asgi_app() below takes no proxy flag,
 # on purpose. It always carries the `namu-proxy-auth` secret, so ModalUpstream
@@ -977,32 +982,60 @@ class DictLimiter:
         return True, 0
 
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    # ffprobe: audio length before any GPU work; ffmpeg: /v1/speech in MP3 or Ogg Opus. ffprobe parses
-    # untrusted uploads, so
-    # rebuild the image now and then to take Debian's security fixes: Modal
-    # caches this layer until forced (MODAL_FORCE_BUILD=1, platform/README.md).
-    .apt_install("ffmpeg")
-    .pip_install("fastapi[standard]", "httpx", "psycopg[binary]==3.2.13", "psycopg-pool==3.2.8")
-)
+class MemoryLimiter:
+    """Fixed-window counters in this process: the limiter of the AWS gateway.
+
+    Each task counts on its own, so with N tasks a caller can reach at most N times a limit (the load
+    balancer spreads a caller's requests across tasks, so in practice it is far less). Abuse control,
+    like DictLimiter; the monthly allowance is metered in Postgres, not here.
+    """
+
+    MAX_BUCKETS = 100_000                      # bounds memory under a flood of distinct callers
+
+    def __init__(self, clock=time.time):
+        import threading
+
+        self.clock, self.lock, self.counts = clock, threading.Lock(), {}
+
+    def hit(self, bucket: str, limit: int, window_s: int) -> tuple[bool, int]:
+        t = int(self.clock())
+        win = t // window_s
+        with self.lock:
+            if len(self.counts) >= self.MAX_BUCKETS:   # keep only windows that are still open
+                self.counts = {k: n for k, n in self.counts.items() if k[2] == t // k[1]}
+            k = (bucket, window_s, win)
+            n = self.counts[k] = self.counts.get(k, 0) + 1
+        if n > limit:
+            return False, (win + 1) * window_s - t
+        return True, 0
 
 
-@app.function(
-    image=image,
-    secrets=[modal.Secret.from_name("namu-db"),
-             modal.Secret.from_name("namu-key-pepper"),
-             modal.Secret.from_name("namu-proxy-auth")],
-    min_containers=1,                          # the front door should never cold-start
-    max_containers=4,
-    timeout=900,
-    scaledown_window=600,
-)
-@modal.concurrent(max_inputs=MAX_INPUTS)
-@modal.asgi_app()
-def api():
-    store = PostgresStore(os.environ["GATEWAY_DATABASE_URL"])
-    upstream = ModalUpstream(UPSTREAM, os.environ.get("MODAL_PROXY_KEY"),
-                             os.environ.get("MODAL_PROXY_SECRET"))
-    limiter = DictLimiter(modal.Dict.from_name("namu-gateway-ratelimit", create_if_missing=True))
-    return create_app(store, upstream, limiter, os.environ["NAMU_KEY_PEPPER"])
+if modal is not None:
+    image = (
+        modal.Image.debian_slim(python_version="3.11")
+        # ffprobe: audio length before any GPU work; ffmpeg: /v1/speech in MP3 or Ogg Opus. ffprobe parses
+        # untrusted uploads, so
+        # rebuild the image now and then to take Debian's security fixes: Modal
+        # caches this layer until forced (MODAL_FORCE_BUILD=1, platform/README.md).
+        .apt_install("ffmpeg")
+        .pip_install("fastapi[standard]", "httpx", "psycopg[binary]==3.2.13", "psycopg-pool==3.2.8")
+    )
+
+    @app.function(
+        image=image,
+        secrets=[modal.Secret.from_name("namu-db"),
+                 modal.Secret.from_name("namu-key-pepper"),
+                 modal.Secret.from_name("namu-proxy-auth")],
+        min_containers=1,                      # the front door should never cold-start
+        max_containers=4,
+        timeout=900,
+        scaledown_window=600,
+    )
+    @modal.concurrent(max_inputs=MAX_INPUTS)
+    @modal.asgi_app()
+    def api():
+        store = PostgresStore(os.environ["GATEWAY_DATABASE_URL"])
+        upstream = ModalUpstream(UPSTREAM, os.environ.get("MODAL_PROXY_KEY"),
+                                 os.environ.get("MODAL_PROXY_SECRET"))
+        limiter = DictLimiter(modal.Dict.from_name("namu-gateway-ratelimit", create_if_missing=True))
+        return create_app(store, upstream, limiter, os.environ["NAMU_KEY_PEPPER"])

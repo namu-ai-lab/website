@@ -1,0 +1,8 @@
+# The AWS gateway's Python packages, pinned. The same libraries the Modal gateway image installs
+# (platform/modal/namu_gateway.py) and platform/requirements-dev.txt tests against.
+fastapi==0.161.1
+uvicorn[standard]==0.52.4
+httpx==0.28.1
+python-multipart==0.0.32
+psycopg[binary]==3.2.13
+psycopg-pool==3.2.8

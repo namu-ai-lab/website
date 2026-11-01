@@ -3,10 +3,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 export const ENV_FILE = new URL("../.env.local", import.meta.url);
 
-export function readEnv() {
-  if (!existsSync(ENV_FILE)) return {};
+export function readEnv(file = ENV_FILE) {
+  if (!existsSync(file)) return {};
   const out = {};
-  for (const line of readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
+  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
     if (m) out[m[1]] = m[2].replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
   }
