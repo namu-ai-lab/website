@@ -400,6 +400,8 @@
 .cx-get-steps a:hover > svg { transform: translateX(3px); }
 .cx-get-art { position: relative; display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; padding: 18px; overflow: hidden; isolation: isolate;
   background: #faf5ee; }
+/* the Namu mark, engraved behind the words (components/Art: HeroRing) */
+.cx-get-art .ring { position: absolute; z-index: 1; right: 8%; top: 50%; width: 62%; max-width: 360px; aspect-ratio: 1; transform: translateY(-58%); opacity: .85; pointer-events: none; }
 .cx-get-words { position: absolute; z-index: 1; inset: 18px 22px auto auto; display: grid; justify-items: end; gap: 6px; margin: 0; color: rgba(122, 67, 37, .5);
   font-size: 15px; letter-spacing: .01em; text-align: right; pointer-events: none; }
 .cx-get-words span:nth-child(2) { color: rgba(122, 67, 37, .32); }

@@ -24,7 +24,7 @@ export type PlatformCopy = {
   outputs: Record<OutputId, string>;
   gender: { female: string; male: string };
   soon: string; all: string; play: string; stop: string; pause: string; download: string; save: string; saved: string; saving: string;
-  cancel: string; delete: string; create: string; search: string; back: string; copy: string; copied: string; retry: string;
+  cancel: string; close: string; delete: string; create: string; search: string; back: string; copy: string; copied: string; retry: string;
   notReady: [string, string];
   library: { search: string; language: string; use: string; useIn: string; copyId: string; none: string; coming: string };
   record: { record: string; stop: string; upload: string; recording: (t: string) => string; mic: string; decode: string; long: (min: number) => string };
@@ -48,7 +48,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Phone line", file: "File" },
     gender: { female: "Female", male: "Male" },
     soon: "Soon", all: "All", play: "Play", stop: "Stop", pause: "Pause", download: "Download", save: "Save", saved: "Saved", saving: "Saving…",
-    cancel: "Cancel", delete: "Delete", create: "Create", search: "Search", back: "Back", copy: "Copy", copied: "Copied", retry: "Try again",
+    cancel: "Cancel", close: "Close", delete: "Delete", create: "Create", search: "Search", back: "Back", copy: "Copy", copied: "Copied", retry: "Try again",
     notReady: ["Almost ready", "This part of the platform is being set up."],
     library: { search: "Search voices", language: "Language", use: "Use", useIn: "Use in Speak", copyId: "Copy ID", none: "No voice matches.", coming: "Coming" },
     record: { record: "Record", stop: "Stop", upload: "Upload", recording: t => `Recording · ${t}`, mic: "The microphone is not available.", decode: "This file cannot be read.", long: m => `Up to ${m} minutes.` },
@@ -70,7 +70,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Ligne téléphonique", file: "Fichier" },
     gender: { female: "Femme", male: "Homme" },
     soon: "Bientôt", all: "Tout", play: "Écouter", stop: "Arrêter", pause: "Pause", download: "Télécharger", save: "Enregistrer", saved: "Enregistré", saving: "Enregistrement…",
-    cancel: "Annuler", delete: "Supprimer", create: "Créer", search: "Rechercher", back: "Retour", copy: "Copier", copied: "Copié", retry: "Réessayer",
+    cancel: "Annuler", close: "Fermer", delete: "Supprimer", create: "Créer", search: "Rechercher", back: "Retour", copy: "Copier", copied: "Copié", retry: "Réessayer",
     notReady: ["Presque prêt", "Cette partie de la plateforme est en cours d’installation."],
     library: { search: "Rechercher une voix", language: "Langue", use: "Usage", useIn: "Utiliser dans Parler", copyId: "Copier l’ID", none: "Aucune voix ne correspond.", coming: "À venir" },
     record: { record: "Enregistrer", stop: "Arrêter", upload: "Importer", recording: t => `Enregistrement · ${t}`, mic: "Le micro n’est pas disponible.", decode: "Ce fichier ne peut pas être lu.", long: m => `${m} minutes au plus.` },
