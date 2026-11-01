@@ -13,7 +13,7 @@ export type Sector = { id: SectorId; photo: string; name: Record<Lang, string> }
 export type Idea = {
   id: string; sector: SectorId; title: Record<Lang, string>; fr: string;
   /** the Hausa Tafiya said, and its recording per voice, where there is one */
-  ha?: string; audio?: Partial<Record<"nadia" | "salim", string>>;
+  ha?: string; audio?: Partial<Record<"nadia", string>>;
 };
 
 export const SECTORS: Sector[] = [
@@ -28,15 +28,15 @@ export const SECTORS: Sector[] = [
 export const IDEAS: Idea[] = [
   { id: "vaccination", sector: "health", title: { en: "Vaccination day", fr: "Jour de vaccination" },
     fr: `N’oubliez pas${n}: demain matin, amenez votre bébé au centre de santé pour la vaccination.`,
-    ha: "Kar ki manta, gobe da safe ki kawo jaririnki asibiti don allurar rigakafi.", audio: { nadia: "/demo/clinic-nadia.m4a", salim: "/demo/clinic-salim.m4a" } },
+    ha: "Kar ki manta, gobe da safe ki kawo jaririnki asibiti don allurar rigakafi.", audio: { nadia: "/demo/clinic-nadia.m4a" } },
   { id: "heat", sector: "health", title: { en: "A very hot day", fr: "Une journée très chaude" },
     fr: `Bonjour${n}! Il fera très chaud aujourd’hui, alors buvez beaucoup d’eau.`,
-    ha: "Ina kwana? Yau za a yi zafi sosai, don haka ku sha ruwa da yawa.", audio: { nadia: "/demo/weather-nadia.m4a", salim: "/demo/weather-salim.m4a" } },
+    ha: "Ina kwana? Yau za a yi zafi sosai, don haka ku sha ruwa da yawa.", audio: { nadia: "/demo/weather-nadia.m4a" } },
   { id: "nets", sector: "health", title: { en: "Sleep under a net", fr: "Dormir sous une moustiquaire" },
     fr: "La saison des pluies arrive. Chaque nuit, dormez sous une moustiquaire avec vos enfants." },
   { id: "sowing", sector: "farming", title: { en: "Time to sow", fr: "Le temps des semis" },
     fr: "La saison des pluies s’est installée. Il est temps pour les agriculteurs de semer le mil et le sorgho.",
-    ha: "Damina ta kama. Lokaci ya yi da manoma su fara shuka gero da dawa.", audio: { salim: "/demo/farm-salim.m4a", nadia: "/demo/farm-nadia.m4a" } },
+    ha: "Damina ta kama. Lokaci ya yi da manoma su fara shuka gero da dawa.", audio: { nadia: "/demo/farm-nadia.m4a" } },
   { id: "rain", sector: "farming", title: { en: "Heavy rain on Thursday", fr: "Fortes pluies jeudi" },
     fr: "De fortes pluies sont attendues jeudi. Mettez vos récoltes et vos semences à l’abri." },
   { id: "livestock", sector: "farming", title: { en: "Livestock vaccination", fr: "Vaccination du bétail" },
@@ -62,19 +62,20 @@ export const IDEAS: Idea[] = [
   { id: "hours", sector: "markets", title: { en: "Opening hours", fr: "Heures d’ouverture" },
     fr: `La boutique est ouverte tous les jours de 8${h}h à 20${h}h.` },
   { id: "once", sector: "stories", title: { en: "Once, in a village", fr: "Il était une fois" },
-    fr: "Un jour, dans un village, il y avait un vieux conteur.",
-    ha: "Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari.", audio: { salim: "/usecases/heritage.m4a" } },
+    fr: "Un jour, dans un village, il y avait un vieux conteur." },
   { id: "tonight", sector: "stories", title: { en: "Tonight’s tale", fr: "Le conte de ce soir" },
     fr: `Ce soir, écoutez le conte du lièvre et de l’hyène, à 20${h}h sur notre radio.` },
 ];
 
 /** An idea's recording in a voice, else the one it has. */
-export const sampleOf = (i: Idea, voice: string): string | undefined => i.audio?.[voice as "nadia" | "salim"] ?? Object.values(i.audio ?? {})[0];
+export const sampleOf = (i: Idea, voice: string): string | undefined => i.audio?.[voice as "nadia"] ?? Object.values(i.audio ?? {})[0];
 
-/* Voice notes to try on Read and Translate: real Hausa (Tafiya), and Kora's French for each (public/usecases). */
+/* Voice notes to try on Read and Translate: real Hausa said by Tafiya in Nadia's voice (public/demo, public/usecases),
+   with its French. The recordings in the withdrawn voices (salim, fr; lib/voices) are not offered here. */
 export type TryNote = { id: string; audio: string; ha: string; fr: string };
 export const TRY_NOTES: TryNote[] = [
-  { id: "price", audio: "/usecases/translation-ha.m4a", ha: "Nawa ne farashin buhun gero?", fr: `Quel est le prix du sac de mil${n}?` },
-  { id: "story", audio: "/usecases/heritage.m4a", ha: "Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari.", fr: "Un jour, dans un village, il y avait un vieux conteur." },
   { id: "form", audio: "/usecases/public.m4a", ha: "Za mu taimaka muku ku cike fom ɗin, mataki-mataki.", fr: "Nous allons vous aider à remplir le formulaire étape par étape." },
+  { id: "clinic", audio: "/demo/clinic-nadia.m4a", ha: "Kar ki manta, gobe da safe ki kawo jaririnki asibiti don allurar rigakafi.",
+    fr: `N’oubliez pas${n}: demain matin, amenez votre bébé au centre de santé pour la vaccination.` },
+  { id: "lesson", audio: "/usecases/education.m4a", ha: "Bari mu koyi ƙidaya tare: ɗaya, biyu, uku, huɗu, biyar.", fr: `Apprenons à compter ensemble${n}: un, deux, trois, quatre, cinq.` },
 ];

@@ -35,7 +35,7 @@ export const TEMPLATES: Template[] = [
       "Si tu ne connais pas la réponse, dis-le simplement et propose de parler à un agent de santé.",
   },
   {
-    id: "farm-advice", sector: "farming", voice: "salim", languages: ["ha"], photo: "farming", sample: "/demo/farm-salim.m4a",
+    id: "farm-advice", sector: "farming", voice: "nadia", languages: ["ha"], photo: "farming", sample: "/demo/farm-nadia.m4a",
     name: { en: "Farmers’ line", fr: "Ligne des agriculteurs" },
     line: { en: "Season advice: sowing, rain, storage and livestock", fr: "Conseils de saison : semis, pluie, stockage et bétail" },
     greeting: "Bonjour, ici le conseil agricole. Parlez-moi de votre champ.",
@@ -59,7 +59,7 @@ export const TEMPLATES: Template[] = [
       "Tu donnes les pièces à fournir et le lieu où se rendre, étape par étape. Tu ne donnes pas d’avis politique.",
   },
   {
-    id: "customer-service", sector: "markets", voice: "salim", languages: ["ha"], photo: "markets", sample: "/demo/greet-salim.m4a",
+    id: "customer-service", sector: "markets", voice: "nadia", languages: ["ha"], photo: "markets", sample: "/demo/greet-nadia.m4a",
     name: { en: "Market line", fr: "Ligne du marché" },
     line: { en: "Prices, opening hours and mobile money safety", fr: "Prix, heures d’ouverture et sécurité du mobile money" },
     greeting: "Bonjour, bienvenue. Que puis-je faire pour vous ?",
@@ -68,7 +68,7 @@ export const TEMPLATES: Template[] = [
       "Pour une réclamation sur un compte, tu expliques comment joindre un conseiller.",
   },
   {
-    id: "story-companion", sector: "stories", voice: "salim", languages: ["ha"], photo: "statement", sample: "/usecases/heritage.m4a",
+    id: "story-companion", sector: "stories", voice: "nadia", languages: ["ha"], photo: "statement", sample: "/demo/greet-nadia.m4a",
     name: { en: "Storyteller", fr: "Conteur" },
     line: { en: "Short tales for children, with a question at the end", fr: "Des contes courts pour les enfants, avec une question à la fin" },
     greeting: "Bonjour ! Tu veux entendre un conte ?",
