@@ -78,6 +78,65 @@
   .cx-frame[data-side="closed"] .cx-menu { right: auto; width: 260px; }
 }
 
+/* ---- the console in the platform's clothes: Create's and Agents' tokens, frames, pills and ink (platform.css .pf), so
+   the three areas read as one product. Frames are Harmattan with no border; the primary pill is Kola; controls are
+   sand and cream; dialogs cream. Code stays on its night ground. */
+.cx-frame { --ink: #1C1410; --ink-2: #4A3D33; --ink-3: #7A6352; --line: rgba(28, 20, 16, .1); --line-2: rgba(28, 20, 16, .14); --kola: #6B3E1E;
+  --dry-clay: #EDD9B0; --focus: #6B3E1E; color: var(--ink); }
+.cx-frame :focus-visible { outline-color: var(--kola); }
+.cx-frame .cx-nav a { height: 42px; color: var(--ink-3); }
+.cx-frame .cx-nav a:hover { background: rgba(28, 20, 16, .05); color: var(--ink); }
+.cx-frame .cx-nav a[aria-current="page"] { background: var(--surface); color: var(--ink); font-weight: 400; box-shadow: none; }
+.cx-frame .cx-access { background: var(--surface-2); }
+.cx-frame .cx-menu { background: #FFFAF1; }
+.cx-frame .cx-head h1 { font-size: clamp(28px, 2.4vw, 36px); letter-spacing: -.02em; line-height: 1.1; }
+.cx-frame .cx-head p { color: var(--ink-3); font-size: 16px; }
+
+/* frames */
+.cx-frame .cx-card, .cx-frame .cx-tile, .cx-frame .cx-table-wrap, .cx-frame .cx-metrics, .cx-frame .cx-get, .cx-frame .cx-page .panel.acct-card {
+  border: 0; border-radius: 24px; background: var(--surface); }
+.cx-frame .cx-table-wrap.flat { border-radius: 0; background: none; }
+.cx-frame .cx-table tbody tr:hover td, .cx-frame .cx-try a:hover { background: rgba(28, 20, 16, .035); }
+.cx-frame .cx-empty { border: 0; border-radius: 24px; background: var(--surface); }
+.cx-frame .cx-empty-ic { background: var(--surface-2); }
+.cx-frame .cx-danger { box-shadow: inset 0 0 0 1px rgba(168, 50, 31, .22); }
+.cx-frame .cx-get-art { background: var(--surface-2); }
+.cx-frame .cx-get-steps a:hover { background: rgba(28, 20, 16, .04); }
+.cx-frame .cx-get-ic { background: var(--bg); }
+.cx-frame .cx-get-steps li.done .cx-get-ic { background: var(--kola); color: #FFFAF1; }
+.cx-frame .cx-metric.allow { color: #4A2A12; background: var(--dry-clay); }
+.cx-frame .cx-meter { background: rgba(28, 20, 16, .08); }
+.cx-frame .cx-meter i { background: var(--kola); }
+
+/* pills: sand, and Kola for the one that matters */
+.cx-frame .cx-btn { height: 44px; padding: 0 20px; background: var(--surface-2); color: var(--ink); box-shadow: none; font-size: 15.5px; font-weight: 500; }
+.cx-frame .cx-btn:hover { background: var(--dry-clay); }
+.cx-frame .cx-btn.primary { background: var(--kola); color: #FFFAF1; }
+.cx-frame .cx-btn.primary:hover { background: var(--ink); }
+.cx-frame .cx-btn.ghost { background: transparent; }
+.cx-frame .cx-btn.ghost:hover { background: rgba(28, 20, 16, .06); }
+.cx-frame .cx-btn.danger { background: #A8321F; color: #FFFAF1; }
+.cx-frame .cx-btn.danger:hover { background: #8a2818; }
+.cx-frame .cx-btn.sm { height: 36px; padding: 0 14px; font-size: 14.5px; }
+.cx-frame .cx-metric.allow .cx-btn { background: rgba(255, 250, 241, .7); box-shadow: none; }
+.cx-frame .cx-metric.allow .cx-btn:hover { background: #FFFAF1; }
+.cx-frame .cx-icon-btn:hover { background: rgba(28, 20, 16, .06); }
+
+/* choosing and typing: sand tracks, cream fields */
+.cx-frame .cx-seg, .cx-frame .cx-pg-modes { background: var(--surface-2); }
+.cx-frame .cx-seg button[aria-checked="true"], .cx-frame .cx-seg button[aria-selected="true"], .cx-frame .cx-pg-modes button[aria-selected="true"] {
+  background: #FFFAF1; box-shadow: none; }
+.cx-frame .cx-select select, .cx-frame .cx-input, .cx-frame .cx-pg-textarea { background: var(--bg); }
+.cx-frame .cx-pg-textarea:focus { border-color: var(--kola); box-shadow: none; }
+.cx-frame .cx-status, .cx-frame .cx-pill, .cx-frame .cx-tag { background: var(--surface-2); color: var(--ink-2); }
+.cx-frame .cx-status.s4 { background: rgba(232, 147, 90, .2); color: #7a4325; }
+.cx-frame .cx-pill.good { background: rgba(107, 62, 30, .1); color: var(--kola); }   /* no green on Namu's ground */
+.cx-frame .cx-ok { color: var(--kola); }
+.cx-frame .cx-status.s5 { background: rgba(168, 50, 31, .12); color: #A8321F; }
+.cx-frame .cx-base { background: var(--surface); }
+.cx-frame .cx-dialog { background: #FFFAF1; }
+.cx-frame .cx-dialog::backdrop { background: rgba(28, 20, 16, .46); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
 /* ---- the doors' slim bar (sign-in, accounts switched off) */
 .cx-auth { display: block; background: none; }
 .cx-top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 24px; border-bottom: 1px solid var(--line);
