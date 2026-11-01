@@ -27,14 +27,17 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
   useEffect(() => () => { current.current?.pause(); void rec.current?.stop(); void graph.current?.ctx.close(); }, []);
 
   /* the agent's voice goes through an analyser, so the orb can follow it */
+  const hush = () => { current.current?.pause(); current.current?.dispatchEvent(new Event("ended")); };
   const play = (b: Blob) => {
-    current.current?.pause();
+    hush();
     const g = (graph.current ??= (() => { const ctx = new AudioContext(); const analyser = ctx.createAnalyser(); analyser.fftSize = 512; analyser.connect(ctx.destination); return { ctx, analyser }; })());
     void g.ctx.resume();
     const url = URL.createObjectURL(b), a = new Audio(url);
-    g.ctx.createMediaElementSource(a).connect(g.analyser);
+    const source = g.ctx.createMediaElementSource(a);
+    source.connect(g.analyser);
     current.current = a;
-    a.onended = () => { URL.revokeObjectURL(url); setSpeakingNow(false); };
+    // ended, failed or cut short (hush): the sound and its node are let go once
+    a.onended = a.onerror = () => { a.onended = a.onerror = null; source.disconnect(); URL.revokeObjectURL(url); if (current.current === a) { current.current = null; setSpeakingNow(false); } };
     setSpeakingNow(true);
     void a.play().catch(() => setSpeakingNow(false));
   };
@@ -54,7 +57,7 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
     } catch { setErr(t.errors.generic); setPhase("idle"); }
   };
   const listen = async () => {
-    current.current?.pause(); setSpeakingNow(false); setErr(null);
+    hush(); setSpeakingNow(false); setErr(null);
     const r = (rec.current = new Recorder());
     try { await r.start(60, () => void send()); } catch { rec.current = null; setErr(t.errors.mic); return; }
     if (rec.current === r) setPhase("recording");
@@ -86,7 +89,7 @@ export function TalkPanel({ agentId, name, speaking, voice, lang }: { agentId: s
         {phase === "busy" ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={button.icon} size={16} stroke={1.6} />}{button.label}
       </button>
       {phase !== "idle" && phase !== "recording" && (
-        <button type="button" className="ag-link" onClick={() => { current.current?.pause(); setSpeakingNow(false); setConv(null); void start(); }} disabled={phase === "busy"}>{t.talk.again}</button>
+        <button type="button" className="ag-link" onClick={() => { hush(); setSpeakingNow(false); setConv(null); void start(); }} disabled={phase === "busy"}>{t.talk.again}</button>
       )}
       {err && <p className="cx-error" role="alert">{err}</p>}
     </section>

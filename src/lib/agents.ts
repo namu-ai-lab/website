@@ -44,13 +44,16 @@ export async function getAgent(userId: string, id: string): Promise<Agent | null
 export type AgentInit = Omit<Agent, "id" | "created_at" | "updated_at" | "channels">;
 
 export async function createAgent(userId: string, a: AgentInit): Promise<Agent> {
-  const [{ n }] = await sql<{ n: number }>("select count(*)::int as n from public.agents where user_id = $1", [userId]);
-  if (n >= LIMITS_AGENT.agents) throw new RangeError("too_many_agents");
-  const [r] = await sql<AgentRecord>(`insert into public.agents (user_id, name, template, greeting, instructions, voice, languages, checks)
-    values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb) returning ${AGENT_COLUMNS}`,
-    [userId, a.name.slice(0, LIMITS_AGENT.name), a.template, a.greeting.slice(0, LIMITS_AGENT.greeting), a.instructions.slice(0, LIMITS_AGENT.instructions),
-      a.voice, a.languages, JSON.stringify(a.checks)]);
-  return agentOf(r);
+  return tx(async q => {
+    await q("select pg_advisory_xact_lock(hashtext('agents:' || $1))", [userId]);   // the count and the insert, one request at a time
+    const [{ n }] = await q<{ n: number }>("select count(*)::int as n from public.agents where user_id = $1", [userId]);
+    if (n >= LIMITS_AGENT.agents) throw new RangeError("too_many_agents");
+    const [r] = await q<AgentRecord>(`insert into public.agents (user_id, name, template, greeting, instructions, voice, languages, checks)
+      values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb) returning ${AGENT_COLUMNS}`,
+      [userId, a.name.slice(0, LIMITS_AGENT.name), a.template, a.greeting.slice(0, LIMITS_AGENT.greeting), a.instructions.slice(0, LIMITS_AGENT.instructions),
+        a.voice, a.languages, JSON.stringify(a.checks)]);
+    return agentOf(r);
+  });
 }
 
 export async function updateAgent(userId: string, id: string, p: AgentPatch): Promise<Agent | null> {

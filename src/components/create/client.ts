@@ -17,16 +17,20 @@ const audioPost = (body: Blob) => ({ method: "POST", headers: { "Content-Type": 
 export const translate = async (text: string, from: LangCode, to: LangCode) =>
   ((await (await ok(await fetch("/api/create/translate", json("POST", { text, from, to })))).json()) as { text: string }).text;
 
-/* The same words in the same voice sound the same: made once per page, then played from here. */
+/* The same words in the same voice sound the same: made once, then played from here. Only the last few are kept,
+   so a long session on a small phone does not hold every recording. */
+const KEEP = 12;
 const spoken = new Map<string, Promise<Blob>>();
 export function speak(text: string, lang: LangCode, voice: string | null): Promise<Blob> {
   const key = `${lang}|${voice ?? ""}|${text}`;
   let p = spoken.get(key);
-  if (!p) {
+  if (p) spoken.delete(key);                                     // most recently used goes to the end
+  else {
     p = fetch("/api/create/speak", json("POST", { text, lang, voice })).then(ok).then(r => r.blob());
-    spoken.set(key, p);
     p.catch(() => spoken.delete(key));
   }
+  spoken.set(key, p);
+  while (spoken.size > KEEP) spoken.delete(spoken.keys().next().value!);
   return p;
 }
 

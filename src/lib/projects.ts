@@ -30,6 +30,7 @@ export const MAX_MESSAGES = 500;
 /** Keeps a message made in Create: its project and its version, together or not at all. */
 export async function saveMessage(userId: string, m: NewMessage): Promise<Message> {
   return tx(async q => {
+    await q("select pg_advisory_xact_lock(hashtext('projects:' || $1))", [userId]);   // the count and the insert, one request at a time
     const [{ n }] = await q<{ n: number }>("select count(*)::int as n from public.projects where user_id = $1", [userId]);
     if (n >= MAX_MESSAGES) throw new RangeError("too_many_messages");
     const [p] = await q<{ id: string; title: string; updated_at: Date }>(`insert into public.projects (user_id, title, kind, source_lang, source_text, made_for)

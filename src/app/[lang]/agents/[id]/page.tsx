@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { NotConfigured } from "@/components/account/AccountShell";
@@ -8,6 +7,7 @@ import { NotReady } from "@/components/agents/NotReady";
 import { PlatformShell } from "@/components/platform/PlatformShell";
 import { agentsCopy } from "@/content/agents";
 import { platformCopy } from "@/content/platform";
+import { site } from "@/content/site";
 import { isLang, type Lang } from "@/i18n/config";
 import { requireAccount } from "@/lib/account";
 import { conversationsOf, docsOf, getAgent } from "@/lib/agents";
@@ -40,13 +40,10 @@ export default async function AgentPage({ params, searchParams }: { params: Prom
   }
   const asked = (await searchParams).tab;
   const tab: Tab = TABS.find(x => x === asked) ?? (asked === "deploy" ? "whatsapp" : "agent");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "www.namuai-lab.com";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
   return (
     <PlatformShell {...shell}>
       <AgentBuilder lang={lang} initial={data.agent} docs={data.docs} conversations={data.conversations} tab={tab}
-        whatsapp={{ server: hasWhatsapp(), webhook: `${proto}://${host}/api/agents/whatsapp`, admin: shell.admin }} />
+        whatsapp={{ server: hasWhatsapp(), webhook: `${site.url}/api/agents/whatsapp`, admin: shell.admin }} />
     </PlatformShell>
   );
 }

@@ -89,7 +89,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
               options={sources.map(l => ({ id: l, label: language(l).endonym }))} />
             <Icon name="arrow-long" size={16} stroke={1.5} className="cr-to" />
             <ChipMenu label={t.to} value={language(to).endonym} onPick={id => setTo(id as LangCode)}
-              options={LOCAL.map(l => ({ id: l, label: language(l).endonym, disabled: !can("speech", l) || !canTranslate(from, l), end: !can("speech", l) ? <span className="pf-soon">{p.soon}</span> : undefined }))} />
+              options={LOCAL.map(l => ({ id: l, label: language(l).endonym, disabled: !can("speech", l) || (l !== from && !canTranslate(from, l)), end: !can("speech", l) ? <span className="pf-soon">{p.soon}</span> : undefined }))} />
             {voice && (
               <ChipMenu label={p.voice} value={<><VoiceAvatar v={{ id: voice }} size={22} />{voiceOf(voice).name}</>} onPick={id => setVoices(v => ({ ...v, [to]: id as VoiceId }))}
                 options={voicesFor(to).map(v => ({ id: v.id, label: <><VoiceAvatar v={v} size={22} />{v.name}</>, end: <MiniPlay src={v.sample} label={`${p.play} ${v.name}`} /> }))} />
