@@ -79,3 +79,43 @@ export const TRY_NOTES: TryNote[] = [
     fr: `N’oubliez pas${n}: demain matin, amenez votre bébé au centre de santé pour la vaccination.` },
   { id: "lesson", audio: "/usecases/education.m4a", ha: "Bari mu koyi ƙidaya tare: ɗaya, biyu, uku, huɗu, biyar.", fr: `Apprenons à compter ensemble${n}: un, deux, trois, quatre, cinq.` },
 ];
+
+/* Showcases: real footage from Niger and Hausaland (Wiki Loves Africa and Wikitongues on Wikimedia Commons, CC BY-SA;
+   public/showcase/CREDITS.md), each with what Namu's models made for it, through the API on 2026-11-01: the Hausa
+   Tafiya said in Nadia's voice (the take Tatsuniya heard closest to the script, of two), or, for the storyteller, what
+   Tatsuniya wrote down from his own voice and Kora's French for it, both unedited. The people shown are not Namu
+   users. HA-REVIEW: the scripts' Hausa was drafted for the founder to check by ear. */
+export type Showcase = {
+  id: string; video: string; poster: string; tall?: boolean; focus?: string;
+  who: Record<Lang, string>; title: Record<Lang, string>;
+  /** speak: Nadia says `ha`, written from `fr`. read: `ha` is what Tatsuniya heard, `fr` Kora's French for it. */
+  does: "speak" | "read"; ha: string; fr: string;
+};
+
+export const SHOWCASES: Showcase[] = [
+  { id: "market-crier", video: "/showcase/market-crier.mp4", poster: "/showcase/market-crier.jpg", does: "speak",
+    who: { en: "Traders", fr: "Commerçants" }, title: { en: "The market crier", fr: "Le crieur du marché" },
+    fr: `Le marché de Boumba se tient dimanche${n}: mil, oignons et poisson frais. Venez tôt${n}!`,
+    ha: "Albishirinku! Kasuwar Boumba za ta ci ranar Lahadi: akwai gero, albasa da kifi sabo. Ku zo da wuri." },
+  { id: "storyteller", video: "/showcase/creator.mp4", poster: "/showcase/creator.jpg", does: "read",
+    who: { en: "Creators", fr: "Créateurs" }, title: { en: "A storyteller, written down", fr: "Un conteur, mis par écrit" },
+    ha: "yara a wajen har a raɗe-raɗe ta kama cewa shi sarkin wata ainin wanda lokacin yana neman saikashi, wanda wannan ta saba jaddada mutanen suka yi hijira.",
+    fr: "Les enfants sur place, et même les rumeurs ont commencé à dire que le roi de la lune lui-même, qui à l’époque cherchait à s’isoler, ce qui avait souvent poussé les gens à émigrer." },
+  { id: "herders", video: "/showcase/herders.mp4", poster: "/showcase/herders.jpg", does: "speak",
+    who: { en: "Livestock services", fr: "Services de l’élevage" }, title: { en: "Herders on the move", fr: "Éleveurs en route" },
+    fr: `Éleveurs${n}: la vaccination du bétail commence lundi à Ingall. Amenez vos animaux.`,
+    ha: "Ya ku makiyaya, za a fara allurar rigakafin dabbobi ranar Litinin a Ingall. Ku kawo dabbobinku." },
+  { id: "durbar", video: "/showcase/durbar.mp4", poster: "/showcase/durbar.jpg", does: "speak",
+    who: { en: "Events", fr: "Événements" }, title: { en: "Durbar day", fr: "Jour de Durbar" },
+    fr: `Samedi, la grande parade des cavaliers${n}: tambours, chevaux et couleurs. Venez nombreux${n}!`,
+    ha: "Ranar Asabar za a yi babban Hawan Daba: ganguna, dawakai da kayan ado. Ku zo ku sha kallo!" },
+  { id: "onions", video: "/showcase/onions.mp4", poster: "/showcase/onions.jpg", does: "speak", tall: true,
+    who: { en: "Small businesses", fr: "Petits commerces" }, title: { en: "Galmi onions, by WhatsApp", fr: "Oignons de Galmi, par WhatsApp" },
+    fr: "Oignons violets de Galmi, frais du jour. Livraison à Kano et Maradi. Écrivez-moi sur WhatsApp.",
+    ha: "Albasar Galmi ja, sabuwa daga gona. Muna kai wa Kano da Maradi. Ku yi mini magana a WhatsApp." },
+  { id: "mama", video: "/showcase/mama.mp4", poster: "/showcase/mama.jpg", does: "speak", tall: true, focus: "50% 12%",
+    who: { en: "Families", fr: "Familles" }, title: { en: "A voice note for Mama", fr: "Un message vocal pour Maman" },
+    fr: `Maman, le baptême du petit est samedi matin. Toute la famille t’attend${n}!`,
+    ha: "Mama, za a yi sunan jariri ranar Asabar da safe. Dukkan dangi suna jiranki!" },
+];
+

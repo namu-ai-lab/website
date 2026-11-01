@@ -8,7 +8,7 @@ import { ChipMenu, Making, MessageList, MiniPlay, VoiceEntry, VoiceNote } from "
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
 import { createCopy } from "@/content/create";
-import { IDEAS, SECTORS, sampleOf, type Idea, type SectorId } from "@/content/ideas";
+import { IDEAS, SECTORS, SHOWCASES, sampleOf, type Idea, type SectorId, type Showcase } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
 import { WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
@@ -67,6 +67,12 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     setFrom(fr ? WRITTEN : to); setText(fr ? i.fr : i.ha ?? ""); setOriginal(fr ? null : i.fr); setMade(null); setErr(null);
     top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     requestAnimationFrame(() => box.current?.focus({ preventScroll: true }));
+  };
+
+  /* a showcase goes in as the Hausa Nadia said, with the French it was written from above it */
+  const useShow = (s: Showcase) => {
+    setFrom(to); setText(s.ha); setOriginal(s.fr); setMade(null); setErr(null);
+    top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const tools: { icon: IconName; label: string; href: string }[] = [
@@ -143,6 +149,9 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
         </div>
         {tab === "ideas" ? (
           <div role="tabpanel">
+            <ul className="cr-shows">
+              {SHOWCASES.map(s => <ShowcaseCard key={s.id} s={s} ui={ui} onUse={useShow} />)}
+            </ul>
             <div className={`cr-sectors${sector ? " picked" : ""}`} role="group" aria-label={t.ideas}>
               {SECTORS.map(s => (
                 <button key={s.id} type="button" className="cr-sector" aria-pressed={sector === s.id} onClick={() => setSector(sector === s.id ? null : s.id)}>
@@ -178,3 +187,38 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     </div>
   );
 }
+
+/* A showcase: real footage, played with its sound on a tap (one at a time), and what Namu made for it underneath. */
+function ShowcaseCard({ s, ui, onUse }: { s: Showcase; ui: Lang; onUse: (s: Showcase) => void }) {
+  const t = createCopy[ui].home, p = platformCopy[ui];
+  const video = useRef<HTMLVideoElement>(null);
+  const [on, setOn] = useState(false), [pos, setPos] = useState(0);
+  const toggle = () => {
+    const v = video.current; if (!v) return;
+    if (!v.paused) { v.pause(); return; }
+    document.querySelectorAll<HTMLVideoElement>("video.cr-show-video").forEach(o => { if (o !== v) o.pause(); });
+    void v.play();
+  };
+  return (
+    <li className={`cr-show${s.tall ? " tall" : ""}`}>
+      <button type="button" className="cr-show-media" onClick={toggle} aria-label={`${on ? p.pause : p.play} · ${s.title[ui]}`}>
+        <video ref={video} className="cr-show-video" src={s.video} poster={s.poster} preload="none" playsInline
+          style={s.focus ? { objectPosition: s.focus } : undefined}
+          onPlay={() => setOn(true)} onPause={() => setOn(false)} onEnded={() => { setOn(false); setPos(0); }}
+          onTimeUpdate={e => setPos(e.currentTarget.currentTime / (e.currentTarget.duration || 1))} />
+        <span className="cr-show-play" aria-hidden="true"><Icon name={on ? "pause" : "play"} size={16} stroke={1.6} /></span>
+        <i className="cr-show-bar" style={{ transform: `scaleX(${pos})` }} aria-hidden="true" />
+      </button>
+      <div className="cr-show-body">
+        <span className="cr-show-who">{s.who[ui]}</span>
+        <h3>{s.title[ui]}</h3>
+        <p lang="ha">{s.ha}</p>
+        <p className="cr-show-fr" lang="fr">{s.fr}</p>
+        {s.does === "speak"
+          ? <button type="button" className="cx-btn ghost sm" onClick={() => onUse(s)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>
+          : <a className="cx-btn ghost sm" href={lp(ui, "/create/read")}>{t.readYours}<Icon name="arrow-long" size={14} stroke={1.6} /></a>}
+      </div>
+    </li>
+  );
+}
+
