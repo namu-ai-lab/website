@@ -2,7 +2,8 @@
    none of them set; each feature switches on when its settings are there, and its pages say so when they are not:
      accounts      DATABASE_URL, NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET, NAMU_KEY_PEPPER (NEON_AUTH_PROVIDERS)
      live demos    NAMU_DEMO_KEY (the conversation also uses NAMU_AGENT_URL, MODAL_PROXY_KEY, MODAL_PROXY_SECRET)
-     Playground    NAMU_SERVICE_KEY
+     Playground    NAMU_SERVICE_KEY (also the platform's Create and Agents doors)
+     WhatsApp      WHATSAPP_TOKEN, WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN (agents answering on WhatsApp)
    What is wrong is a feature that is set up in part: accounts with no pepper, half a proxy token. next.config.ts runs
    checkServerEnv() whenever Next starts. A production build or server stops, so a broken configuration never
    replaces a working deployment; the dev server prints what is on and what to fix.
@@ -12,12 +13,14 @@
 export const SERVER_SETTINGS = [
   "DATABASE_URL", "NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET", "NEON_AUTH_PROVIDERS", "NAMU_KEY_PEPPER",
   "NAMU_DEMO_KEY", "NAMU_SERVICE_KEY", "NAMU_AGENT_URL", "MODAL_PROXY_KEY", "MODAL_PROXY_SECRET",
+  "WHATSAPP_TOKEN", "WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN",
 ] as const;
 export type ServerSetting = (typeof SERVER_SETTINGS)[number];
 
 type Env = Partial<Record<string, string>>;
 
 const ACCOUNTS = ["DATABASE_URL", "NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET"] as const;
+const WHATSAPP = ["WHATSAPP_TOKEN", "WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN"] as const;
 
 const isUrl = (s: string) => { try { return Boolean(new URL(s)); } catch { return false; } };
 
@@ -36,6 +39,8 @@ export function envProblems(env: Env): string[] {
   }
   if (has("MODAL_PROXY_KEY") !== has("MODAL_PROXY_SECRET")) problems.push("MODAL_PROXY_KEY and MODAL_PROXY_SECRET are a pair: set both or neither.");
   if (has("NAMU_AGENT_URL") && !isUrl(env.NAMU_AGENT_URL ?? "")) problems.push("NAMU_AGENT_URL is not a URL.");
+  const noWa = WHATSAPP.filter(name => !has(name));
+  if (noWa.length > 0 && noWa.length < WHATSAPP.length) problems.push(`WhatsApp is half configured: set ${noWa.join(" and ")} too, or leave all three unset.`);
   return problems;
 }
 
@@ -44,7 +49,7 @@ export function envSummary(env: Env): string {
   const on = (names: readonly ServerSetting[]) => names.every(name => Boolean(env[name]));
   const feature = (label: string, names: readonly ServerSetting[]) =>
     on(names) ? `${label} on` : `${label} off (${names.filter(name => !env[name]).join(", ")})`;
-  return [feature("accounts", ACCOUNTS), feature("live demos", ["NAMU_DEMO_KEY"]), feature("Playground", ["NAMU_SERVICE_KEY"])].join(" · ");
+  return [feature("accounts", ACCOUNTS), feature("live demos", ["NAMU_DEMO_KEY"]), feature("Playground", ["NAMU_SERVICE_KEY"]), feature("WhatsApp", WHATSAPP)].join(" · ");
 }
 
 /** Stops with every problem listed when `strict` (a production build or server), and only reports them otherwise. */

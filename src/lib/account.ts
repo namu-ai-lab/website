@@ -27,8 +27,9 @@ export async function profileOf(userId: string): Promise<Profile> {
 
 export const allProfiles = () => sql<Profile>(`${PROFILE} order by p.created_at desc limit 500`);
 
-/** Where to go after signing in: a path on this site only, never another origin; the console by default. */
-export const nextPath = (lang: Lang, raw?: string) => (raw && /^\/(?!\/)[\w\-/]*$/.test(raw) ? raw : lp(lang, "/account"));
+/** Where to go after signing in: a path on this site only (with at most a plain query, as /account/keys?create=1),
+    never another origin; Namu Create, the platform's first door, by default. */
+export const nextPath = (lang: Lang, raw?: string) => (raw && /^\/(?!\/)[\w\-/]*(\?[\w=&-]*)?$/.test(raw) ? raw : lp(lang, "/create"));
 
 /* Every account page starts here: a verified user and their profile, or a trip to the sign-in page. */
 export async function requireAccount(lang: Lang, path: string) {

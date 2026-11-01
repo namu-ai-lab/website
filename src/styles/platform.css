@@ -1,0 +1,109 @@
+/* The platform's shell, shared by its three doors (components/platform): the sidebar's groups, the switch between
+   doors at its foot, and the page layouts. Prefix pf-. Builds on console.css (cx-), which draws the sidebar, the
+   pills, cards and tables every door uses. Each door's own pages: create.css (cr-), agents.css (ag-). */
+
+/* ---- the sidebar: groups with a quiet label that scroll on their own, and a foot that stays put, ending with the
+   switch between doors (as ElevenLabs keeps Developers, Upgrade and Switch in view) */
+.pf .cx-side { overflow: hidden; }
+.pf-nav { display: grid; align-content: start; gap: 10px; min-height: 0; margin: 0 -6px; padding: 0 6px 12px; overflow-y: auto; scrollbar-width: thin; }
+.pf-nav a { height: 34px; }
+.pf-group-label { margin: 0 0 4px; padding: 0 12px; color: var(--ink-3); font-size: 13px; }
+.pf .cx-side-foot { gap: 2px; padding-top: 10px; }
+.pf .cx-side-foot .lang-switch { margin: 4px 0 0 8px; }
+.pf .cx-side-doc { height: 30px; }
+.pf-switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 10px 6px 0 10px;
+  border-top: 1px solid var(--line); }
+.pf-door { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); font-size: 14.5px; font-weight: 500; white-space: nowrap; }
+.pf-orb { flex: none; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(21, 18, 15, .12); }
+.pf-orb.lg { width: 22px; height: 22px; }
+.pf-switch-btn { height: 30px; padding: 0 12px; border: 0; border-radius: var(--r-pill); background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2);
+  font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; }
+.pf-switch-btn:hover, .pf-switch-btn[aria-expanded="true"] { background: var(--surface-2); }
+.pf-doors { position: absolute; left: 0; right: -6px; bottom: calc(100% + 8px); z-index: 45; display: grid; gap: 2px; margin: 0; padding: 6px; list-style: none;
+  border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 24px 48px -20px rgba(21, 18, 15, .3); }
+.pf-doors a { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; color: var(--ink); font-size: 15px; font-weight: 500; text-decoration: none; }
+.pf-doors a:hover { background: var(--surface); }
+.pf-doors a svg { margin-left: auto; color: var(--sahel-deep); }
+
+/* ---- the page */
+.pf-page.center { display: grid; align-content: start; justify-items: center; max-width: none; padding-top: clamp(56px, 12vh, 140px); text-align: center; }
+.pf-page.full { max-width: none; padding: 0; }
+
+/* ---- shared pieces every door uses */
+.pf-hero { display: grid; justify-items: center; gap: 22px; width: min(760px, 100%); }
+.pf-hero h1 { margin: 0; font-size: clamp(30px, 3.2vw, 44px); font-weight: 500; letter-spacing: -.026em; line-height: 1.08; text-wrap: balance; }
+.pf-empty { display: grid; justify-items: center; gap: 14px; padding: clamp(48px, 10vh, 96px) 16px; text-align: center; }
+.pf-empty h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.016em; }
+.pf-empty p { margin: 0; color: var(--ink-3); }
+.pf-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 0; border-radius: var(--r-pill); background: #fff; color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line-2); font: inherit; font-size: 14.5px; text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease); }
+.pf-chip:hover { background: var(--surface); color: var(--ink); }
+.pf-chip[aria-pressed="true"], .pf-chip[aria-checked="true"] { background: var(--ink); color: #fff; box-shadow: none; }
+.pf-chip svg { color: inherit; }
+.pf-soon { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--ink-3);
+  font-size: 12.5px; font-weight: 500; }
+.pf-letters { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf-letters button { min-width: 34px; height: 32px; padding: 0 8px; border: 0; border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px;
+  cursor: pointer; }
+.pf-letters button:hover { background: var(--surface-2); }
+
+/* ---- choosing: language chips, the voice picker, samples */
+.pf-langs, .pf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-chip:disabled { cursor: default; opacity: .7; }
+.pf-chip:disabled:hover { background: #fff; color: var(--ink-2); }
+.pf-chip .pf-soon { margin-right: -6px; }
+.pf-chip.quiet { height: 32px; padding: 0 12px; font-size: 14px; background: none; box-shadow: none; }
+.pf-chip.quiet:hover { background: var(--surface); }
+.pf-chip.quiet[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); }
+.pf-voice-pick { position: relative; }
+.pf-voice-btn { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 14px 0 10px; border: 0; border-radius: 14px; background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); font: inherit; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer; }
+.pf-voice-btn span { flex: 1; }
+.pf-voice-btn svg { color: var(--ink-3); }
+.pf-voice-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; display: grid; gap: 2px; margin: 0; padding: 6px; list-style: none;
+  border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 24px 48px -20px rgba(21, 18, 15, .3); }
+.pf-voice-list li { display: flex; align-items: center; gap: 4px; }
+.pf-voice-list li > button:first-child { display: flex; flex: 1; align-items: center; gap: 10px; padding: 8px; border: 0; border-radius: 10px; background: none; color: var(--ink);
+  font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.pf-voice-list li > button:first-child:hover { background: var(--surface); }
+.pf-voice-list li > button:first-child span { flex: 1; }
+.pf-voice-list svg { color: var(--sahel-deep); }
+.pf-voice-orb { display: inline-block; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(21, 18, 15, .1); }
+.pf-sample { display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink);
+  cursor: pointer; transition: background-color .2s var(--ease); }
+.pf-sample:hover, .pf-sample[aria-pressed="true"] { background: var(--surface-2); }
+
+/* ---- sound: the player and the recorder */
+.pf-player.compact { padding: 6px 8px 6px 6px; }
+.pf-player.compact .cx-wave { height: 28px; }
+.pf-record { display: grid; justify-items: center; gap: 10px; }
+.pf-record-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.pf-recording { display: flex; align-items: center; gap: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pf-level { display: inline-flex; align-items: center; gap: 3px; height: 28px; }
+.pf-level i { width: 4px; height: 100%; border-radius: 2px; background: var(--sahel); transform-origin: center; transition: transform .08s linear; }
+
+/* ---- the voice library */
+.pf-lib { display: grid; gap: 22px; }
+.pf-search { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-3); }
+.pf-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.pf-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; outline: none; }
+.pf-filters { display: grid; gap: 10px; }
+.pf-voices { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin: 6px 0 0; padding: 0; list-style: none; }
+.pf-vcard { display: grid; align-content: start; gap: 6px; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #fff;
+  transition: box-shadow .25s var(--ease), transform .25s var(--ease); }
+.pf-vcard:hover { box-shadow: 0 18px 40px -26px rgba(21, 18, 15, .35); transform: translateY(calc(-1px * var(--motion))); }
+.pf-vcard-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.pf-vcard h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.012em; }
+.pf-vmeta { margin: 0; color: var(--ink-3); font-size: 14px; }
+.pf-vuses { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.pf-vuses span { padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-2); font-size: 12.5px; }
+.pf-vcard-acts { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+.pf-vid { padding: 4px 9px; border-radius: 8px; background: var(--surface); font-size: 13.5px; }
+.pf-coming-orb { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff 0, var(--surface-2) 55%, #d8cfc4 100%);
+  box-shadow: inset 0 0 0 1px var(--line); }
+
+@media (max-width: 860px) {
+  .pf-page.center { padding-top: 40px; }
+  .pf-switch { padding-right: 0; }
+}
