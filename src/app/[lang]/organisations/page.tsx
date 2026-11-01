@@ -71,7 +71,7 @@ export default async function Organisations({ params }: { params: Promise<{ lang
                 </div>
                 <h3>{a.t}</h3>
                 <p>{a.d}</p>
-                {c && <OrgListen id={a.id} clips={c.clips} gloss={c.gloss} note={c.note} transcript={c.transcript} heard={t.heard} hear={t.hear} stop={t.stop} />}
+                {c && <OrgListen id={a.id} clips={c.voicings[0].clips} gloss={c.voicings[0].gloss} note={c.note} transcript={c.voicings[0].transcript} heard={t.heard} hear={t.hear} stop={t.stop} />}
               </li>
             );
           })}
