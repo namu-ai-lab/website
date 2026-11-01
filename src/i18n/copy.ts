@@ -176,7 +176,7 @@ const fr: Copy = {
     aboutNamu: "À propos de Namu", privacy: "Confidentialité", terms: "Conditions",
   },
   home: {
-    hero: "L’IA de la parole pour les langues du Sahel",
+    hero: "L’IA qui parle les langues du Sahel",
     latest: "Dernières actualités", viewNews: "Toutes les actualités",
     models: "Modèles", modelsSub: "Des systèmes de parole issus de nos recherches", modelsLink: "Voir sur namu-ai.org", badge: "Recherche", statusLabel: "Statut",
     research: "Recherche", researchSub: `Cinq programmes, un seul but${n}: des technologies de la parole qui fonctionnent pour les populations du Sahel`, researchLink: "Explorer la recherche",

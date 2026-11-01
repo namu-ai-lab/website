@@ -7,6 +7,9 @@
    What is wrong is a feature that is set up in part: accounts with no pepper, half a proxy token. next.config.ts runs
    checkServerEnv() whenever Next starts. A production build or server stops, so a broken configuration never
    replaces a working deployment; the dev server prints what is on and what to fix.
+   WhatsApp is the exception: it is set up one value at a time (Meta's token, then the verify word, then the app's
+   secret), and while part of it is missing it is simply off (lib/whatsapp hasWhatsapp: the webhook refuses every
+   message), so a half-set WhatsApp is reported (envNotices) and never stops the site's deployment.
    This file reads no values itself (it is given process.env), so next.config.ts can import it; the server reads
    settings through lib/env. .env.example documents every name. */
 
@@ -39,9 +42,14 @@ export function envProblems(env: Env): string[] {
   }
   if (has("MODAL_PROXY_KEY") !== has("MODAL_PROXY_SECRET")) problems.push("MODAL_PROXY_KEY and MODAL_PROXY_SECRET are a pair: set both or neither.");
   if (has("NAMU_AGENT_URL") && !isUrl(env.NAMU_AGENT_URL ?? "")) problems.push("NAMU_AGENT_URL is not a URL.");
-  const noWa = WHATSAPP.filter(name => !has(name));
-  if (noWa.length > 0 && noWa.length < WHATSAPP.length) problems.push(`WhatsApp is half configured: set ${noWa.join(" and ")} too, or leave all three unset.`);
   return problems;
+}
+
+/** Features that are set up in part but are safely off until they are complete: reported, never fatal. */
+export function envNotices(env: Env): string[] {
+  const noWa = WHATSAPP.filter(name => !env[name]);
+  return noWa.length > 0 && noWa.length < WHATSAPP.length
+    ? [`WhatsApp stays off until ${noWa.join(" and ")} ${noWa.length > 1 ? "are" : "is"} set too.`] : [];
 }
 
 /** Which features are on, for the dev server's start-up line. */
@@ -56,7 +64,6 @@ export function envSummary(env: Env): string {
 export function checkServerEnv(env: Env, { strict }: { strict: boolean }): void {
   const problems = envProblems(env);
   if (strict && problems.length) throw new Error(`Server settings need fixing (see .env.example):\n  - ${problems.join("\n  - ")}`);
-  if (strict) return;
-  console.log(`Server settings: ${envSummary(env)}`);
-  for (const p of problems) console.warn(`Server settings: ${p}`);
+  if (!strict) console.log(`Server settings: ${envSummary(env)}`);
+  for (const p of [...(strict ? [] : problems), ...envNotices(env)]) console.warn(`Server settings: ${p}`);
 }
