@@ -47,6 +47,18 @@
 .pf-head p { margin: 8px 0 0; color: var(--ink-3); }
 .pf-head-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* ---- Namu's controls on its own ground: the primary pill is Kola (Ink on hover), the quiet pill Surface 2, the play
+   button Kola; everything else from console.css */
+.pf .cx-btn { height: 44px; padding: 0 20px; background: var(--surface-2); color: var(--ink); box-shadow: none; font-size: 15.5px; font-weight: 500; }
+.pf .cx-btn:hover { background: var(--dry-clay); }
+.pf .cx-btn.primary { background: var(--kola); color: #FFFAF1; }
+.pf .cx-btn.primary:hover { background: var(--ink); }
+.pf .cx-btn.ghost { background: transparent; }
+.pf .cx-btn.ghost:hover { background: rgba(28, 20, 16, .06); }
+.pf .cx-btn.sm { height: 36px; padding: 0 14px; font-size: 14.5px; }
+.pf .cx-play { background: var(--kola); color: #FFFAF1; }
+.pf .cx-play:hover { background: var(--ink); }
+
 /* ---- phones and small tablets: the side menu becomes a row of tabs under the bar */
 @media (max-width: 860px) {
   .pf-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
