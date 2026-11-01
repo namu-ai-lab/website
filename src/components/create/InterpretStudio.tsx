@@ -42,7 +42,7 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
   const t = createCopy[ui].interpret, c = createCopy[ui], p = platformCopy[ui];
   const locals = interpreterLocals();
   const localOf = (turns: { from: LangCode; to?: LangCode }[]) => turns.map(x => (x.from === WRITTEN ? x.to : x.from)).find((l): l is LangCode => !!l && locals.includes(l));
-  const [local, setLocal] = useState<LangCode>(() => localOf(current?.turns ?? []) ?? locals[0] ?? "ha");
+  const [local] = useState<LangCode>(() => localOf(current?.turns ?? []) ?? locals[0] ?? "ha");
   const sides = [local, WRITTEN] as const, other = (l: LangCode) => (l === WRITTEN ? local : WRITTEN);
   const [turns, setTurns] = useState<Shown[]>(current?.turns ?? []);
   const [live, setLive] = useState<Live[]>([]);
