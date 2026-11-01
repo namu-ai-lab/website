@@ -11,9 +11,10 @@ export type DoorId = "create" | "agents" | "api";
 export type PlatformCopy = {
   doors: Record<DoorId, string>;
   access: { approved: string; pending: string; denied: string };
-  switchTo: string; menu: string; openMenu: string; closeMenu: string; signedIn: string;
+  platform: string; menu: string; signedIn: string;
   nav: {
-    home: string; voices: string; projects: string; kit: string; tools: string; speak: string; transcribe: string; video: string;
+    home: string; voices: string; speak: string; read: string; translate: string;
+    projects: string; kit: string; tools: string; transcribe: string; video: string;
     agents: string; templates: string; conversations: string; knowledge: string;
     settings: string;
   };
@@ -34,9 +35,10 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   en: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
-    switchTo: "Switch", menu: "Menu", openMenu: "Open menu", closeMenu: "Close menu", signedIn: "Signed in as",
+    platform: "Platform", menu: "Menu", signedIn: "Signed in as",
     nav: {
-      home: "Home", voices: "Voices", projects: "Projects", kit: "Kit", tools: "Tools", speak: "Speak", transcribe: "Transcribe", video: "Translate a video",
+      home: "Home", voices: "Voices", speak: "Voice message", read: "Read a voice note", translate: "Translate",
+      projects: "Projects", kit: "Kit", tools: "Tools", transcribe: "Transcribe", video: "Translate a video",
       agents: "Agents", templates: "Templates", conversations: "Conversations", knowledge: "Knowledge",
       settings: "Settings",
     },
@@ -55,9 +57,10 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   fr: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
-    switchTo: "Changer", menu: "Menu", openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", signedIn: "Connecté en tant que",
+    platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que",
     nav: {
-      home: "Accueil", voices: "Voix", projects: "Projets", kit: "Kit", tools: "Outils", speak: "Parler", transcribe: "Transcrire", video: "Traduire une vidéo",
+      home: "Accueil", voices: "Voix", speak: "Message vocal", read: "Lire un message vocal", translate: "Traduire",
+      projects: "Projets", kit: "Kit", tools: "Outils", transcribe: "Transcrire", video: "Traduire une vidéo",
       agents: "Agents", templates: "Modèles", conversations: "Conversations", knowledge: "Connaissances",
       settings: "Paramètres",
     },

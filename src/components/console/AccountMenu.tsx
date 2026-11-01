@@ -6,11 +6,11 @@ import { accountCopy } from "@/content/account";
 import { lp, type Lang } from "@/i18n/config";
 import type { ConsoleUser } from "./ConsoleShell";
 
-/* The signed-in account at the foot of the console's sidebar, after platform.openai.com: the initial in a circle with the
-   name and email beside it; it opens a panel upwards with who is signed in, Settings and the way out. Closes on a click
+/* The signed-in account, after platform.openai.com: the initial in a circle (with the name and email beside it, unless
+   compact, as in the platform's top bar); it opens a panel with who is signed in, Settings and the way out. Closes on a click
    outside or Escape (which hands focus back to the button). A disclosure, not an ARIA menu: two plain controls reached
    with Tab, so it does not promise the arrow-key behaviour role="menu" would. */
-export function AccountMenu({ lang, user, label, settings }: { lang: Lang; user: ConsoleUser; label: string; settings?: { label: string; href: string } }) {
+export function AccountMenu({ lang, user, label, settings, compact }: { lang: Lang; user: ConsoleUser; label: string; settings?: { label: string; href: string }; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -22,10 +22,10 @@ export function AccountMenu({ lang, user, label, settings }: { lang: Lang; user:
   }, [open]);
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
   return (
-    <div className="cx-account" ref={box}>
+    <div className={`cx-account${compact ? " compact" : ""}`} ref={box}>
       <button ref={trigger} type="button" className="cx-me" aria-expanded={open} aria-controls="cx-account-menu" aria-label={`${label} ${user.email}`} onClick={() => setOpen(o => !o)}>
         <span className="cx-avatar">{user.image ? <img src={user.image} alt="" /> : initial}</span>
-        <span className="cx-me-who"><strong>{user.name || user.email}</strong>{user.name && <em>{user.email}</em>}</span>
+        {!compact && <span className="cx-me-who"><strong>{user.name || user.email}</strong>{user.name && <em>{user.email}</em>}</span>}
       </button>
       {open && (
         <div className="cx-menu" id="cx-account-menu">
