@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
 import { ChipMenu, Making, MessageList, MiniPlay, VoiceEntry, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
+import { Quickstarts } from "./Quickstarts";
 import { createCopy } from "@/content/create";
-import { IDEAS, SECTORS, SHOWCASES, sampleOf, type Idea, type SectorId, type Showcase } from "@/content/ideas";
+import type { Idea, Showcase } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
 import { WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
@@ -16,8 +17,8 @@ import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
 
 /* Namu Create's home (mock-up v2, Namu/research/elevenlabs/redesign): one question and one box, where French (or a
-   local language) becomes a voice note in the local language, ready for WhatsApp; under it the tools, and ideas from
-   the Sahel's sectors or the messages already made. Languages and voices come from the catalog, so
+   local language) becomes a voice note in the local language, ready for WhatsApp; under it the tools, and the ideas
+   (Quickstarts: real footage and the Sahel's sectors, to search and open) or the messages already made. Languages and voices come from the catalog, so
    Zarma, Fulfulde and Tamajaq light up here when a model speaks them. */
 type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceId | null };
 
@@ -36,8 +37,6 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
   const [made, setMade] = useState<Made | null>(null);
   const [recent, setRecent] = useState(initial);
   const [tab, setTab] = useState<"ideas" | "recent">("ideas");
-  const [sector, setSector] = useState<SectorId | null>(null);
-  const [allIdeas, setAllIdeas] = useState(false);   // phones show six until asked
   const box = useRef<HTMLTextAreaElement>(null), top = useRef<HTMLDivElement>(null);
   const tooLong = text.length > LIMITS.textChars;
   const sources: LangCode[] = [WRITTEN, ...spoken];
@@ -81,7 +80,6 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     { icon: "microphone", label: p.nav.voices, href: L("/create/voices") },
     { icon: "phone-voice", label: t.agents, href: L("/agents") },
   ];
-  const ideas = useMemo(() => IDEAS.filter(i => !sector || i.sector === sector), [sector]);
 
   return (
     <div className="cr-home">
@@ -147,38 +145,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
           <button type="button" role="tab" aria-selected={tab === "recent"} onClick={() => setTab("recent")}>{t.recent}</button>
         </div>
         {tab === "ideas" ? (
-          <div role="tabpanel">
-            <ul className="cr-shows">
-              {SHOWCASES.map(s => <ShowcaseCard key={s.id} s={s} ui={ui} onUse={useShow} />)}
-            </ul>
-            <div className={`cr-sectors${sector ? " picked" : ""}`} role="group" aria-label={t.ideas}>
-              {SECTORS.map(s => (
-                <button key={s.id} type="button" className="cr-sector" aria-pressed={sector === s.id} onClick={() => setSector(sector === s.id ? null : s.id)}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={s.photo} alt="" loading="lazy" /><span>{s.name[ui]}</span>
-                </button>
-              ))}
-            </div>
-            <ul className={`cr-ideas${allIdeas || sector ? " all" : ""}`}>
-              {ideas.map(i => {
-                const src = voice ? sampleOf(i, voice) : undefined;
-                return (
-                  <li key={i.id} className="cr-idea">
-                    <span className="cr-idea-top"><span>{SECTORS.find(s => s.id === i.sector)!.name[ui]}</span><span>{i.ha ? language("ha").endonym : t.text}</span></span>
-                    <h3>{i.title[ui]}</h3>
-                    <p lang="fr">{i.fr}</p>
-                    <span className="cr-idea-foot">
-                      {src && <MiniPlay src={src} label={`${p.play} ${i.title[ui]}`} />}
-                      {usable(i) && <button type="button" className="cx-btn ghost sm" onClick={() => use(i)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-            {!allIdeas && !sector && ideas.length > 6 && (
-              <button type="button" className="cx-btn cr-more" onClick={() => setAllIdeas(true)}>{t.allIdeas(ideas.length)}</button>
-            )}
-          </div>
+          <div role="tabpanel"><Quickstarts lang={ui} voice={voice} usable={usable} onUse={use} onUseShow={useShow} /></div>
         ) : (
           <div role="tabpanel"><MessageList lang={ui} list={recent} ready={ready} /></div>
         )}
@@ -186,38 +153,3 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     </div>
   );
 }
-
-/* A showcase: real footage, played with its sound on a tap (one at a time), and what Namu made for it underneath. */
-function ShowcaseCard({ s, ui, onUse }: { s: Showcase; ui: Lang; onUse: (s: Showcase) => void }) {
-  const t = createCopy[ui].home, p = platformCopy[ui];
-  const video = useRef<HTMLVideoElement>(null);
-  const [on, setOn] = useState(false), [pos, setPos] = useState(0);
-  const toggle = () => {
-    const v = video.current; if (!v) return;
-    if (!v.paused) { v.pause(); return; }
-    document.querySelectorAll<HTMLVideoElement>("video.cr-show-video").forEach(o => { if (o !== v) o.pause(); });
-    void v.play();
-  };
-  return (
-    <li className={`cr-show${s.tall ? " tall" : ""}`}>
-      <button type="button" className="cr-show-media" onClick={toggle} aria-label={`${on ? p.pause : p.play} · ${s.title[ui]}`}>
-        <video ref={video} className="cr-show-video" src={s.video} poster={s.poster} preload="none" playsInline
-          style={s.focus ? { objectPosition: s.focus } : undefined}
-          onPlay={() => setOn(true)} onPause={() => setOn(false)} onEnded={() => { setOn(false); setPos(0); }}
-          onTimeUpdate={e => setPos(e.currentTarget.currentTime / (e.currentTarget.duration || 1))} />
-        <span className="cr-show-play" aria-hidden="true"><Icon name={on ? "pause" : "play"} size={16} stroke={1.6} /></span>
-        <i className="cr-show-bar" style={{ transform: `scaleX(${pos})` }} aria-hidden="true" />
-      </button>
-      <div className="cr-show-body">
-        <span className="cr-show-who">{s.who[ui]}</span>
-        <h3>{s.title[ui]}</h3>
-        <p lang="ha">{s.ha}</p>
-        <p className="cr-show-fr" lang="fr">{s.fr}</p>
-        {s.does === "speak"
-          ? <button type="button" className="cx-btn ghost sm" onClick={() => onUse(s)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>
-          : <a className="cx-btn ghost sm" href={lp(ui, "/create/interpret")}>{t.tryYours}<Icon name="arrow-long" size={14} stroke={1.6} /></a>}
-      </div>
-    </li>
-  );
-}
-

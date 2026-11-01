@@ -3,6 +3,7 @@
    period's figures, each with its line (requests, audio, success rate, latency, characters), and the free allowance
    where OpenAI shows credits; then the latest requests and the models. Drawn on the server. */
 import type { ReactNode } from "react";
+import { HeroRing } from "../Art";
 import { Icon } from "../Icon";
 import { ModelGlyph } from "./ModelGlyph";
 import { Filters } from "./Filters";
@@ -73,6 +74,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
             ))}
           </ol>
           <div className="cx-get-art">
+            <HeroRing id="cx-ring" />
             {/* HA-REVIEW: everyday greetings, as the home page's examples use them */}
             <p className="cx-get-words" aria-hidden="true" lang="ha"><span>Sannu da zuwa</span><span>Barka da safiya</span><span>Ina kwana?</span></p>
             <a className="cx-get-cta" href={L("/docs")}><strong>{t.quick[0]}<Icon name="external" size={14} stroke={1.6} /></strong><em>{t.quick[1]}</em></a>
