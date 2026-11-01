@@ -1,6 +1,6 @@
 /* Copy for the developer console (the signed-in pages), after platform.openai.com: its chrome, the overview, the
    keys table and the usage page. The older strings it still uses live in content/account.ts.
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication.
+   French: read and approved by the founder on 2026-11-01.
    Claims gate (as content/api.ts): no prices, no performance numbers; limits are the gateway's real ones. */
 import type { Lang } from "@/i18n/config";
 

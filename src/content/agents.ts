@@ -2,7 +2,7 @@
    (Agent, Knowledge, Conversations, WhatsApp and the talk panel) and the conversations. Words only where a label or an
    action needs them. Claims gate: an agent is a preview built on Namu's speech models in a chain (it hears, answers
    in text, speaks); never a single speech-to-speech model.
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
+   French: read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 import type { Sector } from "./agent-templates";
 

@@ -5,7 +5,7 @@
    real recording of that voice saying a line of its kind (Tafiya's own output: public/demo, public/usecases).
    Facts: none. The instructions tell the agent to answer from the organisation's own documents, and to send people
    to a person for anything personal or urgent; a CSI is Niger's integrated health centre.
-   FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
+   French: read and approved by the founder on 2026-11-01. */
 import type { Lang } from "@/i18n/config";
 import type { LangCode, VoiceId } from "@/lib/catalog";
 
