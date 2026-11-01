@@ -20,11 +20,13 @@ export function Quickstarts({ lang: ui, voice, usable, onUse, onUseShow }: {
   const t = createCopy[ui].home;
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<Tile | null>(null);
-  /* the showcases and the sectors, one after the other, so every row has footage and a photograph */
+  /* the showcases with the sectors spread evenly among them, so the photographs punctuate the footage */
   const tiles = useMemo(() => {
     const shows: Tile[] = SHOWCASES.map(show => ({ kind: "show", show }));
     const sectors: Tile[] = SECTORS.map(sector => ({ kind: "sector", sector, ideas: IDEAS.filter(i => i.sector === sector.id) }));
-    return Array.from({ length: Math.max(shows.length, sectors.length) }, (_, i) => [shows[i], sectors[i]]).flat().filter((x): x is Tile => !!x);
+    const every = Math.max(1, Math.round(shows.length / sectors.length)), out: Tile[] = [];
+    shows.forEach((x, i) => { out.push(x); if ((i + 1) % every === 0 && sectors.length) out.push(sectors.shift()!); });
+    return [...out, ...sectors];
   }, []);
   const words = q.trim().toLocaleLowerCase(ui);
   const shown = !words ? tiles : tiles.filter(x => {
