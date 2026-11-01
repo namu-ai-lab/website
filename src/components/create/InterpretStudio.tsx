@@ -1,38 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { VoiceLine, type LineSide } from "../platform/VoiceLine";
 import { resample } from "../platform/media";
-import { unlockSound, usePlay, useRecorder } from "./bits";
-import { fileFor, interpret, interpretations, remember, share, speak } from "./client";
+import { unlockSound, useRecorder } from "./bits";
+import { interpret, interpretations, remember, speak } from "./client";
+import { Pill, SaidPill, TurnLane, sideOf, useSayer, type Shown } from "./interpret-turns";
 import { interpreterLocals, voiced } from "./interpreter";
 import { createCopy } from "@/content/create";
 import { TRY_NOTES } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
-import { formatDate, formatSeconds } from "@/i18n/format";
-import { b64ToBlob, shapeOfBlob, toClip, type Clip } from "@/lib/audio";
+import { formatSeconds } from "@/i18n/format";
+import { b64ToBlob, toClip, type Clip } from "@/lib/audio";
 import { WRITTEN, defaultVoice, language, voicesFor, type LangCode } from "@/lib/catalog";
 import { PEAKS, type Interpretation, type Turn } from "@/lib/interpretation-shape";
 import { LIMITS } from "@/lib/limits";
-import { fileName } from "@/lib/project-shape";
-import { keepRecording, recording } from "@/lib/recordings";
+import { keepRecording } from "@/lib/recordings";
 
 /* The Interpreter: voice in, voice out, and nothing written. Two people face each other across Namu: the local
    language on the left, French on the right, a microphone for each, so nobody chooses a direction, you press the
    side you speak. Between them a voice line: its bars rise with whoever is speaking, above the line for the local
-   language (Kola), below it for French (Sahel), and Namu's translation draws the same way as it is said. Under them
-   the conversation runs newest first, each turn on one line: the voice that was heard on its side, Namu's facing it.
-   Every conversation is kept (lib/interpretations keeps the words, never shown, so the voice can be made again; the
-   recordings stay in this browser, lib/recordings) and listed on its own page, /create/interpret/history. */
-type Shown = Turn & { mine?: Blob; sound?: Blob | null };
+   language (Kola), below it for French (Sahel), and Namu's translation draws the same way as it is said. Under them,
+   the latest exchange only, to hear it again; the ones before do not pile up here, they go to the history. Every
+   conversation is kept (lib/interpretations keeps the words, never shown, so the voice can be made again; the
+   recordings stay in this browser, lib/recordings) and replayed on its own page, /create/interpret/history. */
 type Live = { key: string; from: LangCode; to: LangCode; clip: Clip; body: Blob; err?: string };
-type Shape = { peaks: number[]; seconds: number };   // peaks 0 to 100, as a turn keeps them
 type Mode = "rest" | "listen" | "think" | "talk";
 
 const UPLOAD = LIMITS.playgroundUploadMb * 1024 * 1024;
-const sideOf = (l: LangCode) => (l === WRITTEN ? "b" : "a");
 const outline = (peaks: number[]) => resample(peaks, PEAKS).map(x => Math.round(x * 100));
 /** what to keep of a recording: the original where it is smaller and this browser plays it, else the WAV */
 const smallest = (c: Clip) => (c.source.size < c.wav.size && /^audio\/(webm|mp4|mpeg|aac|x-m4a|mp3)/.test(c.source.type) ? c.source : c.wav);
@@ -55,27 +52,10 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
   const session = useRef<{ id: string | null }>({ id: current?.id ?? null });
   const saving = useRef<Promise<void>>(Promise.resolve());
   const file = useRef<HTMLInputElement>(null), said = useRef<LangCode | null>(null), fileLang = useRef<LangCode>(local);
-  const mounted = useMounted();
 
-  /* Namu's voice: one player for every translation, so the orb can follow it; the shapes of the voices made so far */
-  const voice = usePlay();
-  const [now, setNow] = useState<string | null>(null), [making, setMaking] = useState<string | null>(null);
-  const [shapes, setShapes] = useState<Record<string, Shape>>({});
-  /* the voice a turn is said in: its own, or, for a turn kept before its language had one, the language's voice now */
-  const voiceOf = (x: Turn) => x.voice ?? (voiced(x.to) ? defaultVoice(x.to, kitVoices) : null);
-  const say = async (x: Shown, sound?: Blob | null) => {
-    if (now === x.id && voice.on) { voice.stop(); return; }
-    const v = voiceOf(x);
-    if (!v) return;
-    setMaking(x.id);
-    try {
-      const b = sound ?? x.sound ?? await speak(x.text, x.to, v);
-      const s = shapes[x.id] ?? await shapeOfBlob(b).then(o => ({ peaks: o.peaks.map(v => v * 100), seconds: o.seconds })).catch(() => ({ peaks: [], seconds: 0 }));
-      setShapes(m => ({ ...m, [x.id]: s }));
-      orb.current.peaks = s.peaks.map(v => v / 100); orb.current.saying = sideOf(x.to);
-      voice.stop(); setNow(x.id); voice.play(b);
-    } catch { /* the button stays as it was */ } finally { setMaking(null); }
-  };
+  /* Namu's voice: one player for every translation, so the voice line can follow it */
+  const sayer = useSayer(kitVoices, (x, peaks) => { orb.current.peaks = peaks; orb.current.saying = sideOf(x.to); });
+  const { voice, now, say } = sayer;
 
   /* the voice line: whose voice it follows, by what is happening, and on which side of the line */
   const rec = useRecorder(b => { const l = said.current; said.current = null; setSpeaking(null); if (l) void run(l, b, "recording.wav"); },
@@ -155,7 +135,7 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
   const mic = (l: LangCode) => {
     unlockSound();
     if (said.current) { if (said.current === l) rec.toggle(); return; }
-    voice.stop(); said.current = l; setSpeaking(l); setErr(null); rec.toggle();
+    sayer.stop(); said.current = l; setSpeaking(l); setErr(null); rec.toggle();
   };
   const cancel = () => { said.current = null; setSpeaking(null); rec.cancel(); };
   const upload = (l: LangCode) => { unlockSound(); fileLang.current = l; file.current?.click(); };
@@ -166,18 +146,16 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
   };
 
   const fresh = () => {
-    voice.stop(); session.current = { id: null };
-    setTurns([]); setLive([]); setErr(null); setNow(null);
+    sayer.stop(); session.current = { id: null };
+    setTurns([]); setLive([]); setErr(null);
     history.replaceState(null, "", location.pathname);
   };
 
   const count = turns.length + live.length, busy = speaking !== null;
+  /* the latest exchange only: one on its way, else the last one kept */
+  const latestLive = live[live.length - 1], latest = turns[turns.length - 1];
   return (
     <div className="cr-int">
-      <div className="cr-int-acts">
-        <a className="cx-btn sm" href={lp(ui, "/create/interpret/history")}><Icon name="turns" size={16} stroke={1.6} />{t.history}</a>
-        <button type="button" className="cx-btn sm" onClick={fresh} disabled={!count}><Icon name="plus" size={16} stroke={1.6} />{t.fresh}</button>
-      </div>
       <section className="cr-int-stage" aria-label={p.nav.interpret} data-mode={mode}>
         <div className="cr-int-face">
           {sides.map((l, i) => {
@@ -206,36 +184,23 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
           </div>
         )}
 
-        {count ? (
+        {latestLive ? (
             <ol className="cr-lanes" aria-live="polite">
-              {[...live].reverse().map(x => (
-                <li key={x.key} className="cr-lane" data-from={sideOf(x.from)} aria-busy={!x.err}>
-                  <SaidPill side={sideOf(x.from)} sound={x.clip.wav} peaks={outline(x.clip.peaks)} seconds={x.clip.seconds} ui={ui} />
-                  <span className="cr-lane-way" aria-hidden="true"><Icon name="arrow-long" size={16} stroke={1.5} /></span>
-                  <Pill kind="namu" side={sideOf(x.to)} busy={!x.err} label={t.listening} />
-                  {x.err && (
-                    <p className="cr-lane-err" role="alert">
-                      {x.err}
-                      <button type="button" className="cr-int-link" onClick={() => void work(x)}>{p.retry}</button>
-                      <button type="button" className="cr-int-link" onClick={() => setLive(l => l.filter(y => y.key !== x.key))}>{p.delete}</button>
-                    </p>
-                  )}
-                </li>
-              ))}
-              {[...turns].reverse().map(x => (
-                <li key={x.id} className="cr-lane" data-from={sideOf(x.from)}>
-                  <SaidPill side={sideOf(x.from)} sound={x.mine} id={x.id} peaks={x.peaks} seconds={x.seconds} ui={ui} />
-                  <span className="cr-lane-way">
-                    <Icon name="arrow-long" size={16} stroke={1.5} />
-                    {mounted && <time dateTime={x.at}>{formatDate(ui, x.at, { style: "time", zone: "local" })}</time>}
-                  </span>
-                  <Pill kind="namu" side={sideOf(x.to)} label={now === x.id && voice.on ? p.pause : t.listen} off={!voiceOf(x)}
-                    on={now === x.id && voice.on} pos={now === x.id ? voice.pos : 0} busy={making === x.id}
-                    peaks={shapes[x.id]?.peaks} seconds={shapes[x.id]?.seconds} onToggle={() => void say(x)}
-                    end={voiceOf(x) && <SendIt turn={x} voice={voiceOf(x)!} label={t.share} />} />
-                </li>
-              ))}
+              <li key={latestLive.key} className="cr-lane" data-from={sideOf(latestLive.from)} aria-busy={!latestLive.err}>
+                <SaidPill side={sideOf(latestLive.from)} sound={latestLive.clip.wav} peaks={outline(latestLive.clip.peaks)} seconds={latestLive.clip.seconds} ui={ui} />
+                <span className="cr-lane-way" aria-hidden="true"><Icon name="arrow-long" size={16} stroke={1.5} /></span>
+                <Pill kind="namu" side={sideOf(latestLive.to)} busy={!latestLive.err} label={t.listening} />
+                {latestLive.err && (
+                  <p className="cr-lane-err" role="alert">
+                    {latestLive.err}
+                    <button type="button" className="cr-int-link" onClick={() => void work(latestLive)}>{p.retry}</button>
+                    <button type="button" className="cr-int-link" onClick={() => setLive(l => l.filter(y => y.key !== latestLive.key))}>{p.delete}</button>
+                  </p>
+                )}
+              </li>
             </ol>
+          ) : latest ? (
+            <ol className="cr-lanes" aria-live="polite"><TurnLane key={latest.id} turn={latest} ui={ui} sayer={sayer} /></ol>
           ) : (
             <div className="cr-int-try">
               {sides.map((l, i) => SAMPLES[l] && voiced(other(l)) && (
@@ -249,58 +214,10 @@ export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
         <input ref={file} type="file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.opus,.webm,.flac" hidden
           onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void run(fileLang.current, f, f.name); }} />
       </section>
-
+      <div className="cr-int-acts">
+        <a className="cx-btn sm" href={lp(ui, "/create/interpret/history")}><Icon name="turns" size={16} stroke={1.6} />{t.history}</a>
+        <button type="button" className="cx-btn sm" onClick={fresh} disabled={!count}><Icon name="plus" size={16} stroke={1.6} />{t.fresh}</button>
+      </div>
     </div>
   );
 }
-
-/** A voice note as a pill: play, its outline (moving as it plays), its length. `off`: nothing to play (a recording
-    this browser did not keep), a quiet outline with a microphone where play would be. `busy`: being made. */
-function Pill({ kind, side, on = false, pos = 0, busy = false, off = false, peaks, seconds, label, onToggle, end }: {
-  kind: "said" | "namu"; side: "a" | "b"; on?: boolean; pos?: number; busy?: boolean; off?: boolean;
-  peaks?: number[]; seconds?: number; label: string; onToggle?: () => void; end?: ReactNode;
-}) {
-  const bars = peaks?.length ? resample(peaks, 28) : null;
-  return (
-    <div className={`cr-pill ${kind}${off ? " off" : ""}${on ? " on" : ""}`} data-side={side}>
-      <button type="button" className="cr-pill-play" onClick={onToggle} disabled={off || busy || !onToggle} aria-label={label} aria-pressed={on}>
-        {busy ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={off ? "microphone" : on ? "pause" : "play"} size={15} stroke={1.6} />}
-      </button>
-      <span className="cr-pill-wave" aria-hidden="true">
-        {bars ? bars.map((b, i) => <i key={i} className={on && i / bars.length < pos ? "on" : undefined} style={{ height: `${Math.max(14, b)}%` }} />) : <b />}
-      </span>
-      {!!seconds && <span className="cr-pill-len">{formatSeconds(seconds)}</span>}
-      {end}
-    </div>
-  );
-}
-
-/** What was said: the person's own recording, played from this page or from this browser's keeping. */
-function SaidPill({ side, sound, id, peaks, seconds, ui }: { side: "a" | "b"; sound?: Blob; id?: string; peaks: number[]; seconds: number; ui: Lang }) {
-  const p = platformCopy[ui];
-  const { on, pos, play } = usePlay();
-  const [kept, setKept] = useState<Blob | null | undefined>(sound);   // undefined while this browser is asked for it
-  useEffect(() => {
-    if (sound || !id) return;
-    let live = true;
-    void recording(id).then(b => { if (live) setKept(b); });
-    return () => { live = false; };
-  }, [id, sound]);
-  return <Pill kind="said" side={side} on={on} pos={pos} off={kept === null} peaks={peaks} seconds={seconds} label={on ? p.pause : p.play}
-    onToggle={kept ? () => play(kept) : undefined} />;
-}
-
-/** Sends a translation's voice as a WhatsApp voice note (the share sheet on a phone, a download elsewhere). */
-function SendIt({ turn, voice, label }: { turn: Shown; voice: string; label: string }) {
-  const send = async () => {
-    try {
-      const b = turn.sound ?? await speak(turn.text, turn.to, voice);
-      await share(await fileFor(b, "whatsapp", fileName(`namu-${turn.at.slice(0, 16).replace(/\D/g, "")}`, language(turn.to).endonym, "x").replace(/\.x$/, "")));
-    } catch { /* the button stays as it was */ }
-  };
-  return <button type="button" className="cr-pill-send" aria-label={label} title={label} onClick={() => void send()}><Icon name="share" size={14} stroke={1.6} /></button>;
-}
-
-/* Times in the reader's own zone, so they appear only once the page runs in the browser. */
-const never = () => () => {};
-const useMounted = () => useSyncExternalStore(never, () => true, () => false);

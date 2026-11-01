@@ -1,21 +1,49 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "../Icon";
 import { resample } from "../platform/media";
 import { interpretations } from "./client";
+import { TurnLane, useMounted, useSayer } from "./interpret-turns";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
 import { formatDate } from "@/i18n/format";
 import { WRITTEN } from "@/lib/catalog";
-import type { InterpretationSummary, PrintTurn } from "@/lib/interpretation-shape";
+import type { Interpretation, InterpretationSummary, PrintTurn } from "@/lib/interpretation-shape";
 import { forgetSome } from "@/lib/recordings";
 
 /* The Interpreter's history, on its own page: every conversation kept, newest first, each drawn as its voices (the
    local language above the line in Kola, French below in Sahel), with when it was and how many exchanges. A card
-   reopens the conversation in the Interpreter; the bin deletes it, asked twice, with its recordings in this browser. */
-export function InterpretHistory({ lang: ui, list: first, ready }: { lang: Lang; list: InterpretationSummary[]; ready: boolean }) {
+   opens the conversation here (`open`): every turn in order, to hear again, and Continue takes it back to the
+   Interpreter. The bin deletes one, asked twice, with its recordings in this browser. */
+export function InterpretHistory({ lang: ui, list: first, open, kitVoices, ready }: {
+  lang: Lang; list: InterpretationSummary[]; open: Interpretation | null; kitVoices: Partial<Record<string, string>>; ready: boolean;
+}) {
+  if (open) return <Conversation lang={ui} open={open} kitVoices={kitVoices} />;
+  return <Cards lang={ui} list={first} ready={ready} />;
+}
+
+/** One conversation, every turn in the order it was said. */
+function Conversation({ lang: ui, open, kitVoices }: { lang: Lang; open: Interpretation; kitVoices: Partial<Record<string, string>> }) {
+  const t = createCopy[ui].interpret, sayer = useSayer(kitVoices), mounted = useMounted();
+  const [err, setErr] = useState(false);
+  const remove = async () => {
+    try { await interpretations.remove(open.id); } catch { setErr(true); return; }
+    void forgetSome(open.turns.map(x => x.id));
+    window.location.href = lp(ui, "/create/interpret/history");
+  };
+  return (
+    <section className="cr-hist-open">
+      <p className="cr-hist-open-when">{mounted ? whenLabel(open.updatedAt, ui) : ""}<span>{t.exchanges(open.turns.length)}</span></p>
+      <ol className="cr-lanes">{open.turns.map(x => <TurnLane key={x.id} turn={x} ui={ui} sayer={sayer} />)}</ol>
+      {err && <p className="cx-error" role="alert">{createCopy[ui].errors.generic}</p>}
+      <div className="cr-hist-open-foot"><Forget label={t.removeConv} sure={t.sure} onYes={() => void remove()} wide /></div>
+    </section>
+  );
+}
+
+function Cards({ lang: ui, list: first, ready }: { lang: Lang; list: InterpretationSummary[]; ready: boolean }) {
   const t = createCopy[ui].interpret, p = platformCopy[ui];
   const [list, setList] = useState(first), [err, setErr] = useState(false);
   const mounted = useMounted();
@@ -33,7 +61,7 @@ export function InterpretHistory({ lang: ui, list: first, ready }: { lang: Lang;
       <ul className="cr-hist">
         {list.map(x => (
           <li key={x.id}>
-            <a className="cr-hist-card" href={lp(ui, `/create/interpret?c=${x.id}`)}>
+            <a className="cr-hist-card" href={lp(ui, `/create/interpret/history?c=${x.id}`)}>
               <VoicePrint turns={x.print} />
               <span className="cr-hist-when">{mounted ? whenLabel(x.updatedAt, ui) : ""}</span>
               <span className="cr-hist-count">{t.exchanges(x.count)}</span>
@@ -65,17 +93,17 @@ function VoicePrint({ turns }: { turns: PrintTurn[] }) {
 }
 
 /** Delete, asked twice: the first press turns the bin into the question, the second deletes. */
-function Forget({ label, sure, onYes }: { label: string; sure: string; onYes: () => void }) {
+function Forget({ label, sure, onYes, wide }: { label: string; sure: string; onYes: () => void; wide?: boolean }) {
   const [asking, setAsking] = useState(false);
   useEffect(() => { if (!asking) return; const id = window.setTimeout(() => setAsking(false), 4000); return () => clearTimeout(id); }, [asking]);
   return asking
     ? <button key="sure" type="button" className="cr-hist-del sure" onClick={onYes} onBlur={() => setAsking(false)} autoFocus>{sure}</button>
-    : <button key="ask" type="button" className="cr-hist-del" aria-label={label} title={label} onClick={() => setAsking(true)}><Icon name="trash" size={14} stroke={1.6} /></button>;
+    : <button key="ask" type="button" className={`cr-hist-del${wide ? " wide" : ""}`} aria-label={label} title={label} onClick={() => setAsking(true)}>
+        <Icon name="trash" size={14} stroke={1.6} />{wide && label}
+      </button>;
 }
 
-/* Days and times in the reader's own zone, so they appear only once the page runs in the browser. */
-const never = () => () => {};
-const useMounted = () => useSyncExternalStore(never, () => true, () => false);
+/* Days and times are in the reader's own zone, so they appear only once the page runs in the browser (useMounted). */
 /** When a conversation was last used: "Today, 09:54", "Yesterday, 14:10", else the date and time. */
 function whenLabel(iso: string, ui: Lang): string {
   const t = createCopy[ui].interpret, d = new Date(iso), now = new Date();
