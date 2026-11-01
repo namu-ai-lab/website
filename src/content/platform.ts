@@ -11,7 +11,7 @@ export type DoorId = "create" | "agents" | "api";
 export type PlatformCopy = {
   doors: Record<DoorId, string>;
   access: { approved: string; pending: string; denied: string };
-  platform: string; menu: string; signedIn: string;
+  platform: string; menu: string; signedIn: string; side: { open: string; close: string };
   nav: {
     home: string; voices: string; speak: string; interpret: string; translate: string;
     agents: string; templates: string; conversations: string;
@@ -36,7 +36,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   en: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
-    platform: "Platform", menu: "Menu", signedIn: "Signed in as",
+    platform: "Platform", menu: "Menu", signedIn: "Signed in as", side: { open: "Open the menu", close: "Close the menu" },
     nav: {
       home: "Home", voices: "Voices", speak: "Voice message", interpret: "Interpreter", translate: "Translate",
       agents: "Agents", templates: "Templates", conversations: "Conversations",
@@ -58,7 +58,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
   fr: {
     doors: { create: "Create", agents: "Agents", api: "API" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
-    platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que",
+    platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que", side: { open: "Ouvrir le menu", close: "Fermer le menu" },
     nav: {
       home: "Accueil", voices: "Voix", speak: "Message vocal", interpret: "Interprète", translate: "Traduire",
       agents: "Agents", templates: "Modèles", conversations: "Conversations",

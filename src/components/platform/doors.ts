@@ -10,6 +10,9 @@ type NavKey = keyof PlatformCopy["nav"];
 
 export type NavItem = { id: string; href: string; icon: IconName; label: NavKey & keyof PlatformCopy["short"] };
 
+/** The cookie that remembers whether the side menu is closed to its rail ("closed") or open (SideToggle). */
+export const SIDE_COOKIE = "pf_side";
+
 export const AREAS: { id: DoorId; home: string }[] = [
   { id: "create", home: "/create" },
   { id: "agents", home: "/agents" },

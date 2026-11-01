@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
-import { SamplePlay, VoiceDot } from "./bits";
+import { SamplePlay } from "./bits";
 import { ConversationList } from "./Conversations";
 import { ScrollRow } from "../platform/ScrollRow";
 import { TalkPanel } from "./TalkPanel";
@@ -120,7 +120,7 @@ function AgentTab({ a, change, t, lang }: { a: Agent; change: (x: Partial<Agent>
           {voicesFor(speaking).map(v => (
             <span key={v.id} className="ag-voice">
               <button type="button" className="ag-chip" role="radio" aria-checked={v.id === current} onClick={() => change({ voice: v.id as VoiceId })}>
-                <VoiceDot id={v.id} name={v.name} size={22} />{v.name}
+                {v.name}
               </button>
               <SamplePlay src={v.sample} label={`${p.play} · ${v.name}`} className="ag-mini round" />
             </span>

@@ -3,9 +3,8 @@
    period's figures, each with its line (requests, audio, success rate, latency, characters), and the free allowance
    where OpenAI shows credits; then the latest requests and the models. Drawn on the server. */
 import type { ReactNode } from "react";
-import { HeroRing } from "../Art";
 import { Icon } from "../Icon";
-import { MODEL_ORB } from "./colours";
+import { ModelGlyph } from "./ModelGlyph";
 import { Filters } from "./Filters";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
@@ -74,8 +73,6 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
             ))}
           </ol>
           <div className="cx-get-art">
-            <div className="pg-haze" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><span className="grain" /></div>
-            <HeroRing id="cx-ring" />
             {/* HA-REVIEW: everyday greetings, as the home page's examples use them */}
             <p className="cx-get-words" aria-hidden="true" lang="ha"><span>Sannu da zuwa</span><span>Barka da safiya</span><span>Ina kwana?</span></p>
             <a className="cx-get-cta" href={L("/docs")}><strong>{t.quick[0]}<Icon name="external" size={14} stroke={1.6} /></strong><em>{t.quick[1]}</em></a>
@@ -112,7 +109,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
             <ul>{recent.map(r => (
               <li key={r.id}>
                 <span className={`cx-status s${String(r.status)[0]}`}>{r.status}</span>
-                <span className="cx-recent-what"><i className="cx-dot" style={{ background: MODEL_ORB[r.endpoint] }} />{m[r.endpoint]?.name ?? r.endpoint}
+                <span className="cx-recent-what"><ModelGlyph scope={r.endpoint} />{m[r.endpoint]?.name ?? r.endpoint}
                   <em>{r.is_service ? t.playgroundKey : r.key_name ?? "–"}</em></span>
                 <span className="cx-muted cx-small">{nf.format(r.latency_ms / 1000)} s</span>
                 <span className="cx-muted cx-small cx-recent-when"><LocalTime iso={r.created_at.toISOString()} lang={lang} rel /></span>
@@ -125,7 +122,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
           <ul>{SCOPES.map(s => (
             <li key={s}>
               <a href={L(`/account/playground?model=${s}`)}>
-                <i style={{ background: MODEL_ORB[s] }} aria-hidden="true" />
+                <ModelGlyph scope={s} size={20} />
                 <span><strong>{m[s].name}</strong><em>{m[s].task}</em></span>
                 <code>{PATH[s]}</code>
                 <Icon name="arrow-long" size={15} stroke={1.6} />

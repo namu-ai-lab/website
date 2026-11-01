@@ -5,7 +5,6 @@
 
 /* ---- small shared pieces */
 .ag-quiet { margin: 0; color: var(--ink-3); font-size: 14px; }
-.ag-dot { display: inline-grid; place-items: center; flex: none; border-radius: 50%; font-weight: 500; line-height: 1; }
 .ag-tag { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 8px; background: var(--surface-2); color: var(--ink); font-size: 13px;
   white-space: nowrap; }
 .ag-tag.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--sahel); }
@@ -56,7 +55,10 @@
 .ag-go { color: var(--ink-3); transform: rotate(-90deg); }
 .ag-ch { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--bg); color: var(--sahel-deep); }
 .ag-first { padding: 48px 20px 44px; }
-.ag-first-orb { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 36% 32%, #fff4e6 0, #f6c8a0 45%, #e8935a 80%, #b4552a 100%); }
+/* an agent at a glance: the photograph its template serves, or a plain tile for a blank agent */
+.ag-mark { display: grid; place-items: center; flex: none; width: 40px; height: 40px; overflow: hidden; border-radius: 12px; background: var(--surface-2); color: var(--kola); }
+.ag-mark img { width: 100%; height: 100%; object-fit: cover; }
+.ag-first .ag-mark { width: 64px; height: 64px; border-radius: 18px; }
 
 /* ---- templates: who the agent helps, in a photograph */
 .ag-tgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
@@ -146,7 +148,7 @@
 /* the talk panel: an orb, the voice, one button */
 .ag-talk { position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; padding: 28px 22px 24px; border-radius: 28px; background: var(--surface);
   text-align: center; }
-.ag-orb { width: 180px; height: 180px; margin-bottom: 18px; }
+.ag-line { --a: var(--kola); --b: var(--kola); width: 240px; height: auto; margin-bottom: 14px; }
 .ag-talk h3 { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -.005em; }
 .ag-talk-sub { display: flex; align-items: center; gap: 8px; margin: 6px 0 18px; color: var(--ink-3); font-size: 14.5px; }
 .ag-talk-btn { min-width: 150px; justify-content: center; }
@@ -177,7 +179,6 @@
   /* the talk panel on one line: the orb beside the name, the voice and the button */
   .ag-talk { position: static; order: -1; display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; justify-items: start;
     column-gap: 16px; row-gap: 4px; padding: 16px 18px; text-align: left; }
-  .ag-talk .ag-orb { grid-row: 1 / span 4; width: 92px; height: 92px; margin: 0; }
   .ag-talk-sub { margin: 0 0 6px; }
   .ag-talk .ag-link { margin-top: 2px; }
   .ag-talk .cx-error { grid-column: 1 / -1; }

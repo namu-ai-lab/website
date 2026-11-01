@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Icon } from "../Icon";
-import { Orb } from "../platform/Orb";
+import { VoiceLine, type LineSide } from "../platform/VoiceLine";
 import { resample } from "../platform/media";
 import { unlockSound, usePlay, useRecorder } from "./bits";
 import { fileFor, interpret, interpretations, remember, share, speak } from "./client";
@@ -10,22 +10,22 @@ import { interpreterLocals, voiced } from "./interpreter";
 import { createCopy } from "@/content/create";
 import { TRY_NOTES } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
-import type { Lang } from "@/i18n/config";
+import { lp, type Lang } from "@/i18n/config";
 import { formatDate, formatSeconds } from "@/i18n/format";
 import { b64ToBlob, shapeOfBlob, toClip, type Clip } from "@/lib/audio";
 import { WRITTEN, defaultVoice, language, voicesFor, type LangCode } from "@/lib/catalog";
-import { PEAKS, PRINT_TURNS, type Interpretation, type InterpretationSummary, type PrintTurn, type Turn } from "@/lib/interpretation-shape";
+import { PEAKS, type Interpretation, type Turn } from "@/lib/interpretation-shape";
 import { LIMITS } from "@/lib/limits";
 import { fileName } from "@/lib/project-shape";
-import { forgetSome, keepRecording, recording } from "@/lib/recordings";
+import { keepRecording, recording } from "@/lib/recordings";
 
 /* The Interpreter: voice in, voice out, and nothing written. Two people face each other across Namu: the local
    language on the left, French on the right, a microphone for each, so nobody chooses a direction, you press the
-   side you speak. Between them the orb listens (it moves with the voice), thinks, then speaks the translation. Under
-   them the conversation runs newest first, each turn on one line: the voice that was heard on its side, Namu's facing
-   it. Below, the history: every conversation kept (lib/interpretations keeps the words, never shown, so the voice can
-   be made again; the recordings stay in this browser, lib/recordings), each drawn as its voices, the local language
-   above the line and French below. Colours follow the language: Kola for the local one, Sahel for French. */
+   side you speak. Between them a voice line: its bars rise with whoever is speaking, above the line for the local
+   language (Kola), below it for French (Sahel), and Namu's translation draws the same way as it is said. Under them
+   the conversation runs newest first, each turn on one line: the voice that was heard on its side, Namu's facing it.
+   Every conversation is kept (lib/interpretations keeps the words, never shown, so the voice can be made again; the
+   recordings stay in this browser, lib/recordings) and listed on its own page, /create/interpret/history. */
 type Shown = Turn & { mine?: Blob; sound?: Blob | null };
 type Live = { key: string; from: LangCode; to: LangCode; clip: Clip; body: Blob; err?: string };
 type Shape = { peaks: number[]; seconds: number };   // peaks 0 to 100, as a turn keeps them
@@ -39,19 +39,16 @@ const smallest = (c: Clip) => (c.source.size < c.wav.size && /^audio\/(webm|mp4|
 /** Namu's voice notes to try, one in each language */
 const SAMPLES: Partial<Record<LangCode, string>> = { ha: TRY_NOTES.find(n => n.id === "clinic")?.audio, fr: "/usecases/translation-fr.m4a" };
 
-export function InterpretStudio({ lang: ui, kitVoices, list: first, current, ready }: {
-  lang: Lang; kitVoices: Partial<Record<string, string>>; list: InterpretationSummary[]; current: Interpretation | null; ready: boolean;
+export function InterpretStudio({ lang: ui, kitVoices, current, ready }: {
+  lang: Lang; kitVoices: Partial<Record<string, string>>; current: Interpretation | null; ready: boolean;
 }) {
   const t = createCopy[ui].interpret, c = createCopy[ui], p = platformCopy[ui];
   const locals = interpreterLocals();
   const localOf = (turns: { from: LangCode; to?: LangCode }[]) => turns.map(x => (x.from === WRITTEN ? x.to : x.from)).find((l): l is LangCode => !!l && locals.includes(l));
   const [local, setLocal] = useState<LangCode>(() => localOf(current?.turns ?? []) ?? locals[0] ?? "ha");
   const sides = [local, WRITTEN] as const, other = (l: LangCode) => (l === WRITTEN ? local : WRITTEN);
-  const [list, setList] = useState(first);
-  const [conv, setConv] = useState<string | null>(current?.id ?? null);
   const [turns, setTurns] = useState<Shown[]>(current?.turns ?? []);
   const [live, setLive] = useState<Live[]>([]);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null), [notKept, setNotKept] = useState(!ready);
   const [speaking, setSpeaking] = useState<LangCode | null>(null);
   /* the conversation in view: turns are kept into it one after another, and the first one creates it */
@@ -75,24 +72,33 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
       const b = sound ?? x.sound ?? await speak(x.text, x.to, v);
       const s = shapes[x.id] ?? await shapeOfBlob(b).then(o => ({ peaks: o.peaks.map(v => v * 100), seconds: o.seconds })).catch(() => ({ peaks: [], seconds: 0 }));
       setShapes(m => ({ ...m, [x.id]: s }));
-      orb.current.peaks = s.peaks.map(v => v / 100);
+      orb.current.peaks = s.peaks.map(v => v / 100); orb.current.saying = sideOf(x.to);
       voice.stop(); setNow(x.id); voice.play(b);
     } catch { /* the button stays as it was */ } finally { setMaking(null); }
   };
 
-  /* the orb: the voice it follows, by what is happening */
+  /* the voice line: whose voice it follows, by what is happening, and on which side of the line */
   const rec = useRecorder(b => { const l = said.current; said.current = null; setSpeaking(null); if (l) void run(l, b, "recording.wav"); },
     () => { said.current = null; setSpeaking(null); setErr(c.errors.mic); });
   const working = live.some(x => !x.err);
   const mode: Mode = speaking ? "listen" : voice.on && now ? "talk" : working ? "think" : "rest";
-  const orb = useRef<{ mode: Mode; mic: number; peaks: number[]; at: () => number }>({ mode: "rest", mic: 0, peaks: [], at: () => 0 });
-  useEffect(() => { orb.current.mode = mode; orb.current.mic = rec.level; orb.current.at = voice.at; });
+  const orb = useRef<{ mode: Mode; mic: number; peaks: number[]; at: () => number; speaker: LineSide; saying: LineSide }>(
+    { mode: "rest", mic: 0, peaks: [], at: () => 0, speaker: "a", saying: "b" });
+  useEffect(() => {
+    const o = orb.current;
+    o.mode = mode; o.mic = rec.level; o.at = voice.at;
+    if (speaking) o.speaker = sideOf(speaking);
+  });
   const level = useCallback(() => {
     const o = orb.current;
     if (o.mode === "listen") return o.mic * 1.8;
-    if (o.mode === "think") return .14 + .08 * Math.sin(performance.now() / 360);
+    if (o.mode === "think") return .12 + .1 * Math.abs(Math.sin(performance.now() / 260));
     if (o.mode === "talk") return o.peaks.length ? o.peaks[Math.min(o.peaks.length - 1, Math.floor(o.at() * o.peaks.length))] * .9 : .4;
     return 0;
+  }, []);
+  const lineSide = useCallback((): LineSide => {
+    const o = orb.current;
+    return o.mode === "listen" ? o.speaker : o.mode === "talk" ? o.saying : "both";
   }, []);
 
   const keepTurn = (turn: Omit<Turn, "at">) => {
@@ -103,14 +109,8 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
         const k = await interpretations.add(s.id, turn);
         if (!s.id) {
           s.id = k.id;
-          if (session.current === s) { setConv(k.id); history.replaceState(null, "", `${location.pathname}?c=${k.id}`); }
+          if (session.current === s) history.replaceState(null, "", `${location.pathname}?c=${k.id}`);
         }
-        const drawn: PrintTurn = { from: turn.from, seconds: turn.seconds, peaks: turn.peaks };
-        setList(ls => {
-          const was = ls.find(x => x.id === k.id);
-          const print = was ? (was.print.length < PRINT_TURNS ? [...was.print, drawn] : was.print) : [drawn];
-          return [{ id: k.id, from: was?.from ?? turn.from, count: (was?.count ?? 0) + 1, updatedAt: k.turn.at, print }, ...ls.filter(x => x.id !== k.id)];
-        });
       } catch { setNotKept(true); }
     });
   };
@@ -165,30 +165,19 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
     if (src) try { await run(l, await (await fetch(src)).blob(), src.split("/").pop()!); } catch { setErr(c.errors.network); }
   };
 
-  const show = (x: Interpretation | null) => {
-    voice.stop(); session.current = { id: x?.id ?? null };
-    setConv(x?.id ?? null); setTurns(x?.turns ?? []); setLive([]); setErr(null); setNow(null);
-    const l = x && localOf(x.turns); if (l) setLocal(l);
-    history.replaceState(null, "", x ? `${location.pathname}?c=${x.id}` : location.pathname);
-  };
-  const pick = async (id: string) => {
-    if (id === conv) return;
-    setLoading(true);
-    try { show(await interpretations.get(id)); window.scrollTo({ top: 0, behavior: "smooth" }); }
-    catch { setErr(c.errors.generic); } finally { setLoading(false); }
-  };
-  const remove = async (id: string) => {
-    // its recordings go with it: those in view are known, the others are asked for first
-    const ids = id === conv ? turns.map(x => x.id) : await interpretations.get(id).then(x => x.turns.map(u => u.id)).catch(() => []);
-    try { await interpretations.remove(id); } catch { setErr(c.errors.generic); return; }
-    void forgetSome(ids);
-    setList(ls => ls.filter(x => x.id !== id));
-    if (id === conv) show(null);
+  const fresh = () => {
+    voice.stop(); session.current = { id: null };
+    setTurns([]); setLive([]); setErr(null); setNow(null);
+    history.replaceState(null, "", location.pathname);
   };
 
   const count = turns.length + live.length, busy = speaking !== null;
   return (
     <div className="cr-int">
+      <div className="cr-int-acts">
+        <a className="cx-btn sm" href={lp(ui, "/create/interpret/history")}><Icon name="turns" size={16} stroke={1.6} />{t.history}</a>
+        <button type="button" className="cx-btn sm" onClick={fresh} disabled={!count}><Icon name="plus" size={16} stroke={1.6} />{t.fresh}</button>
+      </div>
       <section className="cr-int-stage" aria-label={p.nav.interpret} data-mode={mode}>
         <div className="cr-int-face">
           {sides.map((l, i) => {
@@ -207,7 +196,7 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
               </div>
             );
           })}
-          <div className="cr-int-orb" style={{ order: 2 }}><Orb level={level} active={mode !== "rest"} /></div>
+          <div className="cr-int-line" style={{ order: 2 }}><VoiceLine level={level} side={lineSide} active={mode !== "rest"} /></div>
         </div>
 
         {(err || notKept) && (
@@ -217,8 +206,7 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
           </div>
         )}
 
-        {loading ? <p className="cr-int-wait"><span className="cx-dots" aria-hidden="true"><i /><i /><i /></span></p>
-          : count ? (
+        {count ? (
             <ol className="cr-lanes" aria-live="polite">
               {[...live].reverse().map(x => (
                 <li key={x.key} className="cr-lane" data-from={sideOf(x.from)} aria-busy={!x.err}>
@@ -262,26 +250,6 @@ export function InterpretStudio({ lang: ui, kitVoices, list: first, current, rea
           onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void run(fileLang.current, f, f.name); }} />
       </section>
 
-      <section className="cr-int-history" aria-labelledby="cr-int-history-h">
-        <h2 id="cr-int-history-h">{t.history}</h2>
-        <ul className="cr-int-cards">
-          <li>
-            <button type="button" className="cr-int-card new" onClick={() => show(null)} disabled={!count}>
-              <span className="cr-int-plus"><Icon name="plus" size={20} stroke={1.5} /></span>{t.fresh}
-            </button>
-          </li>
-          {ready && list.map(x => (
-            <li key={x.id}>
-              <button type="button" className="cr-int-card" aria-current={x.id === conv ? "true" : undefined} onClick={() => void pick(x.id)}>
-                <VoicePrint turns={x.print} />
-                <span className="cr-int-card-when">{mounted ? whenLabel(x.updatedAt, ui) : ""}</span>
-                <span className="cr-int-card-count">{t.exchanges(x.count)}</span>
-              </button>
-              <Forget label={t.remove} sure={t.sure} onYes={() => void remove(x.id)} />
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }
@@ -333,41 +301,6 @@ function SendIt({ turn, voice, label }: { turn: Shown; voice: string; label: str
   return <button type="button" className="cr-pill-send" aria-label={label} title={label} onClick={() => void send()}><Icon name="share" size={14} stroke={1.6} /></button>;
 }
 
-/** A conversation drawn as its voices: each turn's outline in its share of the width, the local language above the
-    line and French below, so a dialogue looks like one. */
-function VoicePrint({ turns }: { turns: PrintTurn[] }) {
-  const N = 44, total = turns.reduce((s, x) => s + Math.max(x.seconds, 1), 0) || 1;
-  const cols: { side: "a" | "b"; h: number }[] = [];
-  turns.forEach((x, i) => {
-    const n = i === turns.length - 1 ? N - cols.length : Math.max(2, Math.round((Math.max(x.seconds, 1) / total) * N));
-    const take = Math.max(0, Math.min(n, N - cols.length));
-    const shape = x.peaks.length ? resample(x.peaks, Math.max(take, 1)) : Array(take).fill(30);
-    for (let k = 0; k < take; k++) cols.push({ side: sideOf(x.from), h: Math.max(8, shape[k] ?? 30) });
-  });
-  return (
-    <span className="cr-print" aria-hidden="true">
-      {cols.map((x, i) => <i key={i} data-side={x.side} style={{ ["--h" as string]: `${x.h}%` }} />)}
-    </span>
-  );
-}
-
-/** Delete, asked twice: the first press turns the bin into the question, the second deletes. */
-function Forget({ label, sure, onYes }: { label: string; sure: string; onYes: () => void }) {
-  const [asking, setAsking] = useState(false);
-  useEffect(() => { if (!asking) return; const id = window.setTimeout(() => setAsking(false), 4000); return () => clearTimeout(id); }, [asking]);
-  return asking
-    ? <button key="sure" type="button" className="cr-int-del sure" onClick={onYes} onBlur={() => setAsking(false)} autoFocus>{sure}</button>
-    : <button key="ask" type="button" className="cr-int-del" aria-label={label} title={label} onClick={() => setAsking(true)}><Icon name="trash" size={14} stroke={1.6} /></button>;
-}
-
-/* Days and times in the reader's own zone, so they appear only once the page runs in the browser. */
+/* Times in the reader's own zone, so they appear only once the page runs in the browser. */
 const never = () => () => {};
 const useMounted = () => useSyncExternalStore(never, () => true, () => false);
-/** When a conversation was last used: "Today, 09:54", "Yesterday, 14:10", else the date and time. */
-function whenLabel(iso: string, ui: Lang): string {
-  const t = createCopy[ui].interpret, d = new Date(iso), now = new Date();
-  const time = formatDate(ui, d, { style: "time", zone: "local" });
-  if (d.toDateString() === now.toDateString()) return `${t.today}, ${time}`;
-  if (d.toDateString() === new Date(now.getTime() - 864e5).toDateString()) return `${t.yesterday}, ${time}`;
-  return `${formatDate(ui, d, { style: d.getFullYear() === now.getFullYear() ? "dayMonth" : "day", zone: "local" })}, ${time}`;
-}
