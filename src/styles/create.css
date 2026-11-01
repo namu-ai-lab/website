@@ -254,7 +254,7 @@
 .cr-int-link { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 14px; cursor: pointer; }
 .cr-int-link:hover:not(:disabled) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .cr-int-link:disabled { opacity: .45; cursor: default; }
-.cr-int-acts { display: flex; justify-content: center; gap: 8px; margin-bottom: -16px; }
+.cr-int-acts { display: flex; justify-content: center; gap: 8px; margin-top: -16px; }
 .cr-int-line { flex: none; width: clamp(150px, 26vw, 260px); }
 .cr-int-line canvas { display: block; width: 100%; height: auto; }
 .cr-int-notes { display: grid; justify-items: center; gap: 6px; margin-top: 14px; text-align: center; }
@@ -315,6 +315,16 @@
 .cr-hist-when { min-height: 1.3em; margin-top: 6px; font-size: 15px; font-weight: 500; }
 .cr-hist-count { color: var(--ink-3); font-size: 13.5px; }
 .cr-hist-none { text-align: center; }
+/* one conversation opened: every turn in order, on the same white ground as the Interpreter's stage */
+.cr-hist-open { --a: var(--kola); --a-soft: rgba(107, 62, 30, .26); --b: var(--sahel-deep); --b-soft: rgba(232, 147, 90, .42);
+  width: min(980px, 100%); margin: 0 auto; padding: 26px clamp(18px, 4vw, 40px) 22px; border-radius: 32px; background: #fff;
+  box-shadow: 0 0 0 1px var(--line), 0 40px 80px -60px rgba(28, 20, 16, .4); }
+.cr-hist-open-when { display: flex; justify-content: center; gap: 10px; min-height: 1.4em; margin: 0 0 20px; font-size: 16px; font-weight: 500; }
+.cr-hist-open-when span { color: var(--ink-3); font-weight: 400; }
+.cr-hist-open .cr-lanes { margin: 0; padding: 0; box-shadow: none; }
+.cr-hist-open-foot { display: flex; justify-content: center; margin-top: 22px; }
+.cr-hist-open-foot .cr-hist-del { position: static; opacity: 1; }
+.cr-hist-del.wide { display: inline-flex; gap: 8px; width: auto; padding: 0 14px; border-radius: 9999px; font: inherit; font-size: 14px; }
 .cr-print { display: flex; align-items: center; gap: 2px; width: 100%; height: 56px; background: linear-gradient(var(--line-2), var(--line-2)) center / 100% 1px no-repeat; }
 .cr-print i { position: relative; flex: 1; height: 100%; }
 .cr-print i::before { content: ""; position: absolute; left: 0; right: 0; height: calc(var(--h) * .5); border-radius: 2px; background: var(--a); }

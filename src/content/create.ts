@@ -24,7 +24,7 @@ export type CreateCopy = {
     lede: (a: string, b: string) => string; ledeOne: (from: string, to: string) => string;
     record: string; stop: string; cancel: string; uploadIn: (name: string) => string; upload: string; tryOne: string; sampleIn: (name: string) => string;
     listening: string; nothing: string; listen: string; share: string;
-    history: string; back: string; none: string; fresh: string; exchanges: (n: number) => string; today: string; yesterday: string; remove: string; sure: string; notKept: string;
+    history: string; back: string; none: string; fresh: string; resume: string; removeConv: string; exchanges: (n: number) => string; today: string; yesterday: string; remove: string; sure: string; notKept: string;
   };
   translate: { go: string; swap: string; placeholder: string; empty: string; record: string; stop: string; listen: string; copy: string; copied: string };
   voices: { all: string; listen: string; use: string };
@@ -50,7 +50,7 @@ export const createCopy: Record<Lang, CreateCopy> = {
       ledeOne: (f, to) => `Speak in ${f}, and hear it in ${to}.`,
       record: "Record", stop: "Stop", cancel: "Cancel", uploadIn: l => `Upload a voice note in ${l}`, upload: "Upload", tryOne: "Or try one", sampleIn: l => `A voice note in ${l}`,
       listening: "Listening…", nothing: "Nothing was heard.", listen: "Listen", share: "Send on WhatsApp",
-      history: "History", back: "Interpreter", none: "Your conversations will show here.", fresh: "New conversation", exchanges: k => (k === 1 ? "1 exchange" : `${k} exchanges`), today: "Today", yesterday: "Yesterday",
+      history: "History", back: "Interpreter", none: "Your conversations will show here.", fresh: "New conversation", resume: "Continue", removeConv: "Delete the conversation", exchanges: k => (k === 1 ? "1 exchange" : `${k} exchanges`), today: "Today", yesterday: "Yesterday",
       remove: "Delete", sure: "Delete?", notKept: "Not saved: it stays here until you leave the page.",
     },
     translate: { go: "Translate", swap: "Swap the languages", placeholder: "Write or say it", empty: "The translation shows here", record: "Record", stop: "Stop", listen: "Listen", copy: "Copy", copied: "Copied" },
@@ -76,7 +76,7 @@ export const createCopy: Record<Lang, CreateCopy> = {
       record: "Enregistrer", stop: "Arrêter", cancel: "Annuler", uploadIn: l => `Importer un vocal en ${l.toLowerCase()}`, upload: "Importer", tryOne: "Ou essayez-en un",
       sampleIn: l => `Un vocal en ${l.toLowerCase()}`,
       listening: "Écoute…", nothing: "Rien n’a été entendu.", listen: "Écouter", share: "Envoyer sur WhatsApp",
-      history: "Historique", back: "Interprète", none: "Vos conversations s’afficheront ici.", fresh: "Nouvelle conversation", exchanges: k => (k === 1 ? "1 échange" : `${k} échanges`), today: "Aujourd’hui", yesterday: "Hier",
+      history: "Historique", back: "Interprète", none: "Vos conversations s’afficheront ici.", fresh: "Nouvelle conversation", resume: "Continuer", removeConv: "Supprimer la conversation", exchanges: k => (k === 1 ? "1 échange" : `${k} échanges`), today: "Aujourd’hui", yesterday: "Hier",
       remove: "Supprimer", sure: `Supprimer${n}?`, notKept: `Non enregistré${n}: il reste ici jusqu’à ce que vous quittiez la page.`,
     },
     translate: { go: "Traduire", swap: "Inverser les langues", placeholder: "Écrivez ou dites-le", empty: "La traduction s’affiche ici", record: "Enregistrer", stop: "Arrêter", listen: "Écouter", copy: "Copier", copied: "Copié" },
