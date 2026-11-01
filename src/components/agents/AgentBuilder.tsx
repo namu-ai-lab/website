@@ -130,14 +130,9 @@ function AgentTab({ a, change, t, lang }: { a: Agent; change: (x: Partial<Agent>
       <div className="ag-field">
         <span>{t.agent.languages}</span>
         <div className="ag-chips" role="group" aria-label={t.agent.languages}>
-          {LOCAL.map(l => {
-            const ok = can("converse", l);
-            return (
-              <button key={l} type="button" className="ag-chip" aria-pressed={a.languages.includes(l)} disabled={!ok} onClick={() => toggle(l)}>
-                {language(l).endonym}{!ok && <em>{p.soon}</em>}
-              </button>
-            );
-          })}
+          {LOCAL.filter(l => can("converse", l)).map(l => (
+            <button key={l} type="button" className="ag-chip" aria-pressed={a.languages.includes(l)} onClick={() => toggle(l)}>{language(l).endonym}</button>
+          ))}
         </div>
       </div>
       <div className="ag-field ag-foot"><span /><button type="button" className="ag-link danger" onClick={() => void remove()}>{t.agent.remove}</button></div>

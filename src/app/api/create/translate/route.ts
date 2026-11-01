@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { canTranslate, isLangCode, voicesFor } from "@/lib/catalog";
+import { canTranslate, canTranslateText, isLangCode, voicesFor } from "@/lib/catalog";
 import { gatewayFailure, translateText } from "@/lib/gateway";
 import { fail, signedIn } from "@/lib/http";
 import { LIMITS } from "@/lib/limits";
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
   if (text.length > LIMITS.textChars) return fail(413, "text_too_long", `Up to ${LIMITS.textChars} characters.`);
   if (!isLangCode(j?.from) || !isLangCode(j?.to) || !canTranslate(j.from, j.to)) return fail(400, "unsupported_pair", "This translation is not available yet.");
   if (j.from === j.to) return NextResponse.json({ text });
+  if (!canTranslateText(j.from, j.to)) return fail(400, "speak_it", "Written text in this language cannot be translated yet. Say it instead.");
   const voice = voicesFor(j.from)[0]?.id ?? null;
   try {
     const out = await translateText(s.user.id, text, j.from, j.to, voice);

@@ -10,29 +10,23 @@ import { lp, type Lang } from "@/i18n/config";
 import { LOCAL, VOICES, WRITTEN, language, voicesFor, type LangCode, type Voice } from "@/lib/catalog";
 
 /* Create's voices (mock-up v2), after ElevenLabs' Voices: the languages as filters (a local language with no voice
-   yet shows as Soon), then each voice as a card with its sphere, its language, what it suits, a sample, and Use, which
+   yet is not shown), then each voice as a card with its sphere, its language, what it suits, a sample, and Use, which
    opens Voice message with it. Everything comes from the catalog, so a new voice or language appears by itself. */
 export function VoiceLibrary({ lang }: { lang: Lang }) {
   const t = createCopy[lang].voices, p = platformCopy[lang];
-  const langs: LangCode[] = [...LOCAL, WRITTEN];
+  const langs: LangCode[] = [...LOCAL, WRITTEN].filter(l => voicesFor(l).length > 0);
   const [pick, setPick] = useState<LangCode | null>(null);
   const shown = VOICES.filter(v => !pick || (v.languages as readonly string[]).includes(pick));
-  const soon = LOCAL.filter(l => !voicesFor(l).length);
   return (
     <div className="cr-voices">
-      <div className="cr-filters" role="group" aria-label={p.library.language}>
-        <button type="button" className="cr-chip" aria-pressed={pick === null} onClick={() => setPick(null)}>{t.all}</button>
-        {langs.map(l => voicesFor(l).length
-          ? <button key={l} type="button" className="cr-chip" aria-pressed={pick === l} onClick={() => setPick(pick === l ? null : l)}>{language(l).endonym}</button>
-          : <span key={l} className="cr-chip off">{language(l).endonym}<span className="pf-soon">{p.soon}</span></span>)}
-      </div>
+      {langs.length > 1 && (
+        <div className="cr-filters" role="group" aria-label={p.library.language}>
+          <button type="button" className="cr-chip" aria-pressed={pick === null} onClick={() => setPick(null)}>{t.all}</button>
+          {langs.map(l => <button key={l} type="button" className="cr-chip" aria-pressed={pick === l} onClick={() => setPick(pick === l ? null : l)}>{language(l).endonym}</button>)}
+        </div>
+      )}
       <ul className="cr-vgrid">
         {shown.map(v => <VoiceCard key={v.id} v={v} lang={lang} />)}
-        {!pick && soon.map(l => (
-          <li key={l} className="cr-vcard soon">
-            <span className="cr-vhead"><span className="cr-orb-ghost" aria-hidden="true" /><span><strong>{language(l).endonym}</strong><em>{p.soon}</em></span></span>
-          </li>
-        ))}
       </ul>
     </div>
   );

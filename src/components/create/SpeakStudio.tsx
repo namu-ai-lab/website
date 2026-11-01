@@ -4,14 +4,14 @@ import { useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
 import { Letters, SampleButton, VoiceAvatar } from "../platform/pickers";
-import { Making, MessageList, OUTPUT_ICON, VoiceNote } from "./bits";
+import { Making, MessageList, OUTPUT_ICON, VoiceEntry, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatNumber } from "@/i18n/format";
-import { LOCAL, OUTPUTS, WRITTEN, can, canTranslate, defaultVoice, language, voice as voiceOf, voicesFor, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
+import { OUTPUTS, WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
 import { fixLetters, hasStandIns } from "@/lib/catalog/text";
 import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
@@ -26,7 +26,8 @@ type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceI
 export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial, ready }:
   { lang: Lang; kitVoices: Partial<Record<string, string>>; initialVoice?: VoiceId; recent: Message[]; ready: boolean }) {
   const t = createCopy[ui].speak, c = createCopy[ui], p = platformCopy[ui];
-  const first = initialVoice ? voiceOf(initialVoice).languages[0] : LOCAL.find(l => can("speech", l)) ?? "ha";
+  const spoken = localFor("speech");
+  const first = initialVoice ? voiceOf(initialVoice).languages[0] : spoken[0] ?? "ha";
   const [lang, setLang] = useState<LangCode>(first);
   const [written, setWritten] = useState<LangCode>(initialVoice ? first : WRITTEN);
   const [voices, setVoices] = useState<Partial<Record<LangCode, VoiceId>>>(() => (initialVoice ? { [first]: initialVoice } : {}));
@@ -41,6 +42,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
   const box = useRef<HTMLTextAreaElement>(null);
   const tooLong = text.length > LIMITS.textChars;
   const local = written === lang;
+  const typed = canTranslateText(written, lang);   // written words in `written` work; else they come in by voice
   const digraphs = Object.values(language(lang).digraphs).filter(ch => ch === ch.toLowerCase()).join(" ");
 
   const make = async () => {
@@ -75,8 +77,13 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
               <button type="button" className="cx-btn ghost sm" onClick={restore}>{t.restore}</button>
             </div>
           )}
-          <textarea ref={box} value={text} onChange={e => { setText(e.target.value); if (original !== null && written === WRITTEN) setOriginal(null); }}
-            placeholder={t.placeholder} aria-label={p.nav.speak} lang={written} aria-invalid={tooLong || undefined} spellCheck={written === WRITTEN} />
+          {typed ? (
+            <textarea ref={box} value={text} onChange={e => { setText(e.target.value); if (original !== null && written === WRITTEN) setOriginal(null); }}
+              placeholder={t.placeholder} aria-label={p.nav.speak} lang={written} aria-invalid={tooLong || undefined} spellCheck={written === WRITTEN} />
+          ) : (
+            <VoiceEntry ui={ui} from={written} to={lang} onError={setErr}
+              onResult={r => { setOriginal(r.heard); setText(r.text); setWritten(lang); setMade(null); setErr(null); }} />
+          )}
           {local && (
             <div className="cr-letters">
               <Letters lang={lang} target={box} onInsert={setText} />
@@ -86,8 +93,8 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
           <div className="cr-editor-foot">
             <span className={tooLong ? "over" : undefined}>{t.chars(formatNumber(ui, text.length), formatNumber(ui, LIMITS.textChars))}</span>
             <span className="cr-grow" />
-            <Dictate lang={written} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
-              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />
+            {typed && <Dictate lang={written} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
+              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />}
             {/* phones: Make it right under the words; the settings card's own button is for wider screens */}
             <button type="button" className="cx-btn primary cr-make-here" onClick={() => void make()} disabled={!text.trim() || tooLong || phase !== "idle" || !voice}>
               {made && made.text === text.trim() ? t.again : t.make}
@@ -123,21 +130,18 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
           <div className="cr-choices" role="radiogroup" aria-label={t.writtenIn}>
             {[WRITTEN, lang].filter((l, i, xs) => xs.indexOf(l) === i).map(l => (
               <button key={l} type="button" role="radio" className="cr-choice" aria-checked={written === l} onClick={() => { setWritten(l); setOriginal(null); }}
-                disabled={l !== lang && !canTranslate(l, lang)}>{language(l).endonym}</button>
+>{language(l).endonym}</button>
             ))}
           </div>
         </div>
         <div className="cr-set">
           <p className="cr-label">{t.language}</p>
           <div className="cr-options" role="radiogroup" aria-label={t.language}>
-            {LOCAL.map(l => {
-              const ok = can("speech", l);
-              return (
-                <button key={l} type="button" role="radio" className="cr-option" aria-checked={lang === l} disabled={!ok} onClick={() => pickLang(l)}>
-                  {language(l).endonym}<span className="cr-end">{ok ? lang === l && <Icon name="check" size={16} stroke={1.6} /> : <span className="pf-soon">{p.soon}</span>}</span>
-                </button>
-              );
-            })}
+            {spoken.map(l => (
+              <button key={l} type="button" role="radio" className="cr-option" aria-checked={lang === l} onClick={() => pickLang(l)}>
+                {language(l).endonym}<span className="cr-end">{lang === l && <Icon name="check" size={16} stroke={1.6} />}</span>
+              </button>
+            ))}
           </div>
         </div>
         <div className="cr-set">

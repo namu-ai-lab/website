@@ -18,7 +18,7 @@ export type ConsoleCopy = {
     welcome: (name: string) => string; startLede: string; keyName: string; keyNamePh: string; creating: string; created: string; shownOnce: string;
     tryFirst: string; playground: string; newKey: string; requests30: string; success: string; latency: string; last30: string;
     recentH: string; recentAll: string; recentEmpty: string; tryH: string; tryLede: string; tryIt: string; playgroundKey: string;
-    getStarted: string; dismiss: string; steps: [string, string][]; quick: [string, string]; pg: [string, string];
+    getStarted: string; steps: [string, string][]; quick: [string, string]; pg: [string, string];
     period: string; ranges: Record<"24h" | "7d" | "14d" | "30d", string>;
     m: { requests: string; audio: string; success: string; latency: string; chars: string; allowance: string };
     left: (min: string) => string; ofMonth: (limit: string, date: string) => string; more: string;
@@ -122,7 +122,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       requests30: "Requests", success: "Success rate", latency: "Average latency", last30: "Last 30 days",
       recentH: "Recent requests", recentAll: "All logs", recentEmpty: "No requests yet.",
       tryH: "Try a model", tryLede: "Each one opens in the Playground, on your account.", tryIt: "Try", playgroundKey: "Playground",
-      getStarted: "Get started", dismiss: "Dismiss",
+      getStarted: "Get started",
       steps: [["Create an API key", "Keep it on your server"], ["Try the models", "In the Playground, no code"], ["Make your first request", "Hausa speech back in one call"]],
       quick: ["Developer quickstart", "Your first request in minutes"], pg: ["Open the Playground", "Every model, on your account"],
       period: "Period", ranges: { "24h": "24h", "7d": "7d", "14d": "14d", "30d": "30d" },
@@ -237,7 +237,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
   },
   fr: {
     api: "API", menu: "Menu", openMenu: "Ouvrir le menu", closeMenu: "Fermer le menu", signedIn: "Connecté en tant que",
-    nav: { manage: "Gérer", monitor: "Suivre", overview: "Accueil", keys: "Clés d’API", usage: "Consommation", logs: "Journaux", limits: "Limites", settings: "Paramètres", build: "Construire", playground: "Bac à sable", docs: "Documentation", reference: "Référence de l’API", admin: "Comptes" },
+    nav: { manage: "Gérer", monitor: "Suivre", overview: "Accueil", keys: "Clés d’API", usage: "Consommation", logs: "Journaux", limits: "Limites", settings: "Paramètres", build: "Construire", playground: "Playground", docs: "Documentation", reference: "Référence de l’API", admin: "Comptes" },
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
     overview: {
       meta: ["Accueil", "Votre compte API Namu : clés, consommation et une première requête.".replace(" :", `${n}:`)],
@@ -251,13 +251,13 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       welcome: name => (name ? `Bon retour, ${name}` : "Bon retour"),
       startLede: "D’ici à une phrase en haoussa prononcée par Tafiya : une clé, une variable d’environnement, une requête.".replace(" :", `${n}:`),
       keyName: "Nom de la clé", keyNamePh: "Ma première clé", creating: "Création…", created: "Votre clé", shownOnce: "Copiez-la maintenant : nous n’en gardons que l’empreinte, elle ne s’affichera plus.".replace(" :", `${n}:`),
-      tryFirst: `Ou essayez d’abord les modèles, sans clé${n}:`, playground: "Ouvrir le bac à sable", newKey: "Créer une clé d’API",
+      tryFirst: `Ou essayez d’abord les modèles, sans clé${n}:`, playground: "Ouvrir le Playground", newKey: "Créer une clé d’API",
       requests30: "Requêtes", success: "Taux de réussite", latency: "Latence moyenne", last30: "30 derniers jours",
       recentH: "Requêtes récentes", recentAll: "Tous les journaux", recentEmpty: "Aucune requête pour l’instant.",
-      tryH: "Essayer un modèle", tryLede: "Chacun s’ouvre dans le bac à sable, sur votre compte.", tryIt: "Essayer", playgroundKey: "Bac à sable",
-      getStarted: "Pour commencer", dismiss: "Masquer",
-      steps: [["Créer une clé d’API", "À garder sur votre serveur"], ["Essayer les modèles", "Dans le bac à sable, sans code"], ["Faire votre première requête", "De la parole en haoussa en un appel"]],
-      quick: ["Démarrage rapide", "Votre première requête en quelques minutes"], pg: ["Ouvrir le bac à sable", "Tous les modèles, sur votre compte"],
+      tryH: "Essayer un modèle", tryLede: "Chacun s’ouvre dans le Playground, sur votre compte.", tryIt: "Essayer", playgroundKey: "Playground",
+      getStarted: "Pour commencer",
+      steps: [["Créer une clé d’API", "À garder sur votre serveur"], ["Essayer les modèles", "Dans le Playground, sans code"], ["Faire votre première requête", "De la parole en haoussa en un appel"]],
+      quick: ["Démarrage rapide", "Votre première requête en quelques minutes"], pg: ["Ouvrir le Playground", "Tous les modèles, sur votre compte"],
       period: "Période", ranges: { "24h": "24 h", "7d": "7 j", "14d": "14 j", "30d": "30 j" },
       m: { requests: "Requêtes", audio: "Audio", success: "Taux de réussite", latency: "Latence moyenne", chars: "Caractères prononcés", allowance: "Allocation gratuite" },
       left: m => `${m} min restantes`, ofMonth: (l, d) => `sur ${l} min ce mois-ci · remise à zéro le ${d}`, more: `Besoin de plus${n}?`,
@@ -283,7 +283,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       error: "Une erreur est survenue. Réessayez.",
     },
     playground: {
-      meta: ["Bac à sable", "Essayez les modèles de parole de Namu dans votre navigateur, sur votre propre compte."],
+      meta: ["Playground", "Essayez les modèles de parole de Namu dans votre navigateur, sur votre propre compte."],
       lede: "Essayez chaque modèle avec votre voix et vos mots. Les requêtes passent par votre compte : elles comptent dans votre allocation et apparaissent dans les journaux.".replace(" :", `${n}:`),
       modes: { speech: "Texte vers parole", transcribe: "Parole vers texte", translate: "Traduction", converse: "Conversation" },
       settings: "Réglages", model: "Modèle", voice: "Voix",
@@ -308,17 +308,17 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       wake: "La première requête réveille le modèle : cela peut prendre une vingtaine de secondes.".replace(" :", `${n}:`), runsOn: "Sur votre compte",
       history: "Historique", noHistory: "Ce que vous essayez ici s’affiche dans cet onglet jusqu’à ce que vous quittiez la page.",
       errors: { mic: "Autorisez le micro pour enregistrer.", decode: "Ce fichier n’a pas pu être lu comme de l’audio.", long: k => `Restez sous ${k} minutes.`,
-        big: mb => `Ce clip est trop lourd pour le bac à sable (${mb} Mo au plus). Les fichiers plus lourds passent par l’API.`, generic: "Une erreur s’est produite. Réessayez." },
+        big: mb => `Ce clip est trop lourd pour le Playground (${mb} Mo au plus). Les fichiers plus lourds passent par l’API.`, generic: "Une erreur s’est produite. Réessayez." },
     },
     logs: {
-      meta: ["Journaux", "Chaque requête à l’API Namu, depuis vos clés et le bac à sable."],
-      lede: "Chaque requête de vos clés et du bac à sable, de la plus récente à la plus ancienne.",
+      meta: ["Journaux", "Chaque requête à l’API Namu, depuis vos clés et le Playground."],
+      lede: "Chaque requête de vos clés et du Playground, de la plus récente à la plus ancienne.",
       privacy: "Les journaux gardent ce qui a été appelé, quand et avec quel résultat : jamais l’audio ni le texte.".replace(" :", `${n}:`),
-      range: { "24h": "24 heures", "7d": "7 jours", "30d": "30 jours" }, allModels: "Tous les modèles", allKeys: "Toutes les clés", playground: "Bac à sable",
+      range: { "24h": "24 heures", "7d": "7 jours", "30d": "30 jours" }, allModels: "Tous les modèles", allKeys: "Toutes les clés", playground: "Playground",
       status: { all: "Tous les statuts", ok: "Réussies", errors: "Erreurs" },
       th: { time: "Heure", model: "Modèle", key: "Clé", status: "Statut", audio: "Audio", chars: "Caractères", latency: "Latence" },
       older: "Requêtes plus anciennes", newest: "Revenir aux plus récentes",
-      emptyH: "Aucune requête ici pour l’instant", emptyBody: "Les requêtes apparaissent ici quelques secondes après leur envoi.", emptyCta: "Ouvrir le bac à sable",
+      emptyH: "Aucune requête ici pour l’instant", emptyBody: "Les requêtes apparaissent ici quelques secondes après leur envoi.", emptyCta: "Ouvrir le Playground",
       deletedKey: "Clé supprimée",
     },
     settings: {
@@ -339,8 +339,8 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       lede: "Ce que votre compte peut utiliser, et ce que l’API répond quand une limite est atteinte.",
       allowanceH: "Audio mensuel", allowanceLede: "Gratuit pendant la bêta. La transcription et la traduction comptent l’audio envoyé, la synthèse compte l’audio renvoyé, et une conversation compte les deux. Une requête qui échoue ne compte pas.",
       used: (u, l) => `${u} sur ${l} minutes utilisées`, resets: d => `Remise à zéro le ${d} (UTC)`, more: `Besoin de plus${n}? Écrivez-nous`,
-      rateH: "Limites de débit", rateLede: "Requêtes par minute, comptées par clé. Le bac à sable a sa propre limite.",
-      th: { what: "S’applique à", limit: "Limite" }, perMin: k => `${k} requêtes / minute`, playground: "Bac à sable", noKeys: "Aucune clé active pour l’instant.",
+      rateH: "Limites de débit", rateLede: "Requêtes par minute, comptées par clé. Le Playground a sa propre limite.",
+      th: { what: "S’applique à", limit: "Limite" }, perMin: k => `${k} requêtes / minute`, playground: "Playground", noKeys: "Aucune clé active pour l’instant.",
       requestH: "Limites de requête", requestLede: "Vérifiées avant qu’un modèle ne tourne : une requête trop grosse ne coûte rien.".replace(" :", `${n}:`),
       upload: "Taille du fichier audio", audio: "Durée de l’audio", text: "Texte à lire", keys: "Clés actives",
       mb: k => `${k} Mo`, minutes: k => `${k} minutes`, chars: k => `${k} caractères`,
@@ -364,7 +364,7 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
       note: "Les minutes comptent l’audio envoyé et la parole renvoyée.",
       th: { endpoint: "Point d’accès", model: "Modèle", requests: "Requêtes", audio: "Audio (min)", chars: "Caractères", errors: "Erreurs" },
       range: { month: "Ce mois-ci", last: "Le mois dernier", "7d": "7 derniers jours", "30d": "30 derniers jours" }, by: { model: "Par modèle", key: "Par clé" }, groupBy: "Grouper", export: "Exporter en CSV",
-      success: "Taux de réussite", latency: "Latence moyenne", key: "Clé", byModel: "Par modèle", byKey: "Par clé", playground: "Bac à sable", deleted: "Clé supprimée",
+      success: "Taux de réussite", latency: "Latence moyenne", key: "Clé", byModel: "Par modèle", byKey: "Par clé", playground: "Playground", deleted: "Clé supprimée",
       emptyRange: "Aucune requête sur cette période.",
     },
   },

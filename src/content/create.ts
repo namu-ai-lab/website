@@ -10,7 +10,7 @@ export type CreateCopy = {
   home: {
     question: string; placeholder: string; writtenIn: string; to: string; make: string; again: string;
     translating: string; speaking: string; whatsapp: string; download: string;
-    shelf: (langs: string) => string; shelfLine: (voices: string, soon: string) => string; allIdeas: (n: number) => string;
+    allIdeas: (n: number) => string; readYours: string; speakIn: (name: string) => string; orWrite: (name: string) => string;
     ideas: string; recent: string; all: string; use: string; text: string; none: string; agents: string;
   };
   speak: {
@@ -33,7 +33,7 @@ export const createCopy: Record<Lang, CreateCopy> = {
     home: {
       question: "What should people hear?", placeholder: "Write or say your message", writtenIn: "Written in", to: "Said in", make: "Make it", again: "New message",
       translating: "Translating…", speaking: "Making the voice…", whatsapp: "Send on WhatsApp", download: "Download",
-      shelf: l => `${l} voices`, shelfLine: (v, s) => `${v} today. ${s} next.`, allIdeas: k => `Show all ${k} ideas`,
+      allIdeas: k => `Show all ${k} ideas`, readYours: "Read yours", speakIn: l => `Speak in ${l}`, orWrite: l => `or write in ${l}`,
       ideas: "Ideas", recent: "Recent", all: "All", use: "Use", text: "Text", none: "Your messages will show here.", agents: "Agents",
     },
     speak: {
@@ -54,7 +54,7 @@ export const createCopy: Record<Lang, CreateCopy> = {
     home: {
       question: `Que doivent-ils entendre${n}?`, placeholder: "Écrivez ou dites votre message", writtenIn: "Écrit en", to: "Dit en", make: "Créer", again: "Nouveau message",
       translating: "Traduction…", speaking: "Création de la voix…", whatsapp: "Envoyer sur WhatsApp", download: "Télécharger",
-      shelf: l => `Voix en ${l.toLowerCase()}`, shelfLine: (v, s) => `${v} aujourd’hui. ${s} ensuite.`, allIdeas: k => `Voir les ${k} idées`,
+      allIdeas: k => `Voir les ${k} idées`, readYours: "Lire le vôtre", speakIn: l => `Parlez en ${l.toLowerCase()}`, orWrite: l => `ou écrivez en ${l.toLowerCase()}`,
       ideas: "Idées", recent: "Récents", all: "Tout", use: "Utiliser", text: "Texte", none: "Vos messages s’afficheront ici.", agents: "Agents",
     },
     speak: {

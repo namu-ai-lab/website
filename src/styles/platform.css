@@ -43,10 +43,10 @@
 .pf-page { width: 100%; max-width: 1180px; margin: 0 auto; padding: clamp(32px, 5vw, 56px) clamp(16px, 4vw, 52px) 120px; }
 .pf-page.center { display: grid; align-content: start; justify-items: center; text-align: center; }
 .pf-page.full { max-width: none; padding: 0; }
-.pf-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 28px; }
+.pf-head { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; text-align: center; }
 .pf-head h1 { margin: 0; font-size: clamp(28px, 2.4vw, 36px); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
-.pf-head p { margin: 8px 0 0; color: var(--ink-3); }
-.pf-head-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-head p { max-width: 640px; margin: 8px auto 0; color: var(--ink-3); text-wrap: balance; }
+.pf-head-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 
 /* ---- Namu's controls on its own ground: the primary pill is Kola (Ink on hover), the quiet pill Surface 2, the play
    button Kola; everything else from console.css */
@@ -167,5 +167,5 @@
 @media (pointer: coarse) {
   .pf .cx-btn.sm, .cr-mini, .ag-mini, .cr-chip, .ag-chip, .cx-seg button { min-height: 40px; }
   .pf .pf-sample, .cx-icon-btn, .ag-mini.round { min-width: 40px; min-height: 40px; }
-  .pf .ag-see, .pf .ag-link, .pf .ag-crumb a, .cx-frame .cx-more, .cx-frame .cx-dismiss { padding-block: 10px; margin-block: -10px; }   /* a taller hit area, the same layout */
+  .pf .ag-see, .pf .ag-link, .pf .ag-crumb a, .cx-frame .cx-more { padding-block: 10px; margin-block: -10px; }   /* a taller hit area, the same layout */
 }

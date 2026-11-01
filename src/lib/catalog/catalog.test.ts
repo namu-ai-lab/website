@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANGUAGES, MODELS, VOICES, can, canTranslate, defaultVoice, languagesFor, stateOf, voicesFor } from "./index";
+import { LANGUAGES, MODELS, VOICES, can, canTranslate, canTranslateText, defaultVoice, languagesFor, localFor, voicesFor } from "./index";
 import { applyWords, fixLetters, hasStandIns } from "./text";
 import { SCOPES } from "@/lib/key-shape";
 
@@ -23,8 +23,8 @@ describe("catalog", () => {
   it("answers what a task can do in a language", () => {
     expect(can("speech", "ha")).toBe(true);
     expect(can("speech", "dje")).toBe(false);
-    expect(stateOf("ha")).toBe("ready");
-    expect(stateOf("tmh")).toBe("soon");
+    expect(localFor("speech")).toEqual(["ha"]);
+    expect(localFor("transcribe")).not.toContain("tmh");
     expect(canTranslate("fr", "ha")).toBe(true);
     expect(canTranslate("fr", "dje")).toBe(false);
     expect(canTranslate("ha", "ha")).toBe(true);
@@ -58,5 +58,10 @@ describe("text", () => {
     expect(applyWords("Asibitin CSI da UNICEF.", words, "ha")).toBe("Asibitin sé ès i da Yunisef.");
     expect(applyWords("Le CSI et unicef", words, "fr")).toBe("Le CSI et Yunisef");
     expect(applyWords("UNICEFS", words, "ha")).toBe("UNICEFS");
+  });
+  it("types only what the API can translate as text", () => {
+    expect(canTranslateText("ha", "fr")).toBe(true);    // said first in Nadia's voice, then translated
+    expect(canTranslateText("fr", "ha")).toBe(false);   // no French voice: French comes in by voice
+    expect(canTranslateText("ha", "ha")).toBe(true);
   });
 });

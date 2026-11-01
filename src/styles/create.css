@@ -86,25 +86,28 @@
 .cr-tools a:hover .cr-tool { background: var(--surface-2); transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .cr-tools a:hover .cr-tool { transform: none; } }
 
-.cr-shelf { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; margin-top: clamp(48px, 6vw, 64px); padding: 28px 32px;
-  border-radius: 28px; background: var(--surface); }
-.cr-shelf h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500; letter-spacing: -.014em; }
-.cr-shelf p { margin: 0; color: var(--ink-3); }
-.cr-shelf ul { display: flex; gap: 22px; margin: 0; padding: 0; list-style: none; }
-.cr-shelf li { display: grid; justify-items: center; gap: 6px; font-size: 14.5px; }
-.cr-shelf li small { margin-top: -4px; color: var(--ink-3); font-size: 13px; }
-.cr-orb { position: relative; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
-.cr-orb > i { position: absolute; inset: 0; }
-.cr-orb-play { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 250, 241, .72);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--ink); }
-.cr-orb.on { box-shadow: 0 0 0 3px var(--bg), 0 0 0 4.5px var(--kola); }
 .cr-orb-ghost { display: block; width: 76px; height: 76px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); }
-.cr-shelf li.soon { color: var(--ink-3); }
 
 .cr-below { margin-top: clamp(48px, 6vw, 72px); }
 .cr-tabs { display: flex; gap: 26px; margin-bottom: 22px; box-shadow: inset 0 -1px 0 var(--line); }
 .cr-tabs button { height: 46px; padding: 0; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 15.5px; cursor: pointer; box-shadow: inset 0 -2px 0 transparent; }
 .cr-tabs [aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+/* showcases: real footage and what Namu made for it */
+.cr-shows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 36px; padding: 0; list-style: none; }
+.cr-show { display: flex; flex-direction: column; overflow: hidden; border-radius: 24px; background: var(--surface); }
+.cr-show-media { position: relative; display: block; aspect-ratio: 4 / 3; padding: 0; border: 0; background: #1C1410; cursor: pointer; }
+.cr-show-media { overflow: hidden; }
+.cr-show-media video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }   /* an upright clip keeps the frame's shape */
+.cr-show-play { position: absolute; left: 12px; bottom: 12px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255, 250, 241, .8); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: #1C1410; transition: background-color .2s var(--ease); }
+.cr-show-media:hover .cr-show-play { background: #FFFAF1; }
+.cr-show-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--sahel); transform-origin: left; transform: scaleX(0); }
+.cr-show-body { display: flex; flex: 1; flex-direction: column; gap: 6px; padding: 16px 18px; }
+.cr-show-who { color: var(--ink-3); font-size: 13.5px; }
+.cr-show h3 { margin: 0 0 2px; font-size: 17px; font-weight: 500; letter-spacing: -.004em; }
+.cr-show p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-size: 15px; line-height: 1.5; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.cr-show .cr-show-fr { color: var(--ink-3); font-size: 14px; }
+.cr-show-body .cx-btn { align-self: flex-start; margin: auto 0 0 -12px; }
 .cr-sectors { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
 .cr-sector { position: relative; display: block; aspect-ratio: 4 / 3; padding: 0; border: 0; border-radius: 18px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
 .cr-sector img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease-out), filter .3s var(--ease); }
@@ -226,11 +229,18 @@
 .cr-vacts { display: flex; gap: 8px; margin-top: auto; }
 
 .cr-make-here, .cr-more { display: none; }
+/* where words can only be said: a microphone in place of the text box (VoiceEntry, Translate's spoken side) */
+.cr-voice-entry { display: grid; justify-items: center; gap: 10px; padding: 14px 8px 8px; text-align: center; }
+.cr-voice-entry .cr-rec { width: 76px; height: 76px; }
+.cr-voice-entry p { margin: 0; color: var(--ink-2); font-size: 15.5px; font-variant-numeric: tabular-nums; }
+.cr-voice-entry .cr-making { padding: 18px 0; }
+.cr-link { padding: 4px 6px; border: 0; background: none; color: var(--kola); font: inherit; font-size: 14.5px; cursor: pointer; }
+.cr-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---- smaller screens */
 @media (max-width: 1100px) {
   .cr-sectors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .cr-ideas, .cr-vgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cr-ideas, .cr-vgrid, .cr-shows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
   /* phones: the words, then the settings and Make it, then the result, then the history */
@@ -251,8 +261,6 @@
   .cr-settings .cr-option-row { flex: none; }
   .cr-settings .cr-option { flex: none; width: auto; height: 40px; padding: 0 14px; border-radius: 9999px; background: var(--bg); }
   .cr-settings .cr-option[aria-checked="true"] { background: var(--bg); }
-  .cr-shelf { grid-template-columns: minmax(0, 1fr); }
-  .cr-shelf ul { overflow-x: auto; scrollbar-width: none; }
   .cr-row { grid-template-columns: 40px minmax(0, 1fr) minmax(56px, auto) 40px; }
   .cr-row .hide-sm { display: none; }
 }
@@ -260,16 +268,16 @@
   .cr-sectors { grid-template-columns: repeat(6, 42%); overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
   .cr-sectors::-webkit-scrollbar { display: none; }
   .cr-ideas, .cr-vgrid, .cr-pair, .cr-try { grid-template-columns: minmax(0, 1fr); }
+  /* the showcases are a row to swipe on a phone */
+  .cr-shows { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; overflow-x: auto; scroll-snap-type: x mandatory;
+    margin-right: -16px; padding-right: 16px; scrollbar-width: none; }
+  .cr-shows::-webkit-scrollbar { display: none; }
+  .cr-show { scroll-snap-align: start; }
   .cr-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; width: 100%; }
   .cr-tools a { width: auto; font-size: 12.5px; }
   .cr-tool { width: 50px; height: 50px; border-radius: 16px; }
   .cr-composer { padding: 14px 12px 10px; border-radius: 24px; }
   .cr-note-tail { display: none; }
-  .cr-shelf { padding: 24px 20px; }
-  /* the voices fit one row: four circles, no scrolling */
-  .cr-shelf ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow: visible; }
-  .cr-shelf li { min-width: 0; text-align: center; font-size: 13.5px; }
-  .cr-shelf .cr-orb, .cr-shelf .cr-orb > .pf-voice-orb, .cr-shelf .cr-orb-ghost { width: 60px !important; height: 60px !important; }
   /* six ideas until asked, so the page ends */
   .cr-ideas:not(.all) > li:nth-child(n + 7) { display: none; }
   .cr-more { display: flex; justify-content: center; width: 100%; margin-top: 14px; }

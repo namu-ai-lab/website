@@ -13,11 +13,12 @@ import type { Lang } from "@/i18n/config";
 import { formatSeconds } from "@/i18n/format";
 import { toClip } from "@/lib/audio";
 import { LIMITS } from "@/lib/limits";
-import { WRITTEN, can, canTranslate, language, modelFor, type LangCode } from "@/lib/catalog";
+import { WRITTEN, can, canTranslate, canTranslateText, language, modelFor, type LangCode } from "@/lib/catalog";
 
 /* Translate (mock-up v2): a local language and French side by side, either way round. Written words go through
-   Kora's text path; a recording goes through its speech path, which also says what it heard. The pairs come from the
-   catalog, so a language Kora learns appears here by itself. */
+   Kora's text path where the API can take them (canTranslateText); otherwise that side is a microphone, and the
+   recording goes through the speech path, which also says what it heard. The pairs come from the catalog, so a
+   language Kora learns appears here by itself. */
 const UPLOAD = LIMITS.playgroundUploadMb * 1024 * 1024;
 
 export function TranslateStudio({ lang: ui }: { lang: Lang }) {
@@ -46,7 +47,8 @@ export function TranslateStudio({ lang: ui }: { lang: Lang }) {
   };
   const rec = useRecorder(b => void heard(b), () => setErr(c.errors.mic));
   const swap = () => { if (!canTranslate(to, from)) return; setFrom(to); setTo(from); setText(out ?? ""); setOut(text.trim() ? text : null); };
-  const examples = TRY_NOTES.map(n => (from === "ha" ? n.ha : from === WRITTEN ? n.fr : null)).filter((x): x is string => !!x);
+  const typed = canTranslateText(from, to);             // else this side can only be spoken
+  const examples = typed ? TRY_NOTES.map(n => (from === "ha" ? n.ha : from === WRITTEN ? n.fr : null)).filter((x): x is string => !!x) : [];
   const labels = { copy: t.copy, copied: t.copied, failed: c.errors.generic };
 
   return (
@@ -63,16 +65,33 @@ export function TranslateStudio({ lang: ui }: { lang: Lang }) {
       <div className="cr-pair">
         <section className="cr-pane">
           <span className="cr-label">{language(from).endonym}
-            <button type="button" className={`cr-mic${rec.on ? " rec" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? t.stop : t.record} onClick={rec.toggle} disabled={busy}
-              style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>
-              <Icon name={rec.on ? "stop" : "microphone"} size={17} stroke={1.6} />
-            </button>
+            {typed && (
+              <button type="button" className={`cr-mic${rec.on ? " rec" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? t.stop : t.record} onClick={rec.toggle} disabled={busy}
+                style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>
+                <Icon name={rec.on ? "stop" : "microphone"} size={17} stroke={1.6} />
+              </button>
+            )}
           </span>
-          {rec.on ? <p className="cr-rec-time" role="status">{formatSeconds(rec.elapsed)}</p> : (
-            <textarea value={text} onChange={e => setText(e.target.value)} placeholder={t.placeholder} aria-label={language(from).endonym} lang={from} rows={4}
-              maxLength={LIMITS.textChars} onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void go(); } }} />
+          {typed ? (
+            <>
+              {rec.on ? <p className="cr-rec-time" role="status">{formatSeconds(rec.elapsed)}</p> : (
+                <textarea value={text} onChange={e => setText(e.target.value)} placeholder={t.placeholder} aria-label={language(from).endonym} lang={from} rows={4}
+                  maxLength={LIMITS.textChars} onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void go(); } }} />
+              )}
+              <span className="cr-pane-acts end"><button type="button" className="cx-btn primary sm" onClick={() => void go()} disabled={busy || !text.trim()}>{t.go}</button></span>
+            </>
+          ) : (
+            <>
+              {text && <p lang={from}>{text}</p>}
+              <div className="cr-voice-entry">
+                <button type="button" className={`cr-rec${rec.on ? " on" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? t.stop : c.home.speakIn(language(from).name[ui])}
+                  onClick={rec.toggle} disabled={busy} style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>
+                  <Icon name={rec.on ? "stop" : "microphone"} size={28} stroke={1.5} />
+                </button>
+                <p role={rec.on ? "status" : undefined}>{rec.on ? formatSeconds(rec.elapsed) : c.home.speakIn(language(from).name[ui])}</p>
+              </div>
+            </>
           )}
-          <span className="cr-pane-acts end"><button type="button" className="cx-btn primary sm" onClick={() => void go()} disabled={busy || !text.trim()}>{t.go}</button></span>
         </section>
         <section className="cr-pane">
           <span className="cr-label">{language(to).endonym}</span>

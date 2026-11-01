@@ -13,7 +13,7 @@ import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatSeconds } from "@/i18n/format";
 import { toClip } from "@/lib/audio";
-import { LOCAL, WRITTEN, can, canTranslate, defaultVoice, language, type LangCode } from "@/lib/catalog";
+import { WRITTEN, can, canTranslate, defaultVoice, language, localFor, type LangCode } from "@/lib/catalog";
 import { LIMITS } from "@/lib/limits";
 
 /* Read a voice note (mock-up v2): speak, drop or choose a recording in a local language, or try one of Namu's; what
@@ -24,7 +24,8 @@ const UPLOAD = LIMITS.playgroundUploadMb * 1024 * 1024;
 
 export function ReadStudio({ lang: ui }: { lang: Lang }) {
   const t = createCopy[ui].read, c = createCopy[ui], p = platformCopy[ui];
-  const [lang, setLang] = useState<LangCode>(LOCAL.find(l => can("transcribe", l)) ?? LOCAL[0]);
+  const heardIn = localFor("transcribe");
+  const [lang, setLang] = useState<LangCode>(heardIn[0] ?? "ha");
   const [busy, setBusy] = useState(false), [over, setOver] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [out, setOut] = useState<Read | null>(null);
@@ -52,7 +53,7 @@ export function ReadStudio({ lang: ui }: { lang: Lang }) {
 
   return (
     <div className="cr-read">
-      <LanguageChips value={lang} onPick={l => { setLang(l); setOut(null); }} options={LOCAL} ready={l => can("transcribe", l)} soon={p.soon} label={c.speak.language} />
+      {heardIn.length > 1 && <LanguageChips value={lang} onPick={l => { setLang(l); setOut(null); }} options={heardIn} label={c.speak.language} />}
       <div className="cr-drop" data-over={over || undefined} onDragOver={e => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}>
         <button type="button" className={`cr-rec${rec.on ? " on" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? t.stop : t.record} onClick={rec.toggle} disabled={busy}
           style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>

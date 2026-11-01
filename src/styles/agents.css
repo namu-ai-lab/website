@@ -78,14 +78,14 @@
 .ag-blank svg { color: var(--sahel-deep); }
 
 /* ---- one agent: the name, tabs, and the talk panel beside them */
-.ag-crumb { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--ink-3); font-size: 14.5px; }
+.ag-crumb { display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--ink-3); font-size: 14.5px; }
 .ag-crumb a { color: inherit; text-decoration: none; }
 .ag-crumb a:hover { color: var(--ink); }
 .ag-crumb svg { transform: rotate(-90deg); }
 .ag-crumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ag-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-bottom: 8px; }
-.ag-head-name { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; min-width: 0; }
-.ag-name { field-sizing: content; min-width: 4ch; max-width: 100%; margin-left: -8px; padding: 2px 8px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font: inherit;
+.ag-head { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 16px; text-align: center; }
+.ag-head-name { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 12px; min-width: 0; }
+.ag-name { field-sizing: content; min-width: 4ch; max-width: 100%; padding: 2px 8px; text-align: center; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font: inherit;
   font-size: clamp(28px, 2.4vw, 36px); font-weight: 500; letter-spacing: -.02em; line-height: 1.15; }
 .ag-name:hover { background: rgba(28, 20, 16, .04); }
 .ag-name:focus-visible { outline: 2px solid var(--kola); outline-offset: 0; background: #fff; }
@@ -93,6 +93,9 @@
 .ag-save.failed { color: #A8321F; }
 .ag-tabs { display: flex; gap: 26px; margin-bottom: 24px; overflow-x: auto; scrollbar-width: none; box-shadow: inset 0 -1px 0 var(--line); }
 .ag-tabs::-webkit-scrollbar { display: none; }
+/* centred under the title when the tabs fit; flush and scrolling when they do not (auto margins, never clipped) */
+.ag-tabs > :first-child { margin-left: auto; }
+.ag-tabs > :last-child { margin-right: auto; }
 .ag-tabs button { height: 46px; padding: 0; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 15.5px; white-space: nowrap; cursor: pointer;
   box-shadow: inset 0 -2px 0 transparent; transition: color .2s var(--ease); }
 .ag-tabs button:hover { color: var(--ink); }
