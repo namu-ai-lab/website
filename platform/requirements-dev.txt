@@ -6,3 +6,4 @@ pytest==9.1.1
 httpx==0.28.1
 fastapi==0.161.1
 python-multipart==0.0.32       # request.form(): the multipart uploads the gateway reads
+uvicorn==0.52.4                # the AWS gateway's server (platform/aws/gateway): its X-Forwarded-For handling is tested
