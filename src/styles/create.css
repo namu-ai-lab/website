@@ -213,6 +213,13 @@
 .cr-vacts { display: flex; gap: 8px; margin-top: auto; }
 
 .cr-make-here, .cr-more { display: none; }
+/* where words can only be said: a microphone in place of the text box (VoiceEntry, Translate's spoken side) */
+.cr-voice-entry { display: grid; justify-items: center; gap: 10px; padding: 14px 8px 8px; text-align: center; }
+.cr-voice-entry .cr-rec { width: 76px; height: 76px; }
+.cr-voice-entry p { margin: 0; color: var(--ink-2); font-size: 15.5px; font-variant-numeric: tabular-nums; }
+.cr-voice-entry .cr-making { padding: 18px 0; }
+.cr-link { padding: 4px 6px; border: 0; background: none; color: var(--kola); font: inherit; font-size: 14.5px; cursor: pointer; }
+.cr-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---- smaller screens */
 @media (max-width: 1100px) {

@@ -4,13 +4,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../Icon";
 import { LocalTime } from "../console/LocalTime";
 import { VoiceAvatar } from "../platform/pickers";
-import { fileFor, save, speak } from "./client";
+import { fileFor, interpret, save, speak } from "./client";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatSeconds } from "@/i18n/format";
-import { Recorder } from "@/lib/audio";
-import { isVoiceId, language, voice as voiceOf } from "@/lib/catalog";
+import { Recorder, toClip } from "@/lib/audio";
+import { isVoiceId, language, voice as voiceOf, type LangCode } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import { LIMITS } from "@/lib/limits";
 import { fileName, type Message } from "@/lib/project-shape";
@@ -162,5 +162,37 @@ function MessageRow({ m, lang }: { m: Message; lang: Lang }) {
       <button type="button" className="cr-round" aria-label={p.download} onClick={() => void download()} disabled={busy}><Icon name="download" size={15} stroke={1.6} /></button>
       {err && <span className="cx-error" role="alert">{t.errors.generic}</span>}
     </li>
+  );
+}
+
+/** Where a language can only be heard (written French reaches Kora by voice until the API translates text): a large
+    microphone in place of the text box. What was said comes back in `to`, with the words heard in `from`. */
+export function VoiceEntry({ ui, from, to, onResult, onError, aside }:
+  { ui: Lang; from: LangCode; to: LangCode; onResult: (r: { heard: string; text: string }) => void; onError: (m: string) => void; aside?: ReactNode }) {
+  const c = createCopy[ui], [busy, setBusy] = useState(false);
+  const heard = async (b: Blob) => {
+    setBusy(true);
+    try {
+      const clip = await toClip(b, "speech.wav");
+      const body = clip.wav.size <= LIMITS.playgroundUploadMb * 1024 * 1024 ? clip.wav : clip.source;
+      const r = await interpret(body, from, to);
+      if (r.text.trim()) onResult({ heard: r.sourceText.trim(), text: r.text.trim() }); else onError(c.read.nothing);
+    } catch (e) { onError(e instanceof Error ? e.message : c.errors.generic); } finally { setBusy(false); }
+  };
+  const rec = useRecorder(b => void heard(b), () => onError(c.errors.mic));
+  const name = language(from).name[ui];
+  return (
+    <div className="cr-voice-entry">
+      {busy ? <Making label={c.read.listening} /> : (
+        <>
+          <button type="button" className={`cr-rec${rec.on ? " on" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? c.read.stop : c.home.speakIn(name)}
+            onClick={rec.toggle} style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>
+            <Icon name={rec.on ? "stop" : "microphone"} size={28} stroke={1.5} />
+          </button>
+          <p role={rec.on ? "status" : undefined}>{rec.on ? formatSeconds(rec.elapsed) : c.home.speakIn(name)}</p>
+          {!rec.on && aside}
+        </>
+      )}
+    </div>
   );
 }

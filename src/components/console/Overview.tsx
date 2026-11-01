@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { HeroRing } from "../Art";
 import { Icon } from "../Icon";
 import { MODEL_ORB } from "./colours";
-import { Dismissable } from "./Dismissable";
 import { Filters } from "./Filters";
 import { LocalTime } from "./LocalTime";
 import { consoleCopy } from "@/content/console";
@@ -60,7 +59,8 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
   return (
     <>
       {notice}
-      <Dismissable id="get-started" title={t.getStarted} label={t.dismiss}>
+      <section aria-labelledby="get-started-h">
+        <div className="cx-get-h"><h2 id="get-started-h">{t.getStarted}</h2></div>
         <div className="cx-get">
           <ol className="cx-get-steps">
             {t.steps.map(([title, sub], i) => (
@@ -82,7 +82,7 @@ export function Overview({ lang, range, series, steps, notice, usedMin, limitMin
             <a className="cx-get-cta" href={L("/account/playground")}><strong>{t.pg[0]}<Icon name="arrow-long" size={14} stroke={1.6} /></strong><em>{t.pg[1]}</em></a>
           </div>
         </div>
-      </Dismissable>
+      </section>
 
       <div className="cx-range-row">
         <h2>{consoleCopy[lang].nav.usage}</h2>

@@ -4,23 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { language, voicesFor, type LangCode, type Voice, type VoiceId } from "@/lib/catalog";
 
-/* Choosing on the platform, shared by every door: a language (from the catalog, those not ready yet shown as Soon),
-   a voice (with its sample), and the letters a keyboard lacks for the language being written. */
+/* Choosing on the platform, shared by every door: a language (only those that work today, from the catalog), a voice
+   (with its sample), and the letters a keyboard lacks for the language being written. */
 
-/** Languages as chips; those the platform cannot use yet are shown, quietly, and cannot be chosen. */
-export function LanguageChips({ value, onPick, options, ready, soon, label }:
-  { value: LangCode; onPick: (l: LangCode) => void; options: readonly LangCode[]; ready: (l: LangCode) => boolean; soon: string; label: string }) {
+/** Languages as chips; the caller passes only languages that work today, and shows none when there is one. */
+export function LanguageChips({ value, onPick, options, label }:
+  { value: LangCode; onPick: (l: LangCode) => void; options: readonly LangCode[]; label: string }) {
   return (
     <div className="pf-langs" role="radiogroup" aria-label={label}>
-      {options.map(l => {
-        const ok = ready(l);
-        return (
-          <button key={l} type="button" role="radio" className="pf-chip" aria-checked={l === value} disabled={!ok}
-            onClick={() => onPick(l)}>
-            {language(l).endonym}{!ok && <span className="pf-soon">{soon}</span>}
-          </button>
-        );
-      })}
+      {options.map(l => (
+        <button key={l} type="button" role="radio" className="pf-chip" aria-checked={l === value} onClick={() => onPick(l)}>{language(l).endonym}</button>
+      ))}
     </div>
   );
 }

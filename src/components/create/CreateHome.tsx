@@ -4,14 +4,14 @@ import { useMemo, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
 import { VoiceAvatar } from "../platform/pickers";
-import { ChipMenu, Making, MessageList, MiniPlay, VoiceNote } from "./bits";
+import { ChipMenu, Making, MessageList, MiniPlay, VoiceEntry, VoiceNote } from "./bits";
 import { fileFor, keep, save, share, speak, translate } from "./client";
 import { Dictate } from "./Dictate";
 import { createCopy } from "@/content/create";
 import { IDEAS, SECTORS, sampleOf, type Idea, type SectorId } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
-import { LOCAL, WRITTEN, can, canTranslate, defaultVoice, language, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
+import { WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
@@ -24,9 +24,11 @@ type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceI
 
 export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { lang: Lang; recent: Message[]; ready: boolean; kitVoices: Partial<Record<string, string>> }) {
   const t = createCopy[ui].home, c = createCopy[ui], p = platformCopy[ui], L = (x: string) => lp(ui, x);
-  const spoken = LOCAL.filter(l => can("speech", l));
+  const spoken = localFor("speech");
   const [from, setFrom] = useState<LangCode>(WRITTEN);
-  const [to, setTo] = useState<LangCode>(spoken[0] ?? LOCAL[0]);
+  const [to, setTo] = useState<LangCode>(spoken[0] ?? "ha");
+  const typed = canTranslateText(from, to);            // written words in `from` work; else `from` comes in by voice
+  const [original, setOriginal] = useState<string | null>(null);   // the words heard, when they were said in `from`
   const [voices, setVoices] = useState<Partial<Record<LangCode, VoiceId>>>({});
   const voice = voices[to] ?? defaultVoice(to, kitVoices);
   const [text, setText] = useState("");
@@ -50,16 +52,19 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
       if (from !== to) { setPhase("translate"); said = await translate(words, from, to); }
       setPhase("speak");
       const wav = await speak(said, to, voice);
-      const title = titleFrom(from === to ? said : words);
+      const title = titleFrom(original ?? (from === to ? said : words));
       const file = await fileFor(wav, "whatsapp", fileName(title, language(to).endonym, "x").replace(/\.x$/, ""));
       setMade({ wav, file, text: said, lang: to, voice });
-      keep({ sourceLang: from, sourceText: from === to ? "" : words, lang: to, text: said, voice, madeFor: "whatsapp" })
+      keep({ sourceLang: original !== null ? WRITTEN : from, sourceText: original ?? (from === to ? "" : words), lang: to, text: said, voice, madeFor: "whatsapp" })
         .then(m => setRecent(r => [m, ...r])).catch(() => {});
     } catch (e) { setErr(e instanceof Error ? e.message : p.errors.generic); }
     finally { setPhase("idle"); }
   };
+  /* an idea goes in as French where French can be typed, else as the Hausa the model already said for it */
+  const usable = (i: Idea) => canTranslateText(WRITTEN, to) || Boolean(i.ha);
   const use = (i: Idea) => {
-    setFrom(WRITTEN); setText(i.fr); setMade(null); setErr(null);
+    const fr = canTranslateText(WRITTEN, to);
+    setFrom(fr ? WRITTEN : to); setText(fr ? i.fr : i.ha ?? ""); setOriginal(fr ? null : i.fr); setMade(null); setErr(null);
     top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     requestAnimationFrame(() => box.current?.focus({ preventScroll: true }));
   };
@@ -78,22 +83,35 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
       <div className="cr-hero" ref={top}>
         <h1>{t.question}</h1>
         <form className="cr-composer" onSubmit={e => { e.preventDefault(); void make(); }}>
-          <textarea ref={box} value={text} onChange={e => setText(e.target.value)} placeholder={t.placeholder} aria-label={t.question} rows={2}
-            lang={from} aria-invalid={tooLong || undefined}
-            onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void make(); } }} />
+          {original !== null && (
+            <div className="cr-original">
+              <span>{language(WRITTEN).endonym}</span><p lang={WRITTEN}>{original}</p>
+              <button type="button" className="cx-btn ghost sm" onClick={() => { setOriginal(null); setText(""); setFrom(WRITTEN); }}>{c.speak.restore}</button>
+            </div>
+          )}
+          {typed ? (
+            <textarea ref={box} value={text} onChange={e => setText(e.target.value)} placeholder={t.placeholder} aria-label={t.question} rows={2}
+              lang={from} aria-invalid={tooLong || undefined}
+              onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void make(); } }} />
+          ) : (
+            <VoiceEntry ui={ui} from={from} to={to} onError={setErr}
+              onResult={r => { setOriginal(r.heard); setText(r.text); setFrom(to); setMade(null); setErr(null); }}
+              aside={<button type="button" className="cr-link" onClick={() => { setFrom(to); requestAnimationFrame(() => box.current?.focus()); }}>{t.orWrite(language(to).name[ui])}</button>} />
+          )}
           <div className="cr-composer-bar">
-            <ChipMenu label={t.writtenIn} value={language(from).endonym} onPick={id => setFrom(id as LangCode)}
+            <ChipMenu label={t.writtenIn} value={language(original !== null ? WRITTEN : from).endonym} onPick={id => { setFrom(id as LangCode); setOriginal(null); setText(""); }}
               options={sources.map(l => ({ id: l, label: language(l).endonym }))} />
             <Icon name="arrow-long" size={16} stroke={1.5} className="cr-to" />
-            <ChipMenu label={t.to} value={language(to).endonym} onPick={id => setTo(id as LangCode)}
-              options={LOCAL.map(l => ({ id: l, label: language(l).endonym, disabled: !can("speech", l) || (l !== from && !canTranslate(from, l)), end: !can("speech", l) ? <span className="pf-soon">{p.soon}</span> : undefined }))} />
+            {spoken.length > 1
+              ? <ChipMenu label={t.to} value={language(to).endonym} onPick={id => setTo(id as LangCode)} options={spoken.map(l => ({ id: l, label: language(l).endonym }))} />
+              : <span className="cr-chip static">{language(to).endonym}</span>}
             {voice && (
               <ChipMenu label={p.voice} value={<><VoiceAvatar v={{ id: voice }} size={22} />{voiceOf(voice).name}</>} onPick={id => setVoices(v => ({ ...v, [to]: id as VoiceId }))}
                 options={voicesFor(to).map(v => ({ id: v.id, label: <><VoiceAvatar v={v} size={22} />{v.name}</>, end: <MiniPlay src={v.sample} label={`${p.play} ${v.name}`} /> }))} />
             )}
             <span className="cr-grow" />
-            <Dictate lang={from} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
-              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />
+            {typed && <Dictate lang={from} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
+              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />}
             <button type="submit" className="cx-btn primary" disabled={!text.trim() || tooLong || phase !== "idle" || !voice}>{t.make}</button>
           </div>
         </form>
@@ -109,7 +127,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
               <button type="button" className="cx-btn primary" onClick={() => void share(made.file)}><Icon name="share" size={16} stroke={1.6} />{t.whatsapp}</button>
               <button type="button" className="cx-btn" onClick={() => save(made.file, made.file.name)}><Icon name="download" size={16} stroke={1.6} />{t.download}</button>
               <span className="cr-grow" />
-              <button type="button" className="cx-btn ghost" onClick={() => { setMade(null); setText(""); box.current?.focus(); }}>{t.again}</button>
+              <button type="button" className="cx-btn ghost" onClick={() => { setMade(null); setText(""); setOriginal(null); setFrom(WRITTEN); }}>{t.again}</button>
             </div>
           </div>
         )}
@@ -143,7 +161,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
                     <p lang="fr">{i.fr}</p>
                     <span className="cr-idea-foot">
                       {src && <MiniPlay src={src} label={`${p.play} ${i.title[ui]}`} />}
-                      <button type="button" className="cx-btn ghost sm" onClick={() => use(i)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>
+                      {usable(i) && <button type="button" className="cx-btn ghost sm" onClick={() => use(i)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>}
                     </span>
                   </li>
                 );

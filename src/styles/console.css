@@ -83,8 +83,8 @@
 .cx-auth-body .lede { max-width: 30em; }
 
 /* ---- the page */
-.cx-page { width: 100%; max-width: 1240px; padding: 44px clamp(20px, 4vw, 64px) 120px; }
-.cx-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 32px; }
+.cx-page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 44px clamp(20px, 4vw, 64px) 120px; }
+.cx-head { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; text-align: center; }
 .cx-head h1 { margin: 0; font-size: clamp(32px, 2.8vw, 42px); font-weight: 500; letter-spacing: -.024em; line-height: 1.08; text-wrap: balance; }
 .cx-head p { max-width: 42em; margin: 12px 0 0; color: var(--ink-2); font-size: 16.5px; line-height: 1.5; }
 .cx-head-acts { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -396,8 +396,6 @@
 .cx-get-cta:hover { background: rgba(255, 255, 255, .82); transform: translateY(-2px); }
 .cx-get-cta strong { display: flex; align-items: center; gap: 6px; font-size: 15.5px; font-weight: 500; }
 .cx-get-cta em { color: var(--ink-2); font-size: 13.5px; font-style: normal; line-height: 1.35; }
-.cx-dismiss { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 0; border-radius: var(--r-pill); background: none; color: var(--ink-2); font: inherit; font-size: 14.5px; cursor: pointer; }
-.cx-dismiss:hover { background: var(--surface); color: var(--ink); }
 .cx-range-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 40px 0 14px; }
 .cx-range-row h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.015em; }
 .cx-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--line); border-radius: 24px; background: #fff; }
@@ -590,3 +588,8 @@ a.cx-metric:hover { background: #fcfbf9; }
   .cx-head-acts .cx-btn { justify-content: center; }
 }
 @media (hover: none), (pointer: coarse) { .cx-pg kbd { display: none; } }
+
+/* the page's title and its line, centred, as everywhere on the platform */
+.cx-head > div { display: grid; justify-items: center; }
+.cx-head p { max-width: 640px; margin-inline: auto; text-wrap: balance; }
+.cx-head-acts { justify-content: center; }

@@ -29,6 +29,15 @@ export const defaultVoice = (lang: LangCode, chosen?: Partial<Record<string, str
   return (voicesFor(lang)[0]?.id as VoiceId | undefined) ?? null;
 };
 
-/** A local language a project or an agent can offer: ready when the platform can speak it, else on its way. */
-export type LangState = "ready" | "soon";
-export const stateOf = (lang: LangCode): LangState => (can("speech", lang) ? "ready" : "soon");
+/** The local languages a task can use today. The platform offers only these; languages on their way are for the home
+    page to announce, not for a picker to show greyed out. */
+export const localFor = (task: Task): LangCode[] => LOCAL.filter(l => can(task, l));
+
+/** Whether the API translates written text itself (POST /v1/translate with JSON). Off until the gateway that does is
+    deployed (platform/modal/namu_gateway.py from main): until then a text is translated by saying it first, which
+    needs a voice in its language, so French (no voice) reaches Kora by voice only. Turn on with that deploy. */
+export const TEXT_TRANSLATION = false;
+
+/** Whether words typed in `from` can become `to` today; when not, they come in by voice (the speech path). */
+export const canTranslateText = (from: LangCode, to: LangCode) =>
+  from === to || (canTranslate(from, to) && (TEXT_TRANSLATION || voicesFor(from).length > 0));
