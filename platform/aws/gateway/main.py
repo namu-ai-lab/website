@@ -18,6 +18,7 @@ choose its own.
 """
 import os
 import sys
+import tempfile
 
 import namu_gateway as gw
 
@@ -39,6 +40,15 @@ def build(env=os.environ):
     if not key:
         print("namu-api: WARNING no Modal proxy token: the model services must still be open; "
               "set MODAL_PROXY_KEY/MODAL_PROXY_SECRET before they are locked", file=sys.stderr, flush=True)
+    # ffmpeg works through temporary files (MP3/Opus output, upload checks). With a read-only root, only the /tmp
+    # task volume is writable, and only if the image hands it to this user (the Dockerfile's VOLUME); without it
+    # every audio call would fail after the GPU work, so refuse to start and let ECS roll back.
+    try:
+        with tempfile.TemporaryFile():
+            pass
+    except OSError as e:
+        print(f"namu-api: not starting, no writable temporary directory ({e.strerror})", file=sys.stderr, flush=True)
+        raise SystemExit(73)                   # EX_CANTCREAT
     store = gw.PostgresStore(env["GATEWAY_DATABASE_URL"])
     upstream = gw.ModalUpstream(gw.UPSTREAM, key or None, secret or None)
     return gw.create_app(store, upstream, gw.MemoryLimiter(), env["NAMU_KEY_PEPPER"])

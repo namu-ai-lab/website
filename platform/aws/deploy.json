@@ -1,0 +1,5 @@
+{
+  "certificateArn": "arn:aws:acm:us-east-1:051868002294:certificate/9e744e79-dcf9-4209-94de-87afc2c9ac0a",
+  "imageTag": "20261101-1417-8d40fcd3",
+  "desiredCount": 2
+}

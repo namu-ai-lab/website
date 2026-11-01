@@ -13,7 +13,8 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin namu
+    && useradd --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin namu \
+    && chown namu:namu /tmp && chmod 1777 /tmp
 
 WORKDIR /app
 COPY aws/gateway/requirements.txt .
@@ -21,6 +22,10 @@ RUN pip install -r requirements.txt
 COPY modal/namu_gateway.py aws/gateway/main.py ./
 
 USER 10001
+# The task's /tmp volume is created owned by root, 0755, unless the image declares the path as a VOLUME: Fargate
+# then copies its owner and mode (namu, 1777) into the volume. Without this the app cannot write a temporary file
+# and main.py refuses to start.
+VOLUME ["/tmp"]
 EXPOSE 8080
 # --forwarded-allow-ips: only the VPC (platform/aws/infra, 10.40.0.0/16) is trusted to set X-Forwarded-For, so the
 # caller's address is the one the load balancer appended. Keep-alive outlasts the load balancer's idle timeout (900 s)

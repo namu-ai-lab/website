@@ -67,6 +67,18 @@ def test_proxy_token_halves_must_come_together(main):
         main.build(env)
 
 
+def test_refuses_to_start_without_a_writable_temporary_directory(main, monkeypatch, capsys):
+    # On Fargate, a /tmp volume the image did not hand to the app user: every MP3/Opus answer would 500 after the GPU work.
+    def no_tmp(*a, **k):
+        raise FileNotFoundError(2, "No usable temporary directory found")
+    monkeypatch.setattr(main.tempfile, "TemporaryFile", no_tmp)
+    monkeypatch.setattr(gw, "PostgresStore", lambda url: pytest.fail("built a store without a temporary directory"))
+    with pytest.raises(SystemExit) as e:
+        main.build({"GATEWAY_DATABASE_URL": "postgresql://x", "NAMU_KEY_PEPPER": "p"})
+    assert e.value.code == 73
+    assert "no writable temporary directory" in capsys.readouterr().err
+
+
 def test_builds_with_and_without_the_proxy_token(main, monkeypatch, capsys):
     made = {}
     monkeypatch.setattr(gw, "PostgresStore", lambda url: made.setdefault("store", url))

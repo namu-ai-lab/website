@@ -95,6 +95,8 @@ class NamuApiImageStack extends cdk.Stack {
               // Smoke test: the image starts the app's module and refuses to run without its configuration.
               "docker run --rm -e NAMU_API_NO_AUTOBUILD=1 $REPOSITORY_URI:$IMAGE_TAG python -c \"import main, namu_gateway as g; assert g.modal is None\"",
               "docker run --rm $REPOSITORY_URI:$IMAGE_TAG python -c \"import main\" && exit 1 || true",
+              // As on Fargate: a read-only root, so the app user can write only to the volume the image's VOLUME puts on /tmp.
+              "docker run --rm --read-only $REPOSITORY_URI:$IMAGE_TAG python -c \"import tempfile; tempfile.TemporaryFile().close()\"",
             ],
           },
           post_build: {

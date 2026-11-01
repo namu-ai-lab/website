@@ -35,6 +35,7 @@ platform/aws/build-image.sh                    # builds in AWS, prints the new i
 cd platform/aws/infra && npm ci
 npx cdk diff NamuApi -c certificateArn=<arn> -c imageTag=<tag>
 npx cdk deploy NamuApi -c certificateArn=<arn> -c imageTag=<tag>
+platform/aws/smoke-test.sh                     # from outside, no key, no GPU; then record the tag in deploy.json
 ```
 
 ECS starts the new tasks, waits for `/v1/health` on the load balancer, then drains the old ones (up to 120 s for calls
