@@ -35,9 +35,9 @@ export async function gateway(userId: string, path: `/v1/${string}`, init: { bod
   return res;
 }
 
-/** Speech for a text in a voice: WAV bytes. */
-export async function speak(userId: string, text: string, voice: string): Promise<ArrayBuffer> {
-  const res = await gateway(userId, "/v1/speech", { body: JSON.stringify({ text, voice }), type: "application/json" });
+/** Speech for a text in a voice, in the language the text is written in (a voice may speak several): WAV bytes. */
+export async function speak(userId: string, text: string, voice: string, language: LangCode): Promise<ArrayBuffer> {
+  const res = await gateway(userId, "/v1/speech", { body: JSON.stringify({ text, voice, language }), type: "application/json" });
   return res.arrayBuffer();
 }
 
@@ -71,7 +71,7 @@ export async function translateText(userId: string, text: string, source: LangCo
   }
   // A gateway without text translation: say the text, then translate the speech (a language with no voice cannot).
   if (!sourceVoice) throw new GatewayError(502, "upstream_error", "The model could not answer.");
-  const spoken = await speak(userId, text, sourceVoice);
+  const spoken = await speak(userId, text, sourceVoice, source);
   const out = await translateSpeech(userId, spoken, "audio/wav", source, target);
   return { ...out, sourceText: text };
 }

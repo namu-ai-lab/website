@@ -10,6 +10,7 @@ before it reaches the deployed API.
 
 import base64
 import io
+import json
 import shutil
 import subprocess
 import sys
@@ -427,7 +428,7 @@ def test_the_wait_fits_who_is_asking(env):
 
 
 # ---------------------------------------------------------------- the real HTTP client, against a fake Modal
-URLS = {name: f"https://{name}.modal.test" for name in ("transcribe", "voice", "interpret", "agent")}
+URLS = {name: f"https://{name}.modal.test" for name in ("transcribe", "voice", "voice_zarma", "interpret", "agent")}
 
 
 def modal_upstream(handler):
@@ -712,14 +713,14 @@ def test_the_agent_call_carries_the_persona_and_no_session():
 def test_public_catalogue_needs_no_key(env):
     c, *_ = env
     assert c.get("/v1/models").status_code == 200
-    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} == {"nadia", "warm", "fr"}
+    assert {v["id"] for v in c.get("/v1/voices").json()["data"]} == {"nadia", "warm", "fr", "mouhamad"}
 
 
 def test_the_catalogue_offers_no_withdrawn_voice(env):
     c, *_ = env
     tafiya = next(m for m in c.get("/v1/models").json()["data"] if m["id"] == "tafiya")
-    assert tafiya["languages"] == ["ha", "fr"]
-    assert {v["language"] for v in c.get("/v1/voices").json()["data"]} == {"ha", "fr"}
+    assert tafiya["languages"] == ["ha", "fr", "dje"]
+    assert {lang for v in c.get("/v1/voices").json()["data"] for lang in v["languages"]} == {"ha", "fr", "dje"}
     assert "salim" not in gw.VOICES and gw.PERSONAS == ("nadia",)
 
 
@@ -727,6 +728,63 @@ def test_the_french_voice_speaks(env):
     c, store, up, *_ = env
     r = c.post("/v1/speech", headers=auth(), json={"text": "Bonjour", "voice": "fr"})
     assert r.status_code == 200 and up.calls[-1] == ("speak", "fr", "fr")
+
+
+# ---------------------------------------------------------------- a voice in more than one language
+def test_a_voice_lists_its_languages_and_the_one_it_speaks_by_default(env):
+    c, *_ = env
+    voices = {v["id"]: v for v in c.get("/v1/voices").json()["data"]}
+    assert voices["mouhamad"]["languages"] == ["dje", "ha"] and voices["mouhamad"]["language"] == "dje"
+    assert voices["nadia"]["languages"] == ["ha"] and voices["nadia"]["language"] == "ha"
+
+
+@pytest.mark.parametrize("asked, spoken", [(None, "dje"), ("dje", "dje"), ("ha", "ha")])
+def test_mouhamad_speaks_zarma_unless_asked_for_hausa(env, asked, spoken):
+    c, store, up, *_ = env
+    body = {"text": "Fofo", "voice": "mouhamad", **({"language": asked} if asked else {})}
+    r = c.post("/v1/speech", headers=auth(), json=body)
+    assert r.status_code == 200 and up.calls[-1] == ("speak", spoken, "mouhamad")
+
+
+@pytest.mark.parametrize("voice, language", [("mouhamad", "fr"), ("nadia", "dje"), ("fr", "ha"), ("nadia", "xx")])
+def test_a_voice_refuses_a_language_it_does_not_speak(env, voice, language):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": voice, "language": language})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "unsupported_language"
+    assert up.calls == [] and store.usage == []
+
+
+def test_a_language_that_is_not_a_string_is_refused(env):
+    c, store, up, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "mouhamad", "language": ["ha"]})
+    assert r.status_code == 400 and r.json()["error"]["type"] == "invalid_json" and up.calls == []
+
+
+def test_json_speech_says_which_language_it_spoke(env):
+    c, *_ = env
+    r = c.post("/v1/speech", headers=auth(), json={"text": "Sannu", "voice": "mouhamad", "language": "ha", "format": "json"})
+    assert r.status_code == 200 and r.json()["language"] == "ha" and r.json()["voice"] == "mouhamad"
+
+
+def test_each_voice_is_made_by_its_own_service():
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+
+    up = modal_upstream(handler)
+    up.speak("Fofo", "dje", "mouhamad", 60)
+    up.speak("Sannu", "ha", "nadia", 60)
+    up.speak("Bonjour", "fr", "fr", 60)
+    assert [r.url.host for r in seen] == ["voice_zarma.modal.test", "voice.modal.test", "voice.modal.test"]
+    assert [json.loads(r.content)["language"] for r in seen] == ["dje", "ha", "fr"]
+
+
+def test_spoken_translations_keep_their_first_voice():
+    # adding a voice that also speaks Hausa must not change who says Kora's Hausa
+    assert next(k for k, v in gw.VOICES.items() if "ha" in v["languages"]) == "nadia"
+    assert next(k for k, v in gw.VOICES.items() if "fr" in v["languages"]) == "fr"
 
 
 def test_the_website_offers_the_voices_the_gateway_serves():

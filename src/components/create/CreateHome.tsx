@@ -11,7 +11,7 @@ import { createCopy } from "@/content/create";
 import type { Idea, Showcase } from "@/content/ideas";
 import { platformCopy } from "@/content/platform";
 import { lp, type Lang } from "@/i18n/config";
-import { WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
+import { WRITTEN, canTranslate, canTranslateText, defaultVoice, language, localFor, sampleOf, voice as voiceOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
@@ -39,7 +39,9 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
   const [tab, setTab] = useState<"ideas" | "recent">("ideas");
   const box = useRef<HTMLTextAreaElement>(null), top = useRef<HTMLDivElement>(null);
   const tooLong = text.length > LIMITS.textChars;
-  const sources: LangCode[] = [WRITTEN, ...spoken];
+  // what can be written (or said) to become `to`: French only where Kora translates it, and `to` itself
+  const sources: LangCode[] = [WRITTEN, ...spoken].filter(l => canTranslate(l, to));
+  const pickTo = (l: LangCode) => { setTo(l); if (!canTranslate(from, l)) { setFrom(l); setOriginal(null); } };
 
   const make = async () => {
     const words = text.trim();
@@ -58,8 +60,9 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     } catch (e) { setErr(e instanceof Error ? e.message : p.errors.generic); }
     finally { setPhase("idle"); }
   };
-  /* an idea goes in as French where French can be typed, else as the Hausa the model already said for it */
-  const usable = (i: Idea) => canTranslateText(WRITTEN, to) || Boolean(i.ha);
+  /* an idea goes in as French where French can be typed, else as the Hausa the model already said for it (only into
+     Hausa) */
+  const usable = (i: Idea) => canTranslateText(WRITTEN, to) || (to === "ha" && Boolean(i.ha));
   const use = (i: Idea) => {
     const fr = canTranslateText(WRITTEN, to);
     setFrom(fr ? WRITTEN : to); setText(fr ? i.fr : i.ha ?? ""); setOriginal(fr ? null : i.fr); setMade(null); setErr(null);
@@ -67,9 +70,9 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
     requestAnimationFrame(() => box.current?.focus({ preventScroll: true }));
   };
 
-  /* a showcase goes in as the Hausa Nadia said, with the French it was written from above it */
+  /* a showcase goes in as the Hausa Nadia said, with the French it was written from above it: so, into Hausa */
   const useShow = (s: Showcase) => {
-    setFrom(to); setText(s.ha); setOriginal(s.fr); setMade(null); setErr(null);
+    setTo("ha"); setFrom("ha"); setText(s.ha); setOriginal(s.fr); setMade(null); setErr(null);
     top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -106,11 +109,11 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
               options={sources.map(l => ({ id: l, label: language(l).endonym }))} />
             <Icon name="arrow-long" size={16} stroke={1.5} className="cr-to" />
             {spoken.length > 1
-              ? <ChipMenu label={t.to} value={language(to).endonym} onPick={id => setTo(id as LangCode)} options={spoken.map(l => ({ id: l, label: language(l).endonym }))} />
+              ? <ChipMenu label={t.to} value={language(to).endonym} onPick={id => pickTo(id as LangCode)} options={spoken.map(l => ({ id: l, label: language(l).endonym }))} />
               : <span className="cr-chip static">{language(to).endonym}</span>}
             {voice && (
               <ChipMenu label={p.voice} value={voiceOf(voice).name} onPick={id => setVoices(v => ({ ...v, [to]: id as VoiceId }))}
-                options={voicesFor(to).map(v => ({ id: v.id, label: v.name, end: <MiniPlay src={v.sample} label={`${p.play} ${v.name}`} /> }))} />
+                options={voicesFor(to).map(v => ({ id: v.id, label: v.name, end: <MiniPlay src={sampleOf(v, to).src} label={`${p.play} ${v.name}`} /> }))} />
             )}
             <span className="cr-grow" />
             {typed && <Dictate lang={from} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}

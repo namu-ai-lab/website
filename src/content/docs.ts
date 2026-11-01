@@ -37,8 +37,8 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     paramsH: "Parameters", returnsH: "Returns",
     endpoints: [
       { id: "speech", model: "Tafiya", method: "POST", path: "/v1/speech", title: "Text to speech",
-        body: "Turns Hausa text into speech. Send JSON.",
-        params: [["text", "Required. Up to 2,000 characters."], ["voice", "nadia (Hausa, the default; warm is the same voice) or fr (French). See GET /v1/voices."], ["format", "wav (default), mp3, opus (Ogg Opus, for WhatsApp voice notes) or json (base64 WAV in JSON)."]],
+        body: "Turns Hausa, Zarma or French text into speech, in a voice. A voice may speak several languages. Send JSON.",
+        params: [["text", "Required. Up to 2,000 characters."], ["voice", "nadia (Hausa, the default; warm is the same voice), mouhamad (Zarma and Hausa) or fr (French). See GET /v1/voices."], ["language", "The language of the text: ha, dje or fr, one the voice speaks. Optional: without it the voice speaks its first language (mouhamad: Zarma)."], ["format", "wav (default), mp3, opus (Ogg Opus, for WhatsApp voice notes) or json (base64 WAV in JSON)."]],
         returns: "audio/wav (24 kHz mono), audio/mpeg or audio/ogg, with the duration in the X-Audio-Seconds header." },
       { id: "transcribe", model: "Tatsuniya", method: "POST", path: "/v1/transcribe", title: "Speech to text",
         body: "Transcribes Hausa speech. Send the audio as the raw request body or as a multipart field named file.",
@@ -91,8 +91,8 @@ export const docsCopy: Record<Lang, DocsCopy> = {
     paramsH: "Paramètres", returnsH: "Réponse",
     endpoints: [
       { id: "speech", model: "Tafiya", method: "POST", path: "/v1/speech", title: "Synthèse vocale",
-        body: "Transforme un texte en haoussa en parole. Envoyez du JSON.",
-        params: [["text", "Obligatoire. Jusqu’à 2 000 caractères."], ["voice", `nadia (haoussa, par défaut${n}; warm désigne la même voix) ou fr (français). Voir GET /v1/voices.`], ["format", "wav (par défaut), mp3, opus (Ogg Opus, pour les notes vocales WhatsApp) ou json (WAV en base64 dans du JSON)."]],
+        body: "Transforme un texte en haoussa, en zarma ou en français en parole, dans une voix. Une voix peut parler plusieurs langues. Envoyez du JSON.",
+        params: [["text", "Obligatoire. Jusqu’à 2 000 caractères."], ["voice", `nadia (haoussa, par défaut${n}; warm désigne la même voix), mouhamad (zarma et haoussa) ou fr (français). Voir GET /v1/voices.`], ["language", `La langue du texte${n}: ha, dje ou fr, parmi celles de la voix. Facultatif${n}: sans lui, la voix parle sa première langue (mouhamad${n}: le zarma).`], ["format", "wav (par défaut), mp3, opus (Ogg Opus, pour les notes vocales WhatsApp) ou json (WAV en base64 dans du JSON)."]],
         returns: "audio/wav (24 kHz mono), audio/mpeg ou audio/ogg, avec la durée dans l’en-tête X-Audio-Seconds." },
       { id: "transcribe", model: "Tatsuniya", method: "POST", path: "/v1/transcribe", title: "Transcription",
         body: "Transcrit la parole en haoussa. Envoyez l’audio comme corps brut de la requête ou dans un champ multipart nommé file.",

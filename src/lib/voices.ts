@@ -3,8 +3,9 @@
    Withdrawn on 2026-10-31, with no consent record for its speaker: salim, a cloned Hausa voice (and Aïr's persona of
    that name). A request naming it is refused with 400 unknown_voice or unknown_persona; nothing falls back to another
    voice. fr, the French reference voice, withdrawn the same day, is back since 2026-11-01, when the founder confirmed
-   its consent. "warm" is an alias of nadia. */
-export const VOICES = ["nadia", "warm", "fr"] as const;
+   its consent. mouhamad, the founder's own voice (Zarma and Hausa), since 2026-11-01 with his consent. "warm" is an alias
+   of nadia. */
+export const VOICES = ["nadia", "warm", "fr", "mouhamad"] as const;
 export type VoiceId = (typeof VOICES)[number];
 export const PERSONAS = ["nadia"] as const;
 export type PersonaId = (typeof PERSONAS)[number];

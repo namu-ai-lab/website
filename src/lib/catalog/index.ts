@@ -2,11 +2,11 @@
    Browser-safe; import from "@/lib/catalog". */
 import { LANGUAGES, LOCAL, WRITTEN, isLangCode, language, type LangCode, type Language } from "./languages";
 import { MODELS, TASKS, isModelId, model, modelFor, type Model, type ModelId, type Task } from "./models";
-import { USES, VOICES, isVoiceId, voice, voicesFor, type Use, type Voice, type VoiceId } from "./voices";
+import { USES, VOICES, isVoiceId, sampleOf, voice, voicesFor, type Sample, type Use, type Voice, type VoiceId } from "./voices";
 
 export { LANGUAGES, LOCAL, WRITTEN, isLangCode, language, type LangCode, type Language };
 export { MODELS, TASKS, isModelId, model, modelFor, type Model, type ModelId, type Task };
-export { USES, VOICES, isVoiceId, voice, voicesFor, type Use, type Voice, type VoiceId };
+export { USES, VOICES, isVoiceId, sampleOf, voice, voicesFor, type Sample, type Use, type Voice, type VoiceId };
 export { OUTPUTS, isOutputId, output, type Output, type OutputId } from "./outputs";
 
 /** The languages a task can use today, in catalog order. */

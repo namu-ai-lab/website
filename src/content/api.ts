@@ -69,7 +69,7 @@ const en: ApiCopy = {
   modelsCta: "Explore the docs",
   labels: { endpoint: "Endpoint", langs: "Languages", limit: "Per request", status: "Status" },
   models: [
-    { task: "speech", name: "Tafiya", job: "Text to speech", desc: "Turns Hausa text into natural speech, in a female voice, and returns a WAV file.",
+    { task: "speech", name: "Tafiya", job: "Text to speech", desc: "Turns Hausa, Zarma and French text into natural speech, in the voice you choose, and returns the audio.",
       langs: "Hausa", limit: `Up to ${formatNumber("en", LIMITS.textChars)} characters`, status: "In development" },
     { task: "transcribe", name: "Tatsuniya", job: "Speech to text", desc: "Writes down what was said in Hausa’s own alphabet, hooked letters included (ɓ ɗ ƙ ƴ).",
       langs: "Hausa", limit: `Up to ${LIMITS.uploadMb} MB or ${LIMITS.audioMinutes} minutes of audio`, status: "In development" },
@@ -154,7 +154,7 @@ const frCopy: ApiCopy = {
   modelsCta: "Explorer la documentation",
   labels: { endpoint: "Point d’accès", langs: "Langues", limit: "Par requête", status: "Statut" },
   models: [
-    { task: "speech", name: "Tafiya", job: "Texte vers parole", desc: "Transforme un texte en hausa en parole naturelle, avec une voix féminine, et renvoie un fichier WAV.",
+    { task: "speech", name: "Tafiya", job: "Texte vers parole", desc: "Transforme un texte en haoussa, en zarma ou en français en parole naturelle, dans la voix choisie, et renvoie l’audio.",
       langs: "Hausa", limit: `Jusqu’à ${formatNumber("fr", LIMITS.textChars)} caractères`, status: "En développement" },
     { task: "transcribe", name: "Tatsuniya", job: "Parole vers texte", desc: "Écrit ce qui a été dit dans l’alphabet du hausa, lettres crochetées comprises (ɓ ɗ ƙ ƴ).",
       langs: "Hausa", limit: `Jusqu’à ${LIMITS.uploadMb} Mo ou ${LIMITS.audioMinutes} minutes d’audio`, status: "En développement" },
