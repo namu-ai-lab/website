@@ -1,0 +1,41 @@
+# Zarma (dje) spelling-variant table for normalize.canonical_spelling (training and LM text only; never applied to evaluation references).
+# Written 2026-11-01 by the language-pack linguist agent from counts on open sources (Meta Omnilingual ASR transcripts CC-BY-4.0, Google SMOL/GATITOS CC-BY-4.0, FineWeb-2 ODC-By, Peace Corps Niger 2006) and the 1999 arrêté. EVERY ROW NEEDS NATIVE REVIEW.
+# status: needs_native_review (applies only with include_unreviewed=True) | approved (applies by default; set only after native sign-off) | do_not_map (a real word, never rewritten).
+# Counts: "omni dev+test" = dje_omni_v0 references (spk06+spk07); "omni train" = Meta train transcripts in text v0 (spk01-05); "smol" = SmolSent+SmolDoc; counts are lower-cased word tokens.
+variant	canonical	kind	evidence	ambiguity	status
+kan	kaŋ	ng_as_n	omni dev+test kan 876 : kaŋ 54; omni train 405 : 1184; smol 454 : 1733; Peace Corps dictionary uses both for the same relative/conjunction ('Tira kan go fuo ra', 'Kaŋ iri koy ni kwara')	no separate word 'kan' found in the sources (native question L0 A1)	needs_native_review
+aran	araŋ	ng_as_n	omni dev+test 16 : 1; FineWeb-2 216 : 1; smol 0 : 14	none known	needs_native_review
+bon	boŋ	ng_as_n	omni dev+test 60 : 14; smol 74 : 229; Peace Corps dictionary 'Fuo bon' = on the house (headword boŋ)	French 'bon' in code-switching (bon marché)	needs_native_review
+yan	yaŋ	ng_as_n	omni dev+test 33 : 10; FineWeb-2 85 : 3 (as a separate word only; -yan suffix handled by native review of each word)	none known as a separate word	needs_native_review
+nwa	ŋwa	ng_as_n	omni dev+test 26 : 100; Peace Corps 2006 'Nwari' for ŋwaari	none known	needs_native_review
+nwaari	ŋwaari	ng_as_n	Peace Corps 2006 Lesson 13 'Nwari nda foyjiney'	none known	needs_native_review
+nwari	ŋwaari	ng_as_n_and_length	Peace Corps 2006 Lesson 13; omni train	none known	needs_native_review
+inga	nga	pronoun_variant	omni train inga 124, iŋga 54, ɲga 381, ŋga 67, nga 174; arrêté §II.3.1 writes nga 'lui, elle'	inga/iŋga may be a dialect form, not a spelling (native question L0 A7)	needs_native_review
+iŋga	nga	pronoun_variant	as above	as above	needs_native_review
+ɲga	nga	pronoun_variant	one train transcriber writes ɲga (381 tokens)	as above	needs_native_review
+ŋga	nga	pronoun_variant	omni train 67	as above	needs_native_review
+sohon	sohõ	nasal_as_n	omni dev+test sohon 16 : sohõ 10; smol 13 : 0; Bible sohõ 939	none known	needs_native_review
+goga	go ga	joined_particles	omni dev+test goga 7 : go ga 64; arrêté §II.2.5.5 'go ga' in two words	none known	needs_native_review
+nise	ni se	joined_particles	omni dev+test nise 69 : ni se 7	none known	needs_native_review
+iga	i ga	joined_particles	omni dev+test iga 372 : i ga 7; smol i ga 228 : iga 1	none known	needs_native_review
+aga	a ga	joined_particles	omni dev+test aga 206 : a ga 12; smol a ga 342 : aga 1	none known	needs_native_review
+niga	ni ga	joined_particles	omni dev+test niga 418 : ni ga 27	none known	needs_native_review
+ayga	ay ga	joined_particles	omni dev+test ayga 124 : ay ga 43	none known	needs_native_review
+siga	si ga	joined_particles	omni dev+test 3; arrêté §II.2.5.5 'si ga'	none known	needs_native_review
+ago	a go	joined_particles	omni dev+test ago 17 : a go 41	none known	needs_native_review
+haykulu	hari kulu	joined_and_reduced	omni dev+test haykulu 9, hay kulu 102; arrêté §II.2.5.4 'hari kulu ... et non hay kulu'	verbatim (hay kulu) or arrêté (hari kulu)? owner + native question L0 E4	needs_native_review
+hay kulu	hari kulu	reduced_form	arrêté §II.2.5.4	as above	needs_native_review
+woodin	wo-din	demonstrative	smol woodin 64, wodin 24; omni dev+test woodin 12; Bible woodin; arrêté §II.2.5.3.1 'wo-din'	none known	needs_native_review
+wodin	wo-din	demonstrative	as above	none known	needs_native_review
+irkoy	irikoy	name_variant	omni dev+test irkoy 17 : irikoy 17; also the Koyraboro Senni form (lid_rules marker)	dialect or neighbouring-language form	needs_native_review
+kinde	cindi	palatal_variant	omni dev+test kinde 75, kindi 42, cindi 126; spk02/spk06 count 'i way kinde fo'	may be a dialect pronunciation; then it is not a spelling variant	needs_native_review
+kindi	cindi	palatal_variant	as above	as above	needs_native_review
+taaki	taaci	palatal_variant	spk02/spk06 counting transcripts (waytaaki); Bible taaci	as above	needs_native_review
+taci	taaci	length	Peace Corps 2006 'Itaci'; FineWeb-2 11	none known	needs_native_review
+yegga	yagga	vowel_variant	Peace Corps 2006 'Iyega', 'yegga'; Bible yagga; Meta yagga 67	may be a dialect form	needs_native_review
+iwey	iway	vowel_variant	Peace Corps 2006 'Iwey'; Meta iway	may be a dialect form	needs_native_review
+kwara	kwaara	length	omni dev+test kwara 50 : kwaara 0; arrêté §II.2.2 kwaara	none known	needs_native_review
+bobo	boobo	length	report 02 §B7 (Feriji non-Bible lines); grammaire comparée 'boobo'	none known	needs_native_review
+han	han	ng_minimal_pair	Peace Corps dictionary: han 'day' (Han fo no ni ga ka?), haŋ 'drink'; Peace Corps 2006 writes 'han (drink)'	han is a real word: never rewrite to haŋ	do_not_map
+dan	dan	ng_minimal_pair	Peace Corps dictionary: dan 'to forge', daŋ 'to put'	dan is a real word	do_not_map
+hanyan	haŋyaŋ	ng_as_n	Peace Corps 2006 Lesson 4 'Barka nda hari hanyan' (haŋ 'drink' + -yaŋ, both ŋ written n)	the n+y is NOT ɲ: no rule may turn it into ɲ	needs_native_review

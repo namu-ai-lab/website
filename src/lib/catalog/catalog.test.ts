@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANGUAGES, MODELS, VOICES, can, canTranslate, canTranslateText, defaultVoice, languagesFor, localFor, voicesFor } from "./index";
+import { LANGUAGES, MODELS, VOICES, can, canTranslate, canTranslateText, defaultVoice, languagesFor, localFor, sampleOf, voicesFor } from "./index";
 import { applyWords, fixLetters, hasStandIns } from "./text";
 import { SCOPES } from "@/lib/key-shape";
 
@@ -22,8 +22,10 @@ describe("catalog", () => {
 
   it("answers what a task can do in a language", () => {
     expect(can("speech", "ha")).toBe(true);
-    expect(can("speech", "dje")).toBe(false);
-    expect(localFor("speech")).toEqual(["ha"]);
+    expect(can("speech", "dje")).toBe(true);
+    expect(can("transcribe", "dje")).toBe(false);
+    expect(can("converse", "dje")).toBe(false);
+    expect(localFor("speech")).toEqual(["ha", "dje"]);
     expect(localFor("transcribe")).not.toContain("tmh");
     expect(canTranslate("fr", "ha")).toBe(true);
     expect(canTranslate("fr", "dje")).toBe(false);
@@ -34,11 +36,13 @@ describe("catalog", () => {
     expect(defaultVoice("ha")).toBe("nadia");
     expect(defaultVoice("ha", { ha: "nadia" })).toBe("nadia");
     expect(defaultVoice("ha", { ha: "fr" })).toBe("nadia");
-    expect(defaultVoice("dje")).toBeNull();
+    expect(defaultVoice("dje")).toBe("mouhamad");
+    expect(defaultVoice("ha", { ha: "mouhamad" })).toBe("mouhamad");
+    expect(defaultVoice("tmh")).toBeNull();
   });
 
   it("offers no withdrawn voice, and speaks French in the French voice", () => {
-    expect(VOICES.map(v => v.id)).toEqual(["nadia", "fr"]);
+    expect(VOICES.map(v => v.id)).toEqual(["nadia", "fr", "mouhamad"]);
     expect(defaultVoice("ha", { ha: "salim" })).toBe("nadia");
     expect(can("speech", "fr")).toBe(true);
     expect(defaultVoice("fr")).toBe("fr");
@@ -63,5 +67,26 @@ describe("text", () => {
     expect(canTranslateText("ha", "fr")).toBe(true);    // said first in Nadia's voice, then translated
     expect(canTranslateText("fr", "ha")).toBe(true);    // said first in the French voice, until the API takes text
     expect(canTranslateText("ha", "ha")).toBe(true);
+  });
+});
+
+describe("voices in several languages", () => {
+  it("offers a voice under every language it speaks, Nadia first for Hausa", () => {
+    expect(voicesFor("ha").map(v => v.id)).toEqual(["nadia", "mouhamad"]);
+    expect(voicesFor("dje").map(v => v.id)).toEqual(["mouhamad"]);
+  });
+
+  it("has a sample in every language a voice speaks, and plays the one asked for", () => {
+    for (const v of VOICES) for (const l of v.languages) expect(sampleOf(v, l).src).toMatch(/\.m4a$/);
+    const m = VOICES.find(v => v.id === "mouhamad")!;
+    expect(sampleOf(m, "ha").src).toBe("/voices/mouhamad/ha.m4a");
+    expect(sampleOf(m, null).src).toBe("/voices/mouhamad/dje.m4a");
+    expect(sampleOf(m, "fr").src).toBe("/voices/mouhamad/dje.m4a");   // a language it does not speak: its first
+  });
+
+  it("writes Zarma in Zarma: nothing translates into it yet", () => {
+    expect(canTranslate("fr", "dje")).toBe(false);
+    expect(canTranslateText("fr", "dje")).toBe(false);
+    expect(canTranslateText("dje", "dje")).toBe(true);
   });
 });

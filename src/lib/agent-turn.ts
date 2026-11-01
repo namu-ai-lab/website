@@ -79,9 +79,10 @@ export async function say(userId: string, a: Agent, text: string, o: { opus?: bo
   const kit = await kitOf(userId);
   const v = voiceFor(a, kit.voices);
   if (!v) return null;
-  const said = applyWords(text, kit.words, speaking(a));
-  if (!o.opus) return { audio: await speak(userId, said, v), type: "audio/wav" };
-  const res = await gateway(userId, "/v1/speech", { body: JSON.stringify({ text: said, voice: v, format: "opus" }), type: "application/json" });
+  const lang = speaking(a);
+  const said = applyWords(text, kit.words, lang);
+  if (!o.opus) return { audio: await speak(userId, said, v, lang), type: "audio/wav" };
+  const res = await gateway(userId, "/v1/speech", { body: JSON.stringify({ text: said, voice: v, language: lang, format: "opus" }), type: "application/json" });
   return { audio: await res.arrayBuffer(), type: (res.headers.get("content-type") ?? "audio/wav").split(";")[0] };
 }
 

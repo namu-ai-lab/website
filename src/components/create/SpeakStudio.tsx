@@ -11,7 +11,7 @@ import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatNumber } from "@/i18n/format";
-import { OUTPUTS, WRITTEN, canTranslateText, defaultVoice, language, localFor, voice as voiceOf, voicesFor, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
+import { OUTPUTS, WRITTEN, canTranslate, canTranslateText, defaultVoice, language, localFor, sampleOf, voice as voiceOf, voicesFor, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
 import { fixLetters, hasStandIns } from "@/lib/catalog/text";
 import { LIMITS } from "@/lib/limits";
 import { fileName, titleFrom, type Message } from "@/lib/project-shape";
@@ -23,11 +23,13 @@ import { fileName, titleFrom, type Message } from "@/lib/project-shape";
    server; the file is made for its channel in the browser (lib/audio-out). */
 type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceId; target: OutputId };
 
-export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial, ready }:
-  { lang: Lang; kitVoices: Partial<Record<string, string>>; initialVoice?: VoiceId; recent: Message[]; ready: boolean }) {
+export function SpeakStudio({ lang: ui, kitVoices, initialVoice, initialLang, recent: initial, ready }:
+  { lang: Lang; kitVoices: Partial<Record<string, string>>; initialVoice?: VoiceId; initialLang?: LangCode; recent: Message[]; ready: boolean }) {
   const t = createCopy[ui].speak, c = createCopy[ui], p = platformCopy[ui];
   const spoken = localFor("speech");
-  const first = initialVoice ? voiceOf(initialVoice).languages[0] : spoken[0] ?? "ha";
+  // a voice opened from Voices speaks the language it was opened in, when it speaks it here
+  const opened = initialVoice ? voiceOf(initialVoice).languages.filter(l => spoken.includes(l)) : [];
+  const first = (initialLang && opened.includes(initialLang) ? initialLang : opened[0]) ?? spoken[0] ?? "ha";
   const [lang, setLang] = useState<LangCode>(first);
   const [written, setWritten] = useState<LangCode>(initialVoice ? first : WRITTEN);
   const [voices, setVoices] = useState<Partial<Record<LangCode, VoiceId>>>(() => (initialVoice ? { [first]: initialVoice } : {}));
@@ -65,7 +67,8 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
     finally { setPhase("idle"); }
   };
   const restore = () => { if (original === null) return; setText(original); setOriginal(null); setWritten(WRITTEN); setMade(null); };
-  const pickLang = (l: LangCode) => { setLang(l); setMade(null); if (written !== WRITTEN) setWritten(l); };
+  /* French is offered to write in only where it can become the language (Kora); elsewhere one writes in the language */
+  const pickLang = (l: LangCode) => { setLang(l); setMade(null); if (written !== WRITTEN || !canTranslate(WRITTEN, l)) setWritten(l); };
 
   return (
     <div className="cr-studio">
@@ -128,7 +131,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
         <div className="cr-set">
           <p className="cr-label">{t.writtenIn}</p>
           <div className="cr-choices" role="radiogroup" aria-label={t.writtenIn}>
-            {[WRITTEN, lang].filter((l, i, xs) => xs.indexOf(l) === i).map(l => (
+            {[WRITTEN, lang].filter((l, i, xs) => xs.indexOf(l) === i && canTranslate(l, lang)).map(l => (
               <button key={l} type="button" role="radio" className="cr-choice" aria-checked={written === l} onClick={() => { setWritten(l); setOriginal(null); }}
 >{language(l).endonym}</button>
             ))}
@@ -152,7 +155,7 @@ export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial
                 <button type="button" role="radio" className="cr-option" aria-checked={voice === v.id} onClick={() => setVoices(vs => ({ ...vs, [lang]: v.id as VoiceId }))}>
                   {v.name}
                 </button>
-                <SampleButton src={v.sample} label={`${p.play} ${v.name}`} />
+                <SampleButton src={sampleOf(v, lang).src} label={`${p.play} ${v.name}`} />
               </div>
             ))}
           </div>

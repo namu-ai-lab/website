@@ -13,7 +13,7 @@ import { agentsCopy, type AgentsCopy } from "@/content/agents";
 import { platformCopy } from "@/content/platform";
 import { formatNumber } from "@/i18n/format";
 import { lp, type Lang } from "@/i18n/config";
-import { LOCAL, can, defaultVoice, language, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
+import { LOCAL, can, defaultVoice, language, sampleOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
 import { LIMITS_AGENT, type Agent, type AgentDoc, type Conversation } from "@/lib/agent-shape";
 
 /* One agent's page, after ElevenAgents, cut to what an organisation needs first: its name and whether it is on
@@ -122,7 +122,7 @@ function AgentTab({ a, change, t, lang }: { a: Agent; change: (x: Partial<Agent>
               <button type="button" className="ag-chip" role="radio" aria-checked={v.id === current} onClick={() => change({ voice: v.id as VoiceId })}>
                 {v.name}
               </button>
-              <SamplePlay src={v.sample} label={`${p.play} · ${v.name}`} className="ag-mini round" />
+              <SamplePlay src={sampleOf(v, speaking).src} label={`${p.play} · ${v.name}`} className="ag-mini round" />
             </span>
           ))}
         </div>

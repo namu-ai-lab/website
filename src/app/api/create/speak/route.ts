@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const said = applyWords(text, words, j.lang);
   const t0 = Date.now();
   try {
-    const res = await gateway(s.user.id, "/v1/speech", { body: JSON.stringify({ text: said, voice }), type: "application/json" });
+    const res = await gateway(s.user.id, "/v1/speech", { body: JSON.stringify({ text: said, voice, language: j.lang }), type: "application/json" });
     const headers = new Headers({ "Content-Type": res.headers.get("content-type") ?? "audio/wav", "Cache-Control": "no-store", "X-Namu-Latency-Ms": String(Date.now() - t0) });
     const seconds = res.headers.get("x-audio-seconds");
     if (seconds) headers.set("X-Audio-Seconds", seconds);

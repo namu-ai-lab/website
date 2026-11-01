@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { resample } from "./media";
-import { language, voicesFor, type LangCode, type Voice, type VoiceId } from "@/lib/catalog";
+import { language, sampleOf, voicesFor, type LangCode, type VoiceId } from "@/lib/catalog";
 
 /* Choosing on the platform, shared by every door: a language (only those that work today, from the catalog), a voice
    (with its sample), and the letters a keyboard lacks for the language being written. */
@@ -46,7 +46,7 @@ export function VoicePicker({ lang, value, onPick, label, playLabel }: { lang: L
               <button type="button" aria-pressed={v.id === chosen.id} onClick={() => { onPick(v.id as VoiceId); setOpen(false); btn.current?.focus(); }}>
                 <span>{v.name}</span>{v.id === chosen.id && <Icon name="check" size={15} stroke={1.8} />}
               </button>
-              <SampleButton src={v.sample} label={`${playLabel} ${v.name}`} />
+              <SampleButton src={sampleOf(v, lang).src} label={`${playLabel} ${v.name}`} />
             </li>
           ))}
         </ul>
@@ -55,11 +55,12 @@ export function VoicePicker({ lang, value, onPick, label, playLabel }: { lang: L
   );
 }
 
-/** A voice drawn by its own sound: the outline of its sample, as bars, in its language's colour (platform.css). */
-export function VoiceOutline({ v, bars = 40 }: { v: Pick<Voice, "outline" | "languages">; bars?: number }) {
+/** A voice drawn by its own sound: the outline of its sample in a language, as bars, in that language's colour
+    (platform.css). */
+export function VoiceOutline({ outline, lang, bars = 40 }: { outline: readonly number[]; lang: LangCode; bars?: number }) {
   return (
-    <span className="pf-outline" data-lang={v.languages[0]} aria-hidden="true">
-      {resample([...v.outline], bars).map((h, i) => <i key={i} style={{ height: `${Math.max(6, h)}%` }} />)}
+    <span className="pf-outline" data-lang={lang} aria-hidden="true">
+      {resample([...outline], bars).map((h, i) => <i key={i} style={{ height: `${Math.max(6, h)}%` }} />)}
     </span>
   );
 }

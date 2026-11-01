@@ -14,7 +14,7 @@ developer / website ──HTTPS──> api.namuai-lab.com (CNAME at Vercel DNS)
                        platform/aws/gateway = platform/modal/namu_gateway.py's app, without Modal
                                   │  keys, allowance, usage ─────────────> Neon (namu_gateway role)
                                   │  model calls, Modal-Key/Modal-Secret ─> Modal: namu-transcribe, namu-voice,
-                                  ▼                                         namu-interpret, namu-agent
+                                  ▼                                         namu-voice-zarma, namu-interpret, namu-agent
 ```
 
 | Piece | Where |

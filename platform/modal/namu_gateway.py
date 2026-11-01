@@ -11,7 +11,7 @@ file is the only public way in. (The website's server also calls namu-agent's
 text step for the home demo, with the proxy token; see platform/README.md.)
 
     POST /v1/transcribe   Tatsuniya  speech -> text
-    POST /v1/speech       Tafiya     text   -> speech (WAV, MP3 or Ogg Opus)
+    POST /v1/speech       Tafiya     text   -> speech (WAV, MP3 or Ogg Opus), in a voice and one of its languages
     POST /v1/translate    Kora       speech or text -> translated text (+ speech)
     POST /v1/converse     Air        speech -> spoken reply, one turn, nothing kept
     GET  /v1/models  /v1/voices  /v1/usage  /v1/health
@@ -56,13 +56,14 @@ app = modal.App("namu-gateway") if modal else None
 
 # The gateway itself is public: its @modal.asgi_app() below takes no proxy flag,
 # on purpose. It always carries the `namu-proxy-auth` secret, so ModalUpstream
-# sends Modal-Key / Modal-Secret to the four model services, which refuse every
+# sends Modal-Key / Modal-Secret to the five model services, which refuse every
 # request without them (REQUIRE_PROXY_AUTH in each). Deploy this file before
 # them: a service locked before its callers hold the token fails.
 
 UPSTREAM = {
     "transcribe": "https://namu-ai-lab--namu-transcribe-transcribe-api.modal.run",
     "voice": "https://namu-ai-lab--namu-voice-voice-api.modal.run",
+    "voice_zarma": "https://namu-ai-lab--namu-voice-zarma-voice-api.us-east.modal.run",
     "interpret": "https://namu-ai-lab--namu-interpret-api.modal.run",
     "agent": "https://namu-ai-lab--namu-agent-api.modal.run",
 }
@@ -74,7 +75,7 @@ MODELS = [
     {"id": "tatsuniya", "task": "speech-recognition", "endpoint": "/v1/transcribe",
      "scope": "transcribe", "languages": ["ha"], "status": "beta"},
     {"id": "tafiya", "task": "speech-synthesis", "endpoint": "/v1/speech",
-     "scope": "speech", "languages": ["ha", "fr"], "status": "beta"},
+     "scope": "speech", "languages": ["ha", "fr", "dje"], "status": "beta"},
     {"id": "kora", "task": "speech-translation", "endpoint": "/v1/translate",
      "scope": "translate", "languages": ["ha", "fr"], "status": "beta"},
     {"id": "air", "task": "conversation", "endpoint": "/v1/converse",
@@ -86,11 +87,19 @@ MODELS = [
 # falls back to another voice. "fr", the French reference voice, went with it and is back since 2026-11-01, when the
 # founder confirmed its consent. The website keeps the same two lists in src/lib/voices.ts, and test_gateway.py
 # checks that they agree.
+# A voice is a person, and speaks one or more languages: /v1/speech takes the language as "language", and without it
+# the voice speaks its first. "upstream" is the voice's name in the model service that makes it; "service" is that
+# service in UPSTREAM ("voice" when absent: namu_voice.py). mouhamad is the founder's own voice, with his consent
+# (2026-11-01), made by C-250 in namu_voice_zarma.py.
 VOICES = {
-    "nadia": {"language": "ha", "upstream": "nadia", "description": "Warm and patient (female)"},
-    "warm": {"language": "ha", "upstream": "nadia", "description": "Alias of nadia"},
-    "fr": {"language": "fr", "upstream": "fr", "description": "French reference voice"},
+    "nadia": {"languages": ("ha",), "upstream": "nadia", "description": "Warm and patient (female)"},
+    "warm": {"languages": ("ha",), "upstream": "nadia", "description": "Alias of nadia"},
+    "fr": {"languages": ("fr",), "upstream": "fr", "description": "French reference voice"},
+    "mouhamad": {"languages": ("dje", "ha"), "upstream": "mouhamad", "service": "voice_zarma",
+                 "description": "Male; Zarma and Hausa"},
 }
+# The service each upstream voice name is made by: what ModalUpstream.speak calls.
+SPEAK_SERVICE = {v["upstream"]: v.get("service", "voice") for v in VOICES.values()}
 PERSONAS = ("nadia",)
 # Translate speaks its translation in these languages when include_audio asks for it; elsewhere "audio" is null.
 SPOKEN_TARGETS = ("ha", "fr")
@@ -640,8 +649,9 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
 
     @web.get("/v1/voices")
     def voices():
-        return {"data": [{"id": k, "language": v["language"], "description": v["description"]}
-                         for k, v in VOICES.items()]}
+        # "language" is the one the voice speaks when a request names none (the first of "languages")
+        return {"data": [{"id": k, "languages": list(v["languages"]), "language": v["languages"][0],
+                          "description": v["description"]} for k, v in VOICES.items()]}
 
     @web.get("/v1/usage")
     async def usage(request: Request):
@@ -681,7 +691,8 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         except Exception:
             body = None
         # A list, a string, or a text or voice that is not a string would fail further down as a 500.
-        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str) for k in ("text", "voice", "format")):
+        if not isinstance(body, dict) or not all(isinstance(body.get(k) or "", str)
+                                                 for k in ("text", "voice", "language", "format")):
             return err(400, "invalid_json", 'Send JSON: {"text": "...", "voice": "nadia"}.')
         fmt = body.get("format") or "wav"
         if fmt not in SPEECH_FORMATS and fmt != "json":
@@ -696,7 +707,11 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
         if voice not in VOICES:
             return err(400, "unknown_voice", f"Unknown voice. Try one of: {', '.join(VOICES)}.")
         v = VOICES[voice]
-        reply, status, e = await call_upstream(upstream.speak, text, v["language"], v["upstream"],
+        language = body.get("language") or v["languages"][0]
+        if language not in v["languages"]:
+            return err(400, "unsupported_language",
+                       f"The voice {voice} speaks {', '.join(v['languages'])}. Set 'language' to one of them.")
+        reply, status, e = await call_upstream(upstream.speak, text, language, v["upstream"],
                                                time_left(rec, t0), expect="audio")
         if e:
             record(bg, rec, "speech", "tafiya", t0, status, chars=len(text))
@@ -713,7 +728,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
                 return err(500, "encode_failed", f"The speech could not be encoded as {fmt}. Try format wav.")
         record(bg, rec, "speech", "tafiya", t0, 200, returned_s=secs, chars=len(text))
         if fmt == "json":
-            return {"model": "tafiya", "voice": voice, "audio_seconds": round(secs, 2),
+            return {"model": "tafiya", "voice": voice, "language": language, "audio_seconds": round(secs, 2),
                     "audio": base64.b64encode(reply.content).decode(), "sample_rate": 24000}
         return Response(audio, media_type=SPEECH_FORMATS[fmt],
                         headers={"X-Audio-Seconds": f"{secs:.2f}"})
@@ -778,7 +793,7 @@ def create_app(store, upstream, limiter, pepper: str, *, audio_seconds=probe_sec
             # Text only where the target language is not spoken, as for audio in.
             res["audio"] = None
         if spoken and res["text"] and target in SPOKEN_TARGETS:
-            voice = next(v for v in VOICES.values() if v["language"] == target)
+            voice = next(v for v in VOICES.values() if target in v["languages"])
             reply, _, e = await call_upstream(upstream.speak, res["text"], target, voice["upstream"],
                                               time_left(rec, t0), expect="audio")
             if reply is not None:
@@ -880,7 +895,7 @@ class PostgresStore:
 
 
 class ModalUpstream:
-    """The four model services, called with Modal proxy-auth headers.
+    """The five model services, called with Modal proxy-auth headers.
 
     A Modal web call that runs past 150 s is answered with a 303 to the same URL plus a result
     parameter, which blocks until the work is done. Each call follows those 303s, within its time
@@ -939,8 +954,9 @@ class ModalUpstream:
             content=data, headers={"Content-Type": "application/octet-stream"})
 
     def speak(self, text: str, language: str, voice: str, timeout: float) -> UpstreamReply:
+        # the voice decides the service: namu-voice, or namu-voice-zarma for the voices C-250 makes
         return self._post(
-            f"{self.urls['voice']}/v1/speak", timeout,
+            f"{self.urls[SPEAK_SERVICE.get(voice, 'voice')]}/v1/speak", timeout,
             json={"text": text, "language": language, "voice": voice})
 
     def translate(self, data: bytes, source: str, target: str, timeout: float) -> UpstreamReply:

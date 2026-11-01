@@ -7,7 +7,7 @@ Configuration comes from the environment; ECS fills it from the Secrets Manager 
 
     GATEWAY_DATABASE_URL   Neon, the namu_gateway role (it may call the gateway's functions and nothing else)
     NAMU_KEY_PEPPER        the HMAC pepper API keys are stored under; the same value as the website's
-    MODAL_PROXY_KEY        the Modal proxy token that opens the four model services
+    MODAL_PROXY_KEY        the Modal proxy token that opens the five model services
     MODAL_PROXY_SECRET
 
 A missing database URL or pepper stops the task at start-up instead of serving a gateway that cannot check keys;
