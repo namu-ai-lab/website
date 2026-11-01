@@ -209,18 +209,18 @@ Ship it in the deploy order: migration, gateway, site.
 
 ## 9. The platform: three doors
 
-After ElevenLabs' ElevenCreative, ElevenAgents and ElevenAPI, the signed-in platform has three doors, one account and one shell. A switch at the foot of every sidebar moves between them.
+After ElevenLabs' ElevenCreative, ElevenAgents and ElevenAPI, the signed-in platform has three doors and one account. Create and Agents share one shell, with a switch at the foot of the sidebar; Namu API is the developer console as it was, with its own sidebar.
 
 | Door | Routes | For |
 | --- | --- | --- |
 | Namu Create | `/create` (home), `/create/voices`, `/create/projects`, `/create/kit`, `/create/speak`, `/create/transcribe`, `/create/video` | Organisations and creators without code: one message in many languages, made for WhatsApp, radio, phone lines and video |
 | Namu Agents | `/agents`, `/agents/templates`, `/agents/conversations`, `/agents/knowledge` | Voice agents that answer people in their own language |
-| Namu API | `/account` (Get started until the first request, then the dashboard), `/account/keys`, `/account/limits`, `/account/models/[id]`, `/account/voices`, `/account/usage`, `/account/logs`, `/account/playground`, `/account/settings` | Developers |
+| Namu API | `/account`, `/account/playground`, `/account/keys`, `/account/usage`, `/account/logs`, `/account/limits`, `/account/settings` | Developers |
 
-- **The shell.** `components/platform/PlatformShell.tsx` draws every door's page; `components/platform/doors.ts` lists each door's sidebar. The API door's Models group is built from the catalog. The Namu mark leads back to the Lab's home page.
+- **The shell.** `components/platform/PlatformShell.tsx` draws Create's and Agents' pages; `components/platform/doors.ts` lists their sidebars. The console keeps `components/console/ConsoleShell.tsx`. The Namu mark leads back to the Lab's home page.
 - **The catalog.** `src/lib/catalog/` holds the spoken languages, the models, the voices and the output targets, with the questions every screen asks (`languagesFor`, `can`, `canTranslate`, `defaultVoice`, `stateOf`). Nothing on the platform lists a language, a voice or a model by hand. The recipes are in §7.
 - **Shared pieces.** `components/platform/`: the voice library, the language and voice pickers, the player and the recorder. `lib/gateway.ts`: the models on a user's behalf. `lib/audio-out.ts`: a recording made ready for each channel (Ogg Opus for WhatsApp, 48 kHz for radio, 8 kHz for a phone line). `lib/zip.ts`: every language in one download.
 - **Data.** Migration `0006_platform.sql`: projects and their versions, the kit (word list and voice per language), agents, their documents, tests and conversations. Text only: audio is made again from the text when it is needed. Every query filters on the user's id. A page whose table is not there yet (the migration not applied) says the platform is almost ready (`isMissingTable` in `lib/db.ts`).
 - **Agents.** A turn is a chain (`lib/agent-turn.ts`): Tatsuniya hears, Aïr's agent service answers with the agent's brief and the matching passages of its documents (`lib/agent-knowledge.ts`), Tafiya says it in the agent's voice with the word list applied. The text step goes to the agent service directly, as the home page's conversation does, so `lib/agent-meter.ts` applies the gateway's rules to it (an active account inside its allowance, `LIMITS.playgroundPerMin` a minute) and records it in `usage_events` as endpoint `agents` (counted under Aïr in Usage). **planned:** a metered chat endpoint on the gateway (batch 38). A WhatsApp number answers for one agent: only a Namu admin binds it (the agent's PATCH accepts channels from an admin only) and migration `0007` makes the binding unique; the webhook verifies Meta's signature, answers a message once and limits each contact.
-- **For coding agents.** `/llms.txt` describes the API from the catalog and the docs, and the API door's Get started gives a prompt that points an agent at it.
+- **For coding agents.** `/llms.txt` describes the API from the catalog and the docs.
 - **Testing locally without production.** A throwaway Postgres with the migrations applied and a stand-in `neon_auth."user"` row, a small server that answers Neon Auth's `get-session` for a cookie, and a stand-in gateway that answers `/v1/*` with recorded samples; then `next dev` with `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEXT_PUBLIC_NAMU_API_BASE`, `NAMU_SERVICE_KEY` and `NAMU_AGENT_URL` pointing at them. Never the production database or keys.
