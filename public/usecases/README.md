@@ -1,40 +1,48 @@
 # Use case recordings
 
-## The home page's use cases, in every voice (2026-11-01)
+## The home page's use cases, in every voice (2026-11-01, second set)
 
 What the home page's use cases play (`src/content/usecases.ts`): one folder per case, one file per voice and language,
-`<case>/<voice>-<lang>.m4a`. Each case offers the voices its models carry: Tafiya's cases are said by Nadia (Hausa),
-Mouhamad (Hausa and Zarma) and the French voice; Translation by the Hausa voices and the French voice, each followed
-by Kora's own translation; Heritage by the Hausa voices, with what Tatsuniya wrote down.
+`<case>/<voice>-<lang>.m4a`. Every case is said the same four ways, in the menu's order: Zarma (voice 1), Hausa
+(voices 1 and 2), French (voice 3). The page numbers the voices instead of naming them. Translation follows each line
+with its translation; Heritage shows, for Hausa, what Tatsuniya wrote down.
 
-How the lines were written: short, everyday words, no figures, so every voice says them well. The Hausa and French are
-new or reworked from the earlier lines; the Zarma is built from phrases in the Peace Corps/Niger Zarma dictionary (rev.
-2001, public domain) and spelled in the 1999 alphabet (`kaŋ`, `sohõ`), as zarma-exploration `langs/dje/CONVENTION.md`
-asks. **The Zarma waits for a native speaker's check.**
+**How the lines were chosen.** Two or four candidate lines per case, each in Zarma, Hausa and French, were said three
+times by every voice (Nadia and the French voice through `namu-voice`; voice 1 through C-250 with the founder's
+reference clips, the engine of `namu-voice-zarma`, at 32, 40 and 48 steps), and every take was read back by Meta's
+omniASR LLM 3B in its language, with half a second of silence before it so a clipped first word counts. Each case
+kept the candidate whose worst voice read back best, and each voice its best take (among equals, the one of typical
+length). Kept takes read back word for word or within spelling conventions (Zarma *lokol* for *lokkol*, *albarey* for
+*alberey*; Hausa *kwanan* for *kwanon*): at most 3.2 % of characters. One Hausa line was changed after the read-back:
+*Yau gari ya yi hadari* (storm clouds) came back as *haɗari* (danger), so it says *Yau akwai gajimare* (there are
+clouds).
 
-How each recording was chosen: every line was said several times by its voice (Nadia and the French voice through
-`namu-voice`, five takes; Mouhamad through C-250 with his reference clips, the engine of `namu-voice-zarma`, at 32, 40,
-48 and 64 steps), each take was read back by Meta's omniASR LLM 3B in its language (with half a second of silence
-before it, so a clipped first word counts against it), and the take read back most faithfully was kept; among equals,
-the one of typical length. The kept takes read back word for word, except for spelling conventions the recogniser has
-(Zarma *ceere* for *cere*, *alfaaray* for *alfarey*; Hausa *rigaƙafi*; French *mille* for *mil*). Each file then has
-50 ms of lead-in, its loudness evened out (EBU R128, −18 LUFS), a short fade at each end, and is AAC, mono, 24 kHz,
+**The Zarma** is built only from phrases written by native speakers: SMOL (Google, CC-BY-4.0: "Ma si humburu… Ay
+g'araŋ gaa", "ifo no ni ga baa ay ma tee ni se hunkuna?", "Kaayi… deede", "deeda", "lokkol") and the Peace Corps/Niger
+Zarma dictionary (rev. 2001, public domain: "Marje no ji litar go sohon?", "Hunkuna beena hirri", "Nda ni sinda bani",
+"Konni no a ga", "Kwara alberey", "mo taasa"), spelled in the 1999 alphabet (zarma-exploration
+`langs/dje/CONVENTION.md`). **It waits for a native speaker's check**, as does the Hausa.
+
+Each file: 50 ms of lead-in, loudness evened out (EBU R128, −18 LUFS), a short fade at each end, AAC, mono, 24 kHz,
 64 kbit/s.
 
-| Case | Hausa (Nadia, Mouhamad) | Zarma (Mouhamad) | French (French voice) |
-|---|---|---|---|
-| `education` | Sannu da zuwa, yara! Yau za mu koyi karatu tare. Ku saurara da kyau, sannan ku maimaita bayana. | Fofo, zankey! Hunkuna iri ga tira caw cere banda. Wa hangan ay se! | Bonjour les enfants ! Aujourd’hui, nous apprenons à lire ensemble. Écoutez bien, puis répétez après moi. |
-| `health` | Kar ki manta: gobe da safe, ki kawo jaririnki asibiti don allurar rigakafi. | Ma si dirgan: suba susubay, ni ma kande ni izo loktoro kwara. | N’oubliez pas : demain matin, amenez votre bébé au centre de santé pour la vaccination. |
-| `translation` | Sannu! Nawa ne farashin buhun gero a kasuwa yau? | — | Bonjour ! Combien coûte le sac de mil au marché aujourd’hui ? |
-| `farming` | Damina ta kama. Lokaci ya yi da manoma su fara shuka gero da dawa. | Beene haro kaŋ. Sohõ, alfarey ma hayni nda hamo duma. | La saison des pluies est arrivée. C’est le moment de semer le mil et le sorgho. |
-| `public` | Sannu da zuwa. Za mu taimaka muku ku cike fom ɗinku, mataki-mataki. | Fofo! Iri ga ni faaba nda ni tira. | Bienvenue. Nous allons vous aider à remplir votre formulaire, étape par étape. |
-| `heritage` | Wata rana, a wani ƙauye, akwai wani tsoho mai ba da labari. Kowa yana son jin labaransa. | — | — |
+| Case | Zarma | Hausa | French | Meaning |
+|---|---|---|---|---|
+| `education` | Zankey ga koy lokkol ka dondon caw nda hantum. | Yara suna zuwa makaranta domin su koyi karatu da rubutu. | Les enfants vont à l’école pour apprendre à lire et à écrire. | Children go to school to learn to read and write. |
+| `health` | Nda ni izo gonda konni, ma a kondi loktoro kwara hunkuna. | Idan ɗanku yana da zazzaɓi, ku kai shi asibiti yau. | Si votre enfant a de la fièvre, emmenez-le au centre de santé aujourd’hui. | If your child has a fever, take them to the clinic today. |
+| `translation` | Marje no mo taasa go hunkuna? | Nawa ne kwanon shinkafa yau? | Combien coûte le bol de riz aujourd’hui ? | How much is a bowl of rice today? |
+| `farming` | Hunkuna beene hirri. Suba hari ga kaŋ: wa hayni duma. | Yau akwai gajimare. Gobe za a yi ruwan sama: ku shuka gero. | Le ciel est nuageux aujourd’hui. Demain, il va pleuvoir : semez votre mil. | The sky is cloudy today. Rain will fall tomorrow: sow your millet. |
+| `public` | Fofo! Ifo no ni ga ba iri ma te ni se hunkuna? | Sannu! Me kuke so mu yi muku yau? | Bonjour ! Que pouvons-nous faire pour vous aujourd’hui ? | Hello! What can we do for you today? |
+| `heritage` | Kwara alberey ga deeda boobo bay. | Dattawan ƙauye sun san labarai da yawa. | Les anciens du village connaissent beaucoup d’histoires. | The village elders know many stories. |
 
-Translation's answers are Kora's own (`POST /v1/translate` through the site's live demo, with the speech it returned):
-`translation/{nadia,mouhamad}-ha.kora-fr.m4a` say "Bonjour, quel est le prix du sac de mil au marché aujourd'hui ?"
-and `translation/fr-fr.kora-ha.m4a` says "Sannu, nawa ne farashin buhun gero a kasuwa a yau?". Kora heard every word
-of the questions it answered; one of Nadia's takes it misheard ("géraniums") and another French run opened with a
-non-word, so those takes were not used. Heritage shows Tatsuniya's own transcript of each voice's clip.
+**Translation's answers.** From Hausa and French they are Kora's own (`POST /v1/translate` through the site's live
+demo, with the speech it returned): `translation/{mouhamad,nadia}-ha.kora-fr.m4a` say "Combien coûte le bol de riz
+aujourd'hui ?" and `translation/fr-fr.kora-ha.m4a` says "Nawa ne kwanon shinkafa yau?". Kora heard the questions it
+answered word for word; one take it rendered as "sac de riz", so that take was not used. Kora does not translate Zarma
+yet: after the Zarma question the page plays `translation/fr-fr.m4a`, the French line said by Tafiya's French voice,
+and labels it Tafiya. **Heritage** shows Tatsuniya's own transcript of each Hausa clip (it writes *kauye* without the
+hook for one of them). The home playground's Translate samples are `translation/mouhamad-ha.m4a` and
+`heritage/mouhamad-ha.m4a`; sent as they are, Kora heard and translated both exactly.
 
 ## Earlier recordings
 

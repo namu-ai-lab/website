@@ -2,7 +2,7 @@
 
 /* The home page's use cases (content/usecases.ts), after openai.com's: a grid of cards, each a picture, an icon, a
    title and a sentence, with a button that opens more. Here the button opens what the use case sounds like: a menu
-   of the voices it can be heard in (Nadia in Hausa, Mouhamad in Hausa and Zarma, the French voice; choosing one plays
+   of the languages and voices it can be heard in (Zarma first; the voices are numbered, not named; choosing one plays
    it), a play button, the line (or the line and its translation), its meaning, how the sound was made and the models
    it would be built on. One card is open at a time, and one clip plays at a time. On a phone the cards run in a row
    that scrolls sideways. */
@@ -10,8 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { TallyLink } from "./Tally";
 import { track } from "@/lib/analytics";
-import { useCases, type UseCase, type Voicing } from "@/content/usecases";
-import { language, voice as voiceOf } from "@/lib/catalog";
+import { VOICE_NUMBER, useCases, type UseCase, type Voicing } from "@/content/usecases";
+import { language } from "@/lib/catalog";
 import { lp, type Lang } from "@/i18n/config";
 
 export function UseCases({ lang }: { lang: Lang }) {
@@ -71,7 +71,7 @@ export function UseCases({ lang }: { lang: Lang }) {
                         const i = Number(e.target.value);
                         setChosen(x => ({ ...x, [c.id]: i })); play(c, 0, c.voicings[i]);
                       }}>
-                        {c.voicings.map((x, i) => <option key={i} value={i}>{voicingLabel(x)}</option>)}
+                        {c.voicings.map((x, i) => <option key={i} value={i}>{`${language(x.lang).name[lang]} · ${t.voiceN(VOICE_NUMBER[x.voice] ?? i + 1)}`}</option>)}
                       </select>
                       <Icon name="chevron" size={15} stroke={1.8} />
                     </label>
@@ -101,10 +101,4 @@ export function UseCases({ lang }: { lang: Lang }) {
       </div>
     </section>
   );
-}
-
-/** "Mouhamad · Zarma"; a voice named after its language is just its name ("Français"). */
-function voicingLabel(v: Voicing) {
-  const name = voiceOf(v.voice).name, lang = language(v.lang).endonym;
-  return name === lang ? name : `${name} · ${lang}`;
 }
