@@ -1,21 +1,19 @@
 "use client";
 
-/* The home page console: try every one of the Lab's models, after elevenlabs.io's hero panel. Five tabs across the
-   top; each puts one object in the middle (the voice reel, a listening orb, Aïr on a call, a code window) over the
-   same bar: the choices in the middle, the way in on the right.
-     Converse         a live call with Aïr, a research preview (lib/call, /api/demo/converse); the console opens on it
-     Text to speech   Tafiya reads what you type, live (/api/demo/speech); the examples play recordings at once
-     Transcribe       Tatsuniya writes down what you record, upload or pick (/api/demo/transcribe)
-     Translate        Kora answers Hausa in French or French in Hausa, in writing, and aloud into Hausa (/api/demo/translate)
-     API              the code, run on the demo
+/* The home page console: try the Lab's models, after elevenlabs.io's hero panel. Three tabs across the top; each puts
+   one object in the middle (Aïr on a call, a listening orb, a code window) over the same bar: the choices in the
+   middle, the way in on the right.
+     Converse    a live call with Aïr, a research preview (lib/call, /api/demo/converse); the console opens on it
+     Translate   Kora answers Hausa in French or French in Hausa, in writing, and aloud into Hausa (/api/demo/translate)
+     API         the code, run on the demo
    The browser never holds a key: /api/demo adds the server-held demo key, and the gateway caps the demo at 300
    characters and 15 seconds of audio and limits each visitor. The models are woken at the visitor's first scroll or
    touch (lib/wake), so the first live answer does not wait for a GPU to start. Tabs follow the WAI-ARIA tabs pattern. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { CopyButton } from "./ui/CopyButton";
-import { AgentOrb, VoiceReel } from "./VoiceReel";
-import { listenPalettes, playground, samples, scripts, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
+import { AgentOrb } from "./VoiceReel";
+import { listenPalettes, playground, samples, voices, type PlaygroundCopy, type Sample, type Tab } from "@/content/playground";
 import { lp, type Lang } from "@/i18n/config";
 import { apiBase } from "@/lib/public-config";
 import { AirCall, TAP, wav16k, type CallState, type Persona } from "@/lib/call";
@@ -23,7 +21,6 @@ import { track, type DemoMode } from "@/lib/analytics";
 import { useWakeOnFirstTouch } from "@/lib/wake";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const MAX_TEXT = 300;             // the gateway's demo cap on text
 const MAX_CLIP_MS = 14800;        // just under the gateway's 15-second demo cap on audio
 
 /* Runs `tick(elapsedMs)` every frame while `on`; stops when tick returns false. */
@@ -61,7 +58,6 @@ async function demo(path: string, init: RequestInit, signal?: AbortSignal): Prom
 function demoMessage(e: unknown, c: PlaygroundCopy, kind: "text" | "audio" = "text"): string {
   if (!(e instanceof DemoError)) return c.live.failed;
   if (e.status === 429) return c.live.limited;
-  if (e.type === "text_too_long") return c.tts.limit;
   if (e.type === "audio_too_long") return c.listen.tooLong;
   if (e.type === "empty_audio") return c.listen.unheard;
   if (e.status === 400 && kind === "audio") return c.listen.badFile;
@@ -71,13 +67,6 @@ function demoMessage(e: unknown, c: PlaygroundCopy, kind: "text" | "audio" = "te
 async function speech(text: string, voice: string, signal?: AbortSignal): Promise<{ blob: Blob; seconds: string }> {
   const res = await demo("speech", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }) }, signal);
   return { blob: await res.blob(), seconds: res.headers.get("x-audio-seconds") ?? "" };
-}
-
-/* Each example was spoken by Tafiya through the API beforehand (public/demo/<script>-<voice>.m4a, the best of five takes)
-   and plays at once: the example is heard the moment it is picked, with no wait for a sleeping model, and it is the
-   model's real output. Text the visitor types or edits is always generated live. */
-async function recorded(script: string, voice: string, signal?: AbortSignal): Promise<Blob | null> {
-  try { const r = await fetch(`/demo/${script}-${voice}.m4a`, { signal }); return r.ok ? await r.blob() : null; } catch { return null; }
 }
 
 /** True once a request has been waiting long enough that the model is probably waking up. */
@@ -142,19 +131,6 @@ function usePlayer(amp: { current: number }) {
     };
   }, []);
   return { play, stop, playing };
-}
-
-/* An object URL for the last clip, freed when it changes or the tab closes: what the download link points at. */
-function useClipUrl() {
-  const [clip, setClip] = useState<{ url: string; name: string } | null>(null);
-  const last = useRef<string | null>(null);
-  const keep = (blob: Blob, name: string) => {
-    if (last.current) URL.revokeObjectURL(last.current);
-    const url = (last.current = URL.createObjectURL(blob));
-    setClip({ url, name });
-  };
-  useEffect(() => () => { if (last.current) URL.revokeObjectURL(last.current); }, []);
-  return [clip, keep] as const;
 }
 
 /* The microphone, through the same worklet as a call with Aïr (lib/call): loudness into `amp` for the orb, the seconds
@@ -231,10 +207,10 @@ const b64Blob = (b64: string, type = "audio/wav") => new Blob([Uint8Array.from(a
 /* ---------------------------------------------------------------- the bar under every tab */
 type Cta = { label: string; href: string };
 
-function Bar({ cta, lead, children }: { cta: Cta; lead?: ReactNode; children?: ReactNode }) {
+function Bar({ cta, children }: { cta: Cta; children?: ReactNode }) {
   return (
     <div className="pg-bar">
-      {lead ? <div className="pg-bar-l">{lead}</div> : <span aria-hidden="true" />}
+      <span aria-hidden="true" />
       <div className="pg-bar-c">{children}</div>
       <a className="pg-cta" href={cta.href}>{cta.label}</a>
     </div>
@@ -251,91 +227,16 @@ function Pills<T extends string>({ items, value, onPick, label, disabled, extra 
   );
 }
 
-/* ---------------------------------------------------------------- Text to speech (Tafiya) */
-function TextToSpeech({ lang, cta }: { lang: Lang; cta: Cta }) {
-  const c = playground[lang], t = c.tts, ss = scripts[lang], vs = voices[lang];
-  const [text, setText] = useState(ss[0].text);
-  const [vi, setVi] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [clip, keepClip] = useClipUrl();
-  const amp = useRef(0);
-  const player = usePlayer(amp);
-  const cache = useRef(new Map<string, Blob>());     // each voice and text is generated once per visit
-  const box = useRef<HTMLTextAreaElement>(null);
-  const waking = useWaking(busy);
-  /* a request still out when the tab closes is abandoned; one that comes back after the voice or the text changed is
-     kept in the cache but not played */
-  const req = useRef<AbortController | null>(null);
-  const shown = useRef(""); shown.current = `${vs[vi].id}\n${text.trim()}`;
-  useEffect(() => () => req.current?.abort(), []);
-  useEffect(() => {                                   // the box is as tall as its text, no taller
-    const el = box.current;
-    if (!el) return;
-    el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`;
-  }, [text]);
-  const example = ss.find(s => s.text === text.trim()) ?? null;   // an example, as written
-
-  const stop = () => player.stop();
-  async function play() {
-    if (player.playing) { stop(); return; }
-    if (busy) return;
-    const body = text.trim();
-    if (!body) { setError(t.empty); return; }
-    const voice = vs[vi].id, k = `${voice}\n${body}`;
-    setError(null);
-    let blob = cache.current.get(k);
-    if (!blob) {
-      setBusy(true);
-      const ac = (req.current = new AbortController());
-      try { blob = (example && await recorded(example.id, voice, ac.signal)) || (await speech(body, voice, ac.signal)).blob; cache.current.set(k, blob); }
-      catch (e) { if (!ac.signal.aborted) setError(demoMessage(e, c, "text")); return; }
-      finally { setBusy(false); }
-      if (shown.current !== k) return;
-    }
-    keepClip(blob, blob.type.includes("mp4") || blob.type.includes("m4a") ? `tafiya-${voice}-${example?.id ?? "clip"}.m4a` : `tafiya-${voice}.wav`);
-    player.play(blob);
-  }
-
-  return (
-    <>
-      <div className="pg-stage pg-tts">
-        <VoiceReel voices={vs} index={vi} onIndex={i => { stop(); setVi(i); }} playing={player.playing} onPlay={play} amp={amp}
-          labels={{ play: t.play, stop: t.stop, previous: t.previous, next: t.next, voices: t.voices }} />
-        <div className="pg-card pg-text">
-          <label className="sr-only" htmlFor="pg-tts-text">{t.label}</label>
-          <textarea id="pg-tts-text" ref={box} lang="ha" rows={1} maxLength={MAX_TEXT} value={text} placeholder={t.placeholder} spellCheck={false}
-            onChange={e => { setText(e.target.value); setError(null); stop(); }} />
-          {example && <p className="pg-gloss">{example.gloss}</p>}
-          <div className="pg-card-foot">
-            <span className={`pg-tag${example ? "" : " live"}`}>{example ? t.example : t.live}</span>
-            <span className={`pg-count${text.length >= MAX_TEXT ? " full" : ""}`} aria-label={t.limit}>{t.count(text.length, MAX_TEXT)}</span>
-            {clip && <a className="pg-mini" href={clip.url} download={clip.name}><Icon name="download" size={15} stroke={1.6} />{t.download}</a>}
-            <button type="button" className="pg-go" onClick={play} disabled={busy} aria-busy={busy || undefined}>
-              <Icon name={player.playing ? "stop" : "play"} size={15} stroke={1.8} />{player.playing ? t.stop : busy ? c.live.working : t.generate}
-            </button>
-          </div>
-        </div>
-        <p className={error ? "pg-error" : "pg-call-state"} aria-live="polite">{error ?? (busy ? (waking ? c.live.waking : c.live.working) : " ")}</p>
-      </div>
-      <Bar cta={cta}>
-        <Pills items={ss.map(s => ({ id: s.id, label: s.label }))} value={example?.id ?? null} label={t.scripts}
-          onPick={id => { stop(); setError(null); setText(ss.find(s => s.id === id)?.text ?? ""); }} />
-      </Bar>
-    </>
-  );
-}
-
-/* ---------------------------------------------------------------- Speech to text (Tatsuniya) and Translate (Kora) */
-/* One listening orb with a record button; a clip goes in by recording (up to 15 s, counted down), by upload, or as a
-   sample, which plays as it is sent so the visitor hears what the model hears. Speech to text shows the transcript;
-   Translate shows what Kora heard and its translation, and speaks the translation. */
+/* ---------------------------------------------------------------- Translate (Kora) */
+/* One listening orb with a record button, under the direction; a clip goes in by recording (up to 15 s, counted down),
+   by upload, or as a sample, which plays as it is sent so the visitor hears what the model hears. Under the orb, what
+   Kora heard and its translation, which it also speaks. */
 type Heard = { text: string; heard?: string; seconds: number; audio?: Blob };
 
-function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "translate" }) {
+function Translate({ lang, cta }: { lang: Lang; cta: Cta }) {
   const c = playground[lang], t = c.listen;
-  const [target, setTarget] = useState<"fr" | "ha">("fr");      // Translate: the language Kora answers in
-  const list = mode === "stt" ? samples[lang].stt : samples[lang].translate[target];
+  const [target, setTarget] = useState<"fr" | "ha">("fr");      // the language Kora answers in
+  const list = samples[lang][target];
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [out, setOut] = useState<Heard | null>(null);
@@ -357,7 +258,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
     const ac = (abort.current = new AbortController());
     setBusy(true); setError(null); setOut(null);
     try {
-      const res = await demo(mode === "stt" ? "transcribe" : `translate?target=${target}`,
+      const res = await demo(`translate?target=${target}`,
         { headers: { "Content-Type": "application/octet-stream" }, body: audio }, ac.signal);
       const j = await res.json() as { text?: string; source_text?: string; audio_seconds?: number; audio?: string };
       if (!(j.text ?? "").trim()) { setError(t.unheard); return; }
@@ -376,7 +277,7 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
     if (rec.recording) { rec.stop(); return; }
     if (busy || rec.starting) return;
     player.stop(); reset(); setPicked(null); setOut(null);
-    try { await rec.start(); } catch { setError(t.mic); track("mic_denied", { mode: mode === "stt" ? "transcribe" : "translate" }); }
+    try { await rec.start(); } catch { setError(t.mic); track("mic_denied", { mode: "translate" }); }
   }
   async function sample(s: Sample) {
     rec.cancel(); reset(); setPicked(s.id);
@@ -397,52 +298,46 @@ function Listen({ lang, cta, mode }: { lang: Lang; cta: Cta; mode: "stt" | "tran
   const turn = (to: "fr" | "ha") => { if (to === target || busy) return; rec.cancel(); player.stop(); abort.current?.abort(); setTarget(to); setOut(null); setPicked(null); reset(); };
 
   const status = error ?? (rec.recording ? t.listening(rec.left)
-    : busy ? (waking ? c.live.waking : mode === "stt" ? t.transcribing : t.translating)
-    : note ?? (mode === "stt" ? t.idle : t.idleTranslate[target]));
+    : busy ? (waking ? c.live.waking : t.translating)
+    : note ?? t.idleTranslate[target]);
   const from = target === "fr" ? "ha" : "fr";
   const seconds = out ? t.seconds(out.seconds.toFixed(1)) : "";
-  /* Translate's direction: in the bar's free left slot on a wide panel, above the orb on a narrow one (CSS shows one) */
-  const dir = (where: string) => mode === "translate" && (
-    <div className={`pg-seg pg-dir ${where}`} role="group" aria-label={t.direction}>
-      {(["fr", "ha"] as const).map(x => <button key={x} type="button" aria-pressed={target === x} disabled={busy} onClick={() => turn(x)}>{t.dirs[x]}</button>)}
-    </div>
-  );
 
   return (
     <>
-      <div className={`pg-stage pg-listen pg-${mode}`}>
-        {dir("pg-dir-top")}
+      <div className="pg-stage pg-listen">
+        <div className="pg-seg pg-dir" role="group" aria-label={t.direction}>
+          {(["fr", "ha"] as const).map(x => <button key={x} type="button" aria-pressed={target === x} disabled={busy} onClick={() => turn(x)}>{t.dirs[x]}</button>)}
+        </div>
         <div className={`pg-agent${rec.recording ? " live hearing" : ""}`}>
           <i aria-hidden="true" /><i aria-hidden="true" />
-          <AgentOrb palette={listenPalettes[mode]} amp={amp} live={rec.recording || player.playing || busy} />
+          <AgentOrb palette={listenPalettes.translate} amp={amp} live={rec.recording || player.playing || busy} />
           <button type="button" className={`pg-call${rec.recording ? " on" : ""}`} aria-label={rec.recording ? t.stop : t.record} onClick={record} disabled={busy || rec.starting}>
             <Icon name={rec.recording ? "stop" : "microphone"} size={22} stroke={1.6} />
           </button>
         </div>
         <p className={error ? "pg-error" : "pg-call-state"} aria-live="polite">{status}</p>
         <div className={`pg-card pg-heard${out ? " has" : ""}`} aria-live="polite">
-          {mode === "translate" && (
-            <div className="pg-row pg-row-from">
-              <span className="pg-label">{t.heard} · {t.langs[from]}</span>
-              <p lang={from} className={out?.heard ? "" : "muted"}>{out?.heard || "—"}</p>
-            </div>
-          )}
+          <div className="pg-row pg-row-from">
+            <span className="pg-label">{t.heard} · {t.langs[from]}</span>
+            <p lang={from} className={out?.heard ? "" : "muted"}>{out?.heard || "—"}</p>
+          </div>
           <div className="pg-row">
             <div className="pg-row-head">
-              <span className="pg-label">{mode === "stt" ? t.result : `${t.translation} · ${t.langs[target]}`}{out && <span className="muted"> · {seconds}</span>}</span>
+              <span className="pg-label">{t.translation} · {t.langs[target]}{out && <span className="muted"> · {seconds}</span>}</span>
               {out && (
                 <span className="pg-row-acts">
                   {out.audio && <button type="button" className="pg-mini" onClick={() => out.audio && (player.playing ? player.stop() : player.play(out.audio))}>
-                    <Icon name={player.playing ? "stop" : "play"} size={14} stroke={1.8} />{player.playing ? c.tts.stop : t.playTranslation}</button>}
+                    <Icon name={player.playing ? "stop" : "play"} size={14} stroke={1.8} />{player.playing ? t.stopPlaying : t.playTranslation}</button>}
                   <CopyButton text={out.text} labels={{ copy: t.copy, copied: t.copied, failed: t.copyFailed }} select={said} className="pg-mini" icon={{ size: 15, stroke: 1.6 }} />
                 </span>
               )}
             </div>
-            <p lang={mode === "stt" ? "ha" : target} className={out ? "said" : "said muted"} ref={said}>{out?.text || (mode === "stt" ? t.empty : t.emptyTranslate)}</p>
+            <p lang={target} className={out ? "said" : "said muted"} ref={said}>{out?.text || t.emptyTranslate}</p>
           </div>
         </div>
       </div>
-      <Bar cta={cta} lead={dir("pg-dir-bar")}>
+      <Bar cta={cta}>
         <Pills items={list.map(s => ({ id: s.id, label: s.label }))} value={picked} label={t.samples} disabled={busy}
           onPick={id => { const s = list.find(x => x.id === id); if (s) void sample(s); }}
           extra={<>
@@ -585,9 +480,7 @@ export function Playground({ lang }: { lang: Lang }) {
   const build: Cta = { label: c.build, href: lp(lang, "/api#get-started") };
   const pick = (next: Tab, focus = false) => {
     setTab(next);
-    const el = document.getElementById(`pg-tab-${next}`);
-    if (focus) el?.focus();
-    el?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reduced() ? "auto" : "smooth" });   // a narrow row of tabs scrolls to it
+    if (focus) document.getElementById(`pg-tab-${next}`)?.focus();
   };
   const onKey = (e: KeyboardEvent) => {
     const i = ids.indexOf(tab);
@@ -609,9 +502,7 @@ export function Playground({ lang }: { lang: Lang }) {
         ))}
       </div>
       <div id={`pg-panel-${tab}`} className="pg-panel" role="tabpanel" aria-labelledby={`pg-tab-${tab}`} key={tab}>
-        {tab === "tts" && <TextToSpeech lang={lang} cta={build} />}
-        {tab === "stt" && <Listen lang={lang} cta={build} mode="stt" />}
-        {tab === "translate" && <Listen lang={lang} cta={build} mode="translate" />}
+        {tab === "translate" && <Translate lang={lang} cta={build} />}
         {tab === "converse" && <Converse lang={lang} cta={build} />}
         {tab === "api" && <Api lang={lang} />}
       </div>
