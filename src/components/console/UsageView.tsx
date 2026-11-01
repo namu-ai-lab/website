@@ -104,7 +104,6 @@ export function UsageView({ lang, data, by, monthLimitMin }: { lang: Lang; data:
           </table>
         </div>
       </div>
-      <p className="cx-note">{t.note}</p>
     </>
   );
 }

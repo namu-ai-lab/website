@@ -80,12 +80,11 @@ export type ConsoleCopy = {
     mb: (n: number) => string; minutes: (n: number) => string; chars: (n: string) => string;
     errorsH: string; errorsLede: string; eth: { status: string; code: string; meaning: string };
     errors: [string, string, string][];
-    revokeNote: (s: number) => string;
   };
   usage: {
     meta: [string, string]; lede: string; period: string;
     tiles: { audio: string; requests: string; chars: string; errors: string };
-    of: (limit: string) => string; perDay: string; perDayNote: string; byEndpoint: string; empty: string; note: string;
+    of: (limit: string) => string; perDay: string; perDayNote: string; byEndpoint: string; empty: string;
     th: { endpoint: string; model: string; requests: string; audio: string; chars: string; errors: string };
     range: Record<"month" | "last" | "7d" | "30d", string>; by: { model: string; key: string }; groupBy: string; export: string;
     success: string; latency: string; key: string; byModel: string; byKey: string; playground: string; deleted: string; emptyRange: string;
@@ -221,14 +220,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         ["403", "account_paused", "The account is paused. Write to us."],
         ["401", "invalid_api_key · key_revoked", "Check the key, or create a new one."],
       ],
-      revokeNote: s => `A revoked key stops working within ${s} seconds.`,
     },
     usage: {
       meta: ["Usage", "Your Namu API usage over time, by model or by key."], lede: "Requests, audio and characters over time, in UTC. Usage records hold durations, counts and status codes.",
       period: "This month",
       tiles: { audio: "Audio", requests: "Requests", chars: "Characters spoken", errors: "Errors" },
       of: l => `of ${l} min`, perDay: "Requests per day", perDayNote: "By model", byEndpoint: "By endpoint", empty: "No requests yet this month.",
-      note: "Audio minutes count both the audio you send and the speech we return.",
       th: { endpoint: "Endpoint", model: "Model", requests: "Requests", audio: "Audio (min)", chars: "Characters", errors: "Errors" },
       range: { month: "This month", last: "Last month", "7d": "Last 7 days", "30d": "Last 30 days" }, by: { model: "By model", key: "By key" }, groupBy: "Group by", export: "Export CSV",
       success: "Success rate", latency: "Average latency", key: "Key", byModel: "By model", byKey: "By key", playground: "Playground", deleted: "Deleted key",
@@ -354,14 +351,12 @@ export const consoleCopy: Record<Lang, ConsoleCopy> = {
         ["403", "account_paused", "Le compte est en pause. Écrivez-nous."],
         ["401", "invalid_api_key · key_revoked", "Vérifiez la clé, ou créez-en une nouvelle."],
       ],
-      revokeNote: k => `Une clé révoquée cesse de fonctionner en moins de ${k} secondes.`,
     },
     usage: {
       meta: ["Consommation", "Votre consommation de l’API Namu dans le temps, par modèle ou par clé."], lede: "Requêtes, audio et caractères dans le temps, en UTC. Les relevés d’usage contiennent des durées, des nombres et des codes de statut.",
       period: "Ce mois-ci",
       tiles: { audio: "Audio", requests: "Requêtes", chars: "Caractères prononcés", errors: "Erreurs" },
       of: l => `sur ${l} min`, perDay: "Requêtes par jour", perDayNote: "Par modèle", byEndpoint: "Par point d’accès", empty: "Aucune requête ce mois-ci.",
-      note: "Les minutes comptent l’audio envoyé et la parole renvoyée.",
       th: { endpoint: "Point d’accès", model: "Modèle", requests: "Requêtes", audio: "Audio (min)", chars: "Caractères", errors: "Erreurs" },
       range: { month: "Ce mois-ci", last: "Le mois dernier", "7d": "7 derniers jours", "30d": "30 derniers jours" }, by: { model: "Par modèle", key: "Par clé" }, groupBy: "Grouper", export: "Exporter en CSV",
       success: "Taux de réussite", latency: "Latence moyenne", key: "Clé", byModel: "Par modèle", byKey: "Par clé", playground: "Playground", deleted: "Clé supprimée",

@@ -87,7 +87,6 @@ export default async function Limits({ params }: { params: Promise<{ lang: strin
           </table>
         </div>
       </div>
-      <p className="cx-note">{t.revokeNote(LIMITS.revokeSeconds)}</p>
     </ConsoleShell>
   );
 }
