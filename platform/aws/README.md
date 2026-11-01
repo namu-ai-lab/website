@@ -44,10 +44,8 @@ back by hand, deploy the previous tag. The current certificate ARN and tag are i
 ## Change a secret
 
 ```bash
-read -rs "V?New value: "; echo
-aws secretsmanager get-secret-value --secret-id namu/api/gateway --query SecretString --output text \
-  | V="$V" python3 -c 'import json,os,sys; d=json.load(sys.stdin); d["NAMU_KEY_PEPPER"]=os.environ["V"]; print(json.dumps(d))' \
-  | aws secretsmanager put-secret-value --secret-id namu/api/gateway --secret-string file:///dev/stdin; unset V
+npm run aws:secrets                            # copies them from .env.local, as `npm run modal:secrets` does for Modal
+platform/aws/set-gateway-secrets.sh            # or types them: hidden prompts in a real terminal, Enter keeps a value
 aws ecs update-service --cluster namu-api --service namu-api --force-new-deployment
 ```
 

@@ -14,7 +14,8 @@
     "env:init": "node scripts/env-init.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:admin": "node scripts/db-admin.mjs",
-    "modal:secrets": "node scripts/modal-secrets.mjs"
+    "modal:secrets": "node scripts/modal-secrets.mjs",
+    "aws:secrets": "node scripts/aws-secrets.mjs"
   },
   "dependencies": {
     "@neondatabase/auth": "0.6.0-beta",
