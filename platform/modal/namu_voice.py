@@ -19,10 +19,11 @@ The French load is wrapped in try/except on purpose: if the weights volume or a
 reference clip is missing, the service degrades to Hausa-only instead of failing
 to boot. Hausa is the primary product; French is the interpreter's second half.
 
-Withdrawn voices (2026-10-31, ROADMAP S3): the cloned Hausa voice "salim" and
-every French voice, until a signed consent record exists for the speaker. load()
-still finds their files; /v1/speak and speak() refuse them (served() below) and
-/v1/health no longer lists them. The gateway refuses them before they get here.
+Withdrawn voice (2026-10-31, ROADMAP S3): the cloned Hausa voice "salim", until
+a signed consent record exists for its speaker. load() still finds its files;
+/v1/speak and speak() refuse it (served() below) and /v1/health no longer lists
+it. The gateway refuses it before it gets here. The French voices, withdrawn the
+same day, are served again since 2026-11-01, when the founder confirmed consent.
 """
 
 import modal
@@ -58,8 +59,8 @@ def clamp_num_step(requested, default: int) -> int:
     return max(low, min(high, steps))
 
 # See the module docstring. A refused request is a 400: never another voice in its place.
-WITHDRAWN_VOICES = frozenset({"salim", "fr"})
-WITHDRAWN_LANGUAGES = frozenset({"fr"})
+WITHDRAWN_VOICES = frozenset({"salim"})
+WITHDRAWN_LANGUAGES: frozenset[str] = frozenset()
 
 
 def served(language: str | None, voice: str | None) -> bool:
@@ -226,7 +227,8 @@ class Voice:
 
     def _listed(self) -> dict:
         """The voices this container will speak in: what loaded, less what is withdrawn."""
-        return {"ha": [v for v in sorted(self.ha_voices) if served("ha", v)], "fr": []}
+        return {"ha": [v for v in sorted(self.ha_voices) if served("ha", v)],
+                "fr": [v for v in sorted(self.fr_voices) if served("fr", v)]}
 
     @modal.method()
     def speak(self, text: str, language: str = "ha", voice: str | None = None) -> bytes:
@@ -251,7 +253,7 @@ class Voice:
                     "models": {"ha": KURA,
                                "fr": BASE if self.base else None},
                     "voices": self._listed(),
-                    "default_voice": {"ha": self.ha_default},
+                    "default_voice": {"ha": self.ha_default, "fr": "fr"},
                     "num_step_default": self.ha_steps,
                     "container": os.environ.get("MODAL_TASK_ID", "?")}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../Icon";
 import { LocalTime } from "../console/LocalTime";
 import { VoiceAvatar } from "../platform/pickers";
@@ -9,8 +9,8 @@ import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatSeconds } from "@/i18n/format";
-import { Recorder, toClip } from "@/lib/audio";
-import { isVoiceId, language, voice as voiceOf, type LangCode } from "@/lib/catalog";
+import { Recorder, encodeWav, toClip } from "@/lib/audio";
+import { defaultVoice, isVoiceId, language, voice as voiceOf, type LangCode } from "@/lib/catalog";
 import type { IconName } from "@/lib/icons";
 import { LIMITS } from "@/lib/limits";
 import { fileName, type Message } from "@/lib/project-shape";
@@ -59,25 +59,48 @@ export function ChipMenu({ value, options, onPick, label }: { value: ReactNode; 
   );
 }
 
-/* one sound at a time across the page */
-let current: { el: HTMLAudioElement; stop: () => void } | null = null;
+/* One sound at a time across the page, through one audio element: once a tap has played it, Safari lets it play
+   again without one, so the Interpreter's translation can speak as soon as it arrives. */
+let shared: HTMLAudioElement | null = null;
+const element = () => (shared ??= new Audio());
+let current: { stop: () => void } | null = null;
+/** Call from a tap: lets sounds started later, without one, be heard (a tenth of a second of silence plays now). */
+export function unlockSound() {
+  const el = element();
+  if (el.src) return;
+  el.src = URL.createObjectURL(encodeWav(new Float32Array(1600), 16000));
+  void el.play().catch(() => {});
+}
 /** Plays `src` (a URL or a Blob); a second press stops it, and another sound stops this one. */
 export function usePlay() {
   const [on, setOn] = useState(false), [pos, setPos] = useState(0);
-  const me = useRef<{ el: HTMLAudioElement; stop: () => void } | null>(null);
+  const me = useRef<{ stop: () => void } | null>(null);
   useEffect(() => () => { me.current?.stop(); }, []);
   const play = (src: string | Blob) => {
     if (me.current && current === me.current) { me.current.stop(); return; }
     current?.stop();
-    const url = typeof src === "string" ? src : URL.createObjectURL(src);
-    const el = new Audio(url);
-    const stop = () => { el.pause(); setOn(false); setPos(0); if (typeof src !== "string") URL.revokeObjectURL(url); if (current === me.current) current = null; me.current = null; };
+    const url = typeof src === "string" ? src : URL.createObjectURL(src), el = element();
+    let done = false;
+    const mine = {
+      stop: () => {
+        if (done) return;                                       // a play cut short by the next one rejects later: once is enough
+        done = true;
+        el.ontimeupdate = el.onended = null; el.pause();
+        setOn(false); setPos(0);
+        if (typeof src !== "string") URL.revokeObjectURL(url);
+        if (current === mine) current = null;
+        if (me.current === mine) me.current = null;
+      },
+    };
+    el.src = url;
     el.ontimeupdate = () => setPos(el.duration ? el.currentTime / el.duration : 0);
-    el.onended = stop;
-    me.current = current = { el, stop };
-    void el.play().then(() => setOn(true)).catch(stop);
+    el.onended = mine.stop;
+    me.current = current = mine;
+    void el.play().then(() => { if (!done) setOn(true); }).catch(mine.stop);
   };
-  return { on, pos, play, stop: () => me.current?.stop() };
+  /** how far through it is right now (0 to 1), read from the sound itself rather than the last render */
+  const at = useCallback(() => (me.current && current === me.current && shared?.duration ? shared.currentTime / shared.duration : 0), []);
+  return { on, pos, play, at, stop: () => me.current?.stop() };
 }
 
 /** The microphone: start, stop, and the recording handed to `onBlob`; `level` and `elapsed` drive a meter. */
@@ -92,6 +115,7 @@ export function useRecorder(onBlob: (b: Blob) => void, onError: () => void, maxS
   }, [on]);
   useEffect(() => () => { void rec.current?.stop(); }, []);
   const stop = async () => { const r = rec.current; rec.current = null; setOn(false); if (r) onBlob(await r.stop()); };
+  const cancel = async () => { const r = rec.current; rec.current = null; setOn(false); await r?.stop(); };
   const start = async () => {
     if (rec.current) return;
     const r = (rec.current = new Recorder());
@@ -100,7 +124,7 @@ export function useRecorder(onBlob: (b: Blob) => void, onError: () => void, maxS
     if (rec.current !== r) return;
     setElapsed(0); setOn(true);
   };
-  return { on, level, elapsed, toggle: () => void (rec.current ? stop() : start()) };
+  return { on, level, elapsed, toggle: () => void (rec.current ? stop() : start()), cancel: () => void cancel() };
 }
 
 /** A sound file's length, read from its metadata. */
@@ -176,16 +200,16 @@ export function VoiceEntry({ ui, from, to, onResult, onError, aside }:
       const clip = await toClip(b, "speech.wav");
       const body = clip.wav.size <= LIMITS.playgroundUploadMb * 1024 * 1024 ? clip.wav : clip.source;
       const r = await interpret(body, from, to);
-      if (r.text.trim()) onResult({ heard: r.sourceText.trim(), text: r.text.trim() }); else onError(c.read.nothing);
+      if (r.text.trim()) onResult({ heard: r.sourceText.trim(), text: r.text.trim() }); else onError(c.interpret.nothing);
     } catch (e) { onError(e instanceof Error ? e.message : c.errors.generic); } finally { setBusy(false); }
   };
   const rec = useRecorder(b => void heard(b), () => onError(c.errors.mic));
   const name = language(from).name[ui];
   return (
     <div className="cr-voice-entry">
-      {busy ? <Making label={c.read.listening} /> : (
+      {busy ? <Making label={c.interpret.listening} /> : (
         <>
-          <button type="button" className={`cr-rec${rec.on ? " on" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? c.read.stop : c.home.speakIn(name)}
+          <button type="button" className={`cr-rec${rec.on ? " on" : ""}`} aria-pressed={rec.on} aria-label={rec.on ? c.interpret.stop : c.home.speakIn(name)}
             onClick={rec.toggle} style={{ ["--lvl" as string]: String(Math.min(1, rec.level * 1.6)) }}>
             <Icon name={rec.on ? "stop" : "microphone"} size={28} stroke={1.5} />
           </button>
@@ -194,5 +218,21 @@ export function VoiceEntry({ ui, from, to, onResult, onError, aside }:
         </>
       )}
     </div>
+  );
+}
+
+/** Says words aloud in a language's first voice, made once and then replayed. */
+export function SayIt({ text, lang, label }: { text: string; lang: LangCode; label: string }) {
+  const { on, play, stop } = usePlay();
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    if (on) { stop(); return; }
+    setBusy(true);
+    try { play(await speak(text, lang, defaultVoice(lang))); } catch { /* the button stays as it was */ } finally { setBusy(false); }
+  };
+  return (
+    <button type="button" className="cx-btn ghost sm" onClick={() => void go()} disabled={busy} aria-pressed={on}>
+      {busy ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={on ? "pause" : "play"} size={14} stroke={1.6} />}{label}
+    </button>
   );
 }

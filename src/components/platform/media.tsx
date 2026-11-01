@@ -61,7 +61,7 @@ export function AudioPlayer({ src, name, labels, peaks: given, compact }: { src:
   );
 }
 
-function resample(xs: number[], n: number): number[] {
+export function resample(xs: number[], n: number): number[] {
   if (xs.length === n) return xs;
   return Array.from({ length: n }, (_, i) => {
     const a = Math.floor((i / n) * xs.length), b = Math.max(a + 1, Math.floor(((i + 1) / n) * xs.length));

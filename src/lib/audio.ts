@@ -49,6 +49,11 @@ export async function toClip(blob: Blob, name: string): Promise<Clip> {
 export async function peaksOfBlob(blob: Blob): Promise<number[]> {
   return peaksOf((await decode(blob)).getChannelData(0));
 }
+/** A sound's waveform outline and its length, read in one pass. */
+export async function shapeOfBlob(blob: Blob): Promise<{ peaks: number[]; seconds: number }> {
+  const b = await decode(blob);
+  return { peaks: peaksOf(b.getChannelData(0)), seconds: b.duration };
+}
 
 export const b64ToBlob = (b64: string, type = "audio/wav") => new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type });
 

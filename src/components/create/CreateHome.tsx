@@ -77,7 +77,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
 
   const tools: { icon: IconName; label: string; href: string }[] = [
     { icon: "waveform", label: p.nav.speak, href: L("/create/speak") },
-    { icon: "transcript", label: p.nav.read, href: L("/create/read") },
+    { icon: "turns", label: p.nav.interpret, href: L("/create/interpret") },
     { icon: "translate", label: p.nav.translate, href: L("/create/translate") },
     { icon: "microphone", label: p.nav.voices, href: L("/create/voices") },
     { icon: "phone-voice", label: t.agents, href: L("/agents") },
@@ -117,7 +117,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
             )}
             <span className="cr-grow" />
             {typed && <Dictate lang={from} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
-              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />}
+              labels={{ dictate: c.interpret.record, stop: c.interpret.stop, listening: c.interpret.listening, mic: c.errors.mic }} />}
             <button type="submit" className="cx-btn primary" disabled={!text.trim() || tooLong || phase !== "idle" || !voice}>{t.make}</button>
           </div>
         </form>
@@ -216,7 +216,7 @@ function ShowcaseCard({ s, ui, onUse }: { s: Showcase; ui: Lang; onUse: (s: Show
         <p className="cr-show-fr" lang="fr">{s.fr}</p>
         {s.does === "speak"
           ? <button type="button" className="cx-btn ghost sm" onClick={() => onUse(s)}>{t.use}<Icon name="arrow-long" size={14} stroke={1.6} className="rot-up" /></button>
-          : <a className="cx-btn ghost sm" href={lp(ui, "/create/read")}>{t.readYours}<Icon name="arrow-long" size={14} stroke={1.6} /></a>}
+          : <a className="cx-btn ghost sm" href={lp(ui, "/create/interpret")}>{t.tryYours}<Icon name="arrow-long" size={14} stroke={1.6} /></a>}
       </div>
     </li>
   );

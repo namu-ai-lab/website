@@ -8,7 +8,7 @@ import { isVoice } from "@/lib/voices";
    demo key and the visitor (IPv4 address or IPv6 /64), and the gateway applies the demo limits (15 s of audio,
    300 characters, 30 requests per visitor per hour) on top of the demo key's own quota. Converse stays a preview.
    Only the voices the API serves are offered (lib/voices): any other is a 400, never another voice. A translation
-   into French is text only (French speech is withdrawn), so its audio is asked for only into Hausa. */
+   is said in its target language too (include_audio). */
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;            // a cold GPU can take a minute to wake
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     headers["Content-Type"] = "application/octet-stream";
     if (model === "translate") {
       const target = req.nextUrl.searchParams.get("target") === "ha" ? "ha" : "fr";
-      url += target === "ha" ? "?target=ha&include_audio=1" : "?target=fr";
+      url += `?target=${target}&include_audio=1`;
     }
   }
 

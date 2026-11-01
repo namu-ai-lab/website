@@ -11,7 +11,7 @@ import { isPersona, isVoice } from "@/lib/voices";
    allowance and rate limit, and the request appears in their usage and logs as "Playground".
      speech      JSON { text, voice }                    → audio/wav
      transcribe  audio body                              → { text, ... }
-     translate   audio body, ?target=fr|ha               → { source_text, text, audio } (audio into Hausa only)
+     translate   audio body, ?target=fr|ha               → { source_text, text, audio }
      converse    audio body, ?persona=                   → { heard, reply, audio }, one turn, nothing kept
    A voice or persona the API does not serve (lib/voices) is a 400 here, never another voice.
    Audio is passed on in its own container (WAV, WebM/Opus, MP4/AAC, MP3...): the gateway measures any of them with
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
     if (model === "translate") {
       const target = q.get("target") === "ha" ? "ha" : "fr";
       out.set("target", target);
-      if (target === "ha") out.set("include_audio", "1");      // French speech is withdrawn: a French translation is text
+      out.set("include_audio", "1");
     }
     if (model === "converse") out.set("persona", persona);     // no session id: the API keeps no conversation
   }

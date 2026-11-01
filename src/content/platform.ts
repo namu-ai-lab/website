@@ -13,12 +13,12 @@ export type PlatformCopy = {
   access: { approved: string; pending: string; denied: string };
   platform: string; menu: string; signedIn: string;
   nav: {
-    home: string; voices: string; speak: string; read: string; translate: string;
+    home: string; voices: string; speak: string; interpret: string; translate: string;
     agents: string; templates: string; conversations: string;
     settings: string;
   };
   /** the side menu's names in the phone's tab bar, where five share one row */
-  short: Record<"home" | "speak" | "read" | "translate" | "voices" | "agents" | "templates" | "conversations", string>;
+  short: Record<"home" | "speak" | "interpret" | "translate" | "voices" | "agents" | "templates" | "conversations", string>;
   tasks: Record<Task, string>;
   uses: Record<Use, string>;
   outputs: Record<OutputId, string>;
@@ -38,11 +38,11 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     access: { approved: "Beta", pending: "Setting up", denied: "Paused" },
     platform: "Platform", menu: "Menu", signedIn: "Signed in as",
     nav: {
-      home: "Home", voices: "Voices", speak: "Voice message", read: "Read a voice note", translate: "Translate",
+      home: "Home", voices: "Voices", speak: "Voice message", interpret: "Interpreter", translate: "Translate",
       agents: "Agents", templates: "Templates", conversations: "Conversations",
       settings: "Settings",
     },
-    short: { home: "Home", speak: "Message", read: "Read", translate: "Translate", voices: "Voices", agents: "Agents", templates: "Templates", conversations: "Conversations" },
+    short: { home: "Home", speak: "Message", interpret: "Interpret", translate: "Translate", voices: "Voices", agents: "Agents", templates: "Templates", conversations: "Conversations" },
     tasks: { speech: "Speech", transcribe: "Transcription", translate: "Translation", converse: "Conversation" },
     uses: { health: "Health", education: "Education", radio: "Radio", stories: "Stories", public: "Public information", business: "Business" },
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Phone line", file: "File" },
@@ -60,11 +60,11 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     access: { approved: "Bêta", pending: "Configuration", denied: "En pause" },
     platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que",
     nav: {
-      home: "Accueil", voices: "Voix", speak: "Message vocal", read: "Lire un message vocal", translate: "Traduire",
+      home: "Accueil", voices: "Voix", speak: "Message vocal", interpret: "Interprète", translate: "Traduire",
       agents: "Agents", templates: "Modèles", conversations: "Conversations",
       settings: "Paramètres",
     },
-    short: { home: "Accueil", speak: "Message", read: "Lire", translate: "Traduire", voices: "Voix", agents: "Agents", templates: "Modèles", conversations: "Conversations" },
+    short: { home: "Accueil", speak: "Message", interpret: "Interprète", translate: "Traduire", voices: "Voix", agents: "Agents", templates: "Modèles", conversations: "Conversations" },
     tasks: { speech: "Synthèse vocale", transcribe: "Transcription", translate: "Traduction", converse: "Conversation" },
     uses: { health: "Santé", education: "Éducation", radio: "Radio", stories: "Contes", public: "Information publique", business: "Entreprise" },
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Ligne téléphonique", file: "Fichier" },

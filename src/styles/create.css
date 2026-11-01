@@ -129,7 +129,6 @@
 /* the messages made */
 .cr-list { margin: 0; padding: 4px 0; list-style: none; border-radius: 22px; background: var(--surface); }
 .cr-row { display: grid; grid-template-columns: 40px minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, .8fr) minmax(72px, auto) 40px; align-items: center; gap: 14px; padding: 12px 18px; }
-.cr-row.read { grid-template-columns: minmax(0, 1fr) auto auto; }
 .cr-row + .cr-row { box-shadow: 0 -1px 0 var(--line); }
 .cr-row-main { display: grid; min-width: 0; }
 .cr-row-main strong, .cr-row-main em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -175,11 +174,7 @@
 .cr-settings .pf-sample { background: var(--bg); }
 .cr-make { width: 100%; margin-top: 10px; justify-content: center; }
 
-/* ---- Read a voice note */
-.cr-read { display: grid; gap: 18px; }
-.cr-drop { display: grid; justify-items: center; gap: 16px; padding: 40px 24px; border-radius: 28px; box-shadow: inset 0 0 0 1.5px var(--line-2); text-align: center;
-  transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
-.cr-drop[data-over] { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--kola); }
+/* ---- the microphone, and Namu's voice notes to try */
 .cr-rec { display: grid; place-items: center; width: 92px; height: 92px; padding: 0; border: 0; border-radius: 50%; background: var(--kola); color: #FFFAF1; cursor: pointer;
   transition: background-color .25s var(--ease), box-shadow .1s linear; }
 .cr-rec:hover { background: var(--ink); }
@@ -190,6 +185,8 @@
 .cr-try { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: min(760px, 100%); margin: 0; padding: 0; list-style: none; }
 .cr-try li { display: flex; align-items: center; gap: 8px; }
 .cr-try .cr-note { flex: 1; min-width: 0; background: #fff; border-radius: 24px 24px 24px 8px; }
+.cr-int-empty .cr-try .cr-note { background: var(--surface); }
+.cr-int-empty .cr-try .cx-play { background: #fff; }
 .cr-try .cx-play { background: var(--surface-2); color: var(--ink); }
 .cr-try .cx-play:hover { background: var(--dry-clay); }
 .cr-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -237,6 +234,108 @@
 .cr-link { padding: 4px 6px; border: 0; background: none; color: var(--kola); font: inherit; font-size: 14.5px; cursor: pointer; }
 .cr-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
+/* ---- Interpreter: voice in, voice out. A stage with the two sides facing each other across the orb, the conversation
+   under it newest first, each turn on one line; below, the history as voice prints. Symmetric about the middle, and
+   coloured by language: Kola for the local one (side a), Sahel for French (side b). */
+.cr-int { --a: var(--kola); --a-soft: rgba(107, 62, 30, .26); --b: var(--sahel-deep); --b-soft: rgba(232, 147, 90, .42);
+  display: grid; gap: 40px; width: min(980px, 100%); margin: 0 auto; }
+.pf-page:has(> .cr-int) { padding-top: clamp(28px, 4vw, 44px); }
+.cr-int-stage { display: grid; gap: 4px; padding: 30px clamp(18px, 4vw, 40px) 28px; border-radius: 32px; background: #fff;
+  box-shadow: 0 0 0 1px var(--line), 0 40px 80px -60px rgba(28, 20, 16, .4); }
+.cr-int-face { display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 48px); }
+.cr-int-side { flex: 1; display: grid; justify-items: center; align-content: start; gap: 10px; min-width: 0; text-align: center; }
+.cr-int-lang { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--ink); font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+.cr-int-lang i { width: 8px; height: 8px; border-radius: 50%; background: var(--a); }
+.cr-int-side[data-side="b"] .cr-int-lang i { background: var(--b); }
+.cr-int-rec { display: grid; place-items: center; width: 84px; height: 84px; padding: 0; border: 0; border-radius: 50%; background: var(--kola); color: #FFFAF1; cursor: pointer;
+  transition: background-color .25s var(--ease), box-shadow .1s linear, opacity .2s var(--ease), transform .2s var(--ease); }
+.cr-int-rec:hover { background: var(--ink); }
+.cr-int-rec:active { transform: scale(.97); }
+.cr-int-rec.on { background: var(--ink); box-shadow: 0 0 0 calc(6px + var(--lvl, 0) * 16px) rgba(107, 62, 30, .14); }
+.cr-int-rec:disabled { opacity: .28; cursor: default; }
+.cr-int-rec:disabled:hover { background: var(--kola); }
+.cr-int-hint { margin: 2px 0 0; color: var(--ink-2); font-size: 15px; font-variant-numeric: tabular-nums; }
+.cr-int-link { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 14px; cursor: pointer; }
+.cr-int-link:hover:not(:disabled) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.cr-int-link:disabled { opacity: .45; cursor: default; }
+.cr-int-orb { flex: none; width: clamp(120px, 20vw, 190px); }
+.cr-int-orb canvas { display: block; width: 100%; height: auto; }
+.cr-int-stage[data-mode="rest"] .cr-int-orb canvas { opacity: .92; }
+.cr-int-notes { display: grid; justify-items: center; gap: 6px; margin-top: 14px; text-align: center; }
+.cr-int-notes .cx-error { margin: 0; }
+.cr-int-note { margin: 0; color: var(--ink-3); font-size: 14px; }
+.cr-int-wait { display: grid; place-items: center; min-height: 80px; margin: 18px 0 0; }
+
+/* the conversation, newest first: the voice heard on its side, Namu's facing it, the spine and the time between */
+.cr-lanes { display: grid; gap: 12px; margin: 26px 0 0; padding: 22px 0 0; list-style: none; box-shadow: 0 -1px 0 var(--line); }
+.cr-lane { display: grid; grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr); align-items: center; }
+.cr-lane > .cr-pill { grid-row: 1; }
+.cr-lane > .cr-pill[data-side="a"] { grid-column: 1; }
+.cr-lane > .cr-pill[data-side="b"] { grid-column: 3; }
+.cr-lane-way { grid-row: 1; grid-column: 2; display: grid; justify-items: center; gap: 2px; color: var(--ink-3); }
+.cr-lane-way svg { color: var(--a); }
+.cr-lane[data-from="b"] .cr-lane-way svg { color: var(--b); transform: scaleX(-1); }
+.cr-lane-way time { font-size: 12px; font-variant-numeric: tabular-nums; }
+.cr-lane-err { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; margin: 8px 0 0; color: var(--ink-2); font-size: 14px; }
+
+/* a voice note: a person's in white, Namu's in Harmattan; the bars take the colour of the language they are in */
+.cr-pill { display: flex; align-items: center; gap: 10px; min-width: 0; height: 52px; padding: 0 14px 0 8px; border-radius: 26px; }
+.cr-pill.said { background: #fff; box-shadow: inset 0 0 0 1px var(--line-2); }
+.cr-pill.namu { background: var(--surface); }
+.cr-pill-play { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--ink);
+  cursor: pointer; transition: background-color .2s var(--ease); }
+.cr-pill-play:hover:not(:disabled) { background: var(--dry-clay); }
+.cr-pill.namu .cr-pill-play { background: var(--kola); color: #FFFAF1; }
+.cr-pill.namu .cr-pill-play:hover:not(:disabled) { background: var(--ink); }
+.cr-pill-play:disabled { cursor: default; }
+.cr-pill.off .cr-pill-play { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-3); }
+.cr-pill-wave { flex: 1; display: flex; align-items: center; gap: 2px; min-width: 0; height: 26px; }
+.cr-pill-wave i { flex: 1; min-width: 2px; max-width: 4px; border-radius: 2px; background: var(--a-soft); }
+.cr-pill-wave i.on { background: var(--a); }
+.cr-pill[data-side="b"] .cr-pill-wave i { background: var(--b-soft); }
+.cr-pill[data-side="b"] .cr-pill-wave i.on { background: var(--b); }
+.cr-pill-wave b { flex: 1; border-top: 2px dotted rgba(28, 20, 16, .2); }
+.cr-pill-len { flex: none; min-width: 30px; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.cr-pill-send { flex: none; display: grid; place-items: center; width: 30px; height: 30px; margin-right: -6px; padding: 0; border: 0; border-radius: 50%; background: none;
+  color: var(--ink-3); cursor: pointer; }
+.cr-pill-send:hover { background: rgba(28, 20, 16, .06); color: var(--ink); }
+
+/* an empty conversation: a voice note to try under each side */
+.cr-int-try { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 26px 0 0; padding: 22px 0 0; box-shadow: 0 -1px 0 var(--line); }
+.cr-int-sample { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; max-width: 260px; height: 44px; padding: 0 18px; border: 0;
+  border-radius: 9999px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14.5px; cursor: pointer; transition: background-color .2s var(--ease); }
+.cr-int-sample:hover:not(:disabled) { background: var(--surface-2); }
+.cr-int-sample svg { color: var(--a); }
+.cr-int-sample[data-side="b"] svg { color: var(--b); }
+.cr-int-or { flex: none; color: var(--ink-3); font-size: 14px; }
+
+/* the history: a new conversation, then each one kept, drawn as its voices (local above the line, French below) */
+.cr-int-history { display: grid; justify-items: center; gap: 18px; }
+.cr-int-history h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.014em; }
+.cr-int-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.cr-int-cards li { position: relative; display: grid; width: 224px; }
+.cr-int-card { display: grid; justify-items: center; align-content: center; gap: 6px; min-height: 148px; padding: 18px 16px 16px; border: 0; border-radius: 22px; background: var(--surface);
+  color: var(--ink); font: inherit; text-align: center; cursor: pointer; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
+.cr-int-card:hover { background: var(--surface-2); }
+.cr-int-card[aria-current="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px var(--kola); }
+.cr-int-card.new { gap: 10px; background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-2); font-size: 15px; }
+.cr-int-card.new:hover:not(:disabled) { background: rgba(28, 20, 16, .03); color: var(--ink); }
+.cr-int-card.new:disabled { opacity: .5; cursor: default; }
+.cr-int-plus { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--ink); }
+.cr-int-card-when { min-height: 1.3em; margin-top: 6px; font-size: 15px; font-weight: 500; }
+.cr-int-card-count { color: var(--ink-3); font-size: 13.5px; }
+.cr-print { display: flex; align-items: center; gap: 2px; width: 100%; height: 56px; background: linear-gradient(var(--line-2), var(--line-2)) center / 100% 1px no-repeat; }
+.cr-print i { position: relative; flex: 1; height: 100%; }
+.cr-print i::before { content: ""; position: absolute; left: 0; right: 0; height: calc(var(--h) * .5); border-radius: 2px; background: var(--a); }
+.cr-print i[data-side="a"]::before { bottom: 50%; }
+.cr-print i[data-side="b"]::before { top: 50%; background: var(--b); }
+.cr-int-del { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: none;
+  color: var(--ink-3); opacity: 0; cursor: pointer; transition: opacity .2s var(--ease), background-color .2s var(--ease); }
+.cr-int-del:hover { background: rgba(28, 20, 16, .06); color: var(--ink); }
+.cr-int-cards li:hover .cr-int-del, .cr-int-del:focus-visible, .cr-int-del.sure { opacity: 1; }
+.cr-int-del.sure { width: auto; padding: 0 12px; border-radius: 9999px; background: var(--ink); color: #FFFAF1; font: inherit; font-size: 13px; }
+@media (hover: none) { .cr-int-del { opacity: 1; } }
+
 /* ---- smaller screens */
 @media (max-width: 1100px) {
   .cr-sectors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -263,6 +362,27 @@
   .cr-settings .cr-option[aria-checked="true"] { background: var(--bg); }
   .cr-row { grid-template-columns: 40px minmax(0, 1fr) minmax(56px, auto) 40px; }
   .cr-row .hide-sm { display: none; }
+}
+@media (max-width: 720px) {
+  /* phones: the same stage, smaller; the turns stay on one line each, the voices compact */
+  .cr-int { gap: 32px; }
+  .cr-int-stage { padding: 22px 14px 18px; border-radius: 26px; }
+  .cr-int-face { gap: 6px; }
+  .cr-int-lang { font-size: 16px; }
+  .cr-int-rec { width: 64px; height: 64px; }
+  .cr-int-hint { display: none; }
+  .cr-int-orb { width: 104px; }
+  .cr-lane { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); }
+  .cr-lane-way time { display: none; }
+  .cr-pill { gap: 6px; height: 46px; padding: 0 10px 0 6px; }
+  .cr-pill-play { width: 32px; height: 32px; }
+  .cr-pill-len { display: none; }
+  .cr-int-try { gap: 8px; }
+  .cr-int-sample { padding: 0 12px; font-size: 13.5px; }
+  .cr-int-or { display: none; }
+  .cr-int-cards { gap: 10px; }
+  .cr-int-cards li { width: calc(50% - 5px); }
+  .cr-int-card { min-height: 132px; padding: 16px 12px 14px; }
 }
 @media (max-width: 600px) {
   .cr-sectors { grid-template-columns: repeat(6, 42%); overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
