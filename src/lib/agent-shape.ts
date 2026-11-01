@@ -4,7 +4,7 @@
    collect), and the channels it answers on. lib/agents keeps them; lib/agent-turn runs a conversation. */
 import { isLangCode, isVoiceId, type LangCode, type VoiceId } from "@/lib/catalog";
 
-export const LIMITS_AGENT = { name: 80, greeting: 600, instructions: 8000, doc: 200_000, docs: 20, tests: 50, testsPerRun: 10, checks: 30, ask: 1000, expect: 8, agents: 50, turns: 200 } as const;
+export const LIMITS_AGENT = { name: 80, greeting: 600, instructions: 8000, doc: 200_000, docs: 20, checks: 30, agents: 50, turns: 200 } as const;
 
 export type Check = { kind: "goal" | "field"; text: string };
 export type Channels = { whatsapp?: { phoneNumberId: string } };
@@ -15,7 +15,6 @@ export type Agent = {
   created_at: string; updated_at: string;
 };
 export type AgentDoc = { id: string; agent_id: string; name: string; chars: number; created_at: string };
-export type AgentTest = { id: string; agent_id: string; ask: string; expect: string[]; last_pass: boolean | null; last_reply: string | null; last_run_at: string | null };
 /** One turn; `ref` is the channel's own id for it (a WhatsApp message id), so a message delivered twice is answered once. */
 export type Turn = { role: "caller" | "agent"; text: string; at: string; ref?: string };
 export type Conversation = {
@@ -52,10 +51,3 @@ export function cleanPatch(x: unknown, o: { channels?: boolean } = {}): AgentPat
   }
   return out;
 }
-
-/** A test's expected words, as typed in one box: separated by commas, each trimmed, at most LIMITS_AGENT.expect. */
-export const parseExpect = (s: string) => s.split(",").map(w => w.trim()).filter(Boolean).slice(0, LIMITS_AGENT.expect);
-
-const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-/** Whether a reply holds every expected word (ignoring case and accents). An empty list passes. */
-export const passes = (reply: string, expect: readonly string[]) => expect.every(w => fold(reply).includes(fold(w)));

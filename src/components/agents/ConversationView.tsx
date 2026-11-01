@@ -30,19 +30,19 @@ export function ConversationView({ c, lang, speaking }: { c: Conversation; lang:
   return (
     <article className="ag-conv">
       <header className="ag-conv-head">
-        <div><h2>{c.agent_name}</h2><p>{t.convs.channels[c.channel]}{c.contact ? ` · ${c.contact}` : ""} · {formatDate(lang, c.started_at, { style: "dateTime" })}</p></div>
+        <div><h1>{c.agent_name}</h1><p>{t.convs.channels[c.channel]}{c.contact ? ` · ${c.contact}` : ""} · {formatDate(lang, c.started_at, { style: "dateTime" })}</p></div>
         <button type="button" className={`cx-btn sm${flagged ? " primary" : ""}`} aria-pressed={flagged} onClick={() => void flag()}>
           <Icon name="warn" size={15} stroke={1.6} />{flagged ? t.convs.unflag : t.convs.flag}
         </button>
       </header>
       <ol className="ag-turns">
         {c.turns.map((x, i) => (
-          <li key={i} className={`ag-line ${x.role}`}>
-            <p className="ag-who">{x.role === "agent" ? t.talk.agent : t.talk.caller}</p>
+          <li key={i} className={`ag-turn ${x.role}`}>
+            <p className="ag-who">{x.role === "agent" ? t.convs.agent : t.convs.caller}</p>
             <p className="ag-said" lang={speaking}>{x.text}</p>
             {fr[i] ? <p className="ag-fr" lang="fr">{fr[i]}</p> : null}
-            <button type="button" className="ag-fr-btn" aria-pressed={i in fr} onClick={() => void french(i)}>
-              {fr[i] === null ? t.talk.thinking : i in fr ? t.talk.hide : t.talk.french}
+            <button type="button" className="ag-link" aria-pressed={i in fr} onClick={() => void french(i)}>
+              {fr[i] === null ? "…" : i in fr ? t.convs.hide : t.convs.french}
             </button>
           </li>
         ))}

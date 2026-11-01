@@ -1,5 +1,6 @@
 import { NotConfigured } from "@/components/account/AccountShell";
-import { ConversationList } from "@/components/agents/AgentBuilder";
+import { Icon } from "@/components/Icon";
+import { ConversationList } from "@/components/agents/Conversations";
 import { ConversationView } from "@/components/agents/ConversationView";
 import { NotReady } from "@/components/agents/NotReady";
 import { PlatformShell } from "@/components/platform/PlatformShell";
@@ -35,18 +36,19 @@ export default async function Conversations({ params, searchParams }: { params: 
     if (!isMissingTable(e)) throw e;
     return <PlatformShell {...shell} layout="center"><NotReady lang={lang} /></PlatformShell>;
   }
-  if (q.flagged === "1") list = list.filter(c => c.flagged);
   if (open) return (
     <PlatformShell {...shell}>
-      <a className="ag-back" href={L("/agents/conversations")}>{t.convs.back}</a>
+      <nav className="ag-crumb"><a href={L("/agents/conversations")}>{t.convs.back}</a><Icon name="chevron" size={14} stroke={1.6} /><span>{open.agent_name}</span></nav>
       <ConversationView c={open} lang={lang} speaking={speaking} />
     </PlatformShell>
   );
+  const flagged = q.flagged === "1";
+  if (flagged) list = list.filter(c => c.flagged);
   return (
     <PlatformShell {...shell} title={t.convs.title}>
-      <div className="pf-chips ag-conv-filter">
-        <a className="pf-chip" aria-current={q.flagged !== "1" ? "page" : undefined} href={L("/agents/conversations")}>{t.convs.all}</a>
-        <a className="pf-chip" aria-current={q.flagged === "1" ? "page" : undefined} href={`${L("/agents/conversations")}?flagged=1`}>{t.convs.flagged}</a>
+      <div className="ag-filters">
+        <a className="ag-chip" aria-current={!flagged ? "page" : undefined} href={L("/agents/conversations")}>{t.convs.all}</a>
+        <a className="ag-chip" aria-current={flagged ? "page" : undefined} href={`${L("/agents/conversations")}?flagged=1`}>{t.convs.flagged}</a>
       </div>
       <ConversationList list={list} lang={lang} />
     </PlatformShell>

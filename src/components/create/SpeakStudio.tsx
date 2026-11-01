@@ -1,183 +1,167 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { AudioPlayer } from "../platform/media";
-import { LanguageChips, Letters, VoiceAvatar, VoicePicker } from "../platform/pickers";
+import { Letters, SampleButton, VoiceAvatar } from "../platform/pickers";
+import { Making, MessageList, OUTPUT_ICON, VoiceNote } from "./bits";
+import { fileFor, keep, save, share, speak, translate } from "./client";
+import { Dictate } from "./Dictate";
 import { createCopy } from "@/content/create";
 import { platformCopy } from "@/content/platform";
 import type { Lang } from "@/i18n/config";
 import { formatNumber } from "@/i18n/format";
-import { render } from "@/lib/audio-out";
-import { LANGUAGES, LOCAL, OUTPUTS, can, canTranslate, defaultVoice, language, voice as voiceOf, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
+import { LOCAL, OUTPUTS, WRITTEN, can, canTranslate, defaultVoice, language, voice as voiceOf, voicesFor, type LangCode, type OutputId, type VoiceId } from "@/lib/catalog";
 import { fixLetters, hasStandIns } from "@/lib/catalog/text";
 import { LIMITS } from "@/lib/limits";
-import { apiError } from "./fetch";
-import { FileLink } from "./FileLink";
+import { fileName, titleFrom, type Message } from "@/lib/project-shape";
 
-/* Speak, after ElevenLabs' Text to Speech: the words on the left, Settings | History on the right. For the Sahel:
-   the text may be written in French and turned into the local language first (shown in the box, to be checked before
-   it is spoken); the letters a keyboard lacks sit under the box, with a one-tap fix for b' d' k' y'; and the file is
-   made for where it will be heard (a WhatsApp voice note, radio, a phone line), from the same speech, again at once
-   when the choice changes. The organisation's word list is applied on the server. */
+/* Voice message (mock-up v2), after ElevenLabs' Text to Speech: the words on the left; on the right what they are
+   written in, the language and voice that say them, and where they will be heard; the result under the words, and the
+   messages already made below. Written in French, the words become the local language first, and the box then holds
+   that text, to be checked and said again if it needs a change. The organisation's word list is applied on the
+   server; the file is made for its channel in the browser (lib/audio-out). */
+type Made = { wav: Blob; file: File; text: string; lang: LangCode; voice: VoiceId; target: OutputId };
 
-type Take = { id: number; text: string; lang: LangCode; voice: VoiceId; wav: Blob; target: OutputId; file: { blob: Blob; ext: string }; at: number };
-
-const ORDER: LangCode[] = [...LOCAL, ...LANGUAGES.map(l => l.code).filter(c => !LOCAL.includes(c))];
-
-export function SpeakStudio({ lang: ui, kitVoices, initialVoice }: { lang: Lang; kitVoices: Partial<Record<string, string>>; initialVoice?: VoiceId }) {
-  const t = createCopy[ui].speak, p = platformCopy[ui];
-  const first = initialVoice ? voiceOf(initialVoice).languages[0] : ORDER.find(l => can("speech", l))!;
+export function SpeakStudio({ lang: ui, kitVoices, initialVoice, recent: initial, ready }:
+  { lang: Lang; kitVoices: Partial<Record<string, string>>; initialVoice?: VoiceId; recent: Message[]; ready: boolean }) {
+  const t = createCopy[ui].speak, c = createCopy[ui], p = platformCopy[ui];
+  const first = initialVoice ? voiceOf(initialVoice).languages[0] : LOCAL.find(l => can("speech", l)) ?? "ha";
   const [lang, setLang] = useState<LangCode>(first);
-  const [voices, setVoices] = useState<Partial<Record<LangCode, VoiceId>>>(() => initialVoice ? { [first]: initialVoice } : {});
+  const [written, setWritten] = useState<LangCode>(initialVoice ? first : WRITTEN);
+  const [voices, setVoices] = useState<Partial<Record<LangCode, VoiceId>>>(() => (initialVoice ? { [first]: initialVoice } : {}));
   const voice = voices[lang] ?? defaultVoice(lang, kitVoices);
   const [text, setText] = useState("");
-  const [french, setFrench] = useState(false);                 // the box holds French, to be translated first
   const [original, setOriginal] = useState<string | null>(null);
   const [target, setTarget] = useState<OutputId>("whatsapp");
-  const [busy, setBusy] = useState<"translate" | "speak" | null>(null);
+  const [phase, setPhase] = useState<"idle" | "translate" | "speak">("idle");
   const [err, setErr] = useState<string | null>(null);
-  const [side, setSide] = useState<"settings" | "history">("settings");
-  const [takes, setTakes] = useState<Take[]>([]);
-  const [current, setCurrent] = useState<number | null>(null);
+  const [made, setMade] = useState<Made | null>(null);
+  const [recent, setRecent] = useState(initial);
   const box = useRef<HTMLTextAreaElement>(null);
-  const ids = useRef(0);
-  const take = takes.find(x => x.id === current) ?? null;
-  const local = lang !== "fr" && canTranslate("fr", lang);
   const tooLong = text.length > LIMITS.textChars;
+  const local = written === lang;
   const digraphs = Object.values(language(lang).digraphs).filter(ch => ch === ch.toLowerCase()).join(" ");
 
-  /* the file follows the "Made for" choice, made again from the same speech */
-  useEffect(() => {
-    if (!take || take.target === target) return;
-    let live = true;
-    void render(take.wav, target).then(f => { if (live) setTakes(ts => ts.map(x => x.id === take.id ? { ...x, target, file: { blob: f.blob, ext: f.ext } } : x)); });
-    return () => { live = false; };
-  }, [target, take]);
-
-  const pickLang = (l: LangCode) => { setLang(l); setErr(null); if (l === "fr") setFrench(false); };
-  const starter = (s: string) => { setText(s); setOriginal(null); setFrench(local); setErr(null); requestAnimationFrame(() => box.current?.focus()); };
-
-  const translate = async () => {
-    setBusy("translate"); setErr(null);
+  const make = async () => {
+    const words = text.trim();
+    if (!words || !voice) return;
+    setErr(null); setMade(null);
     try {
-      const res = await fetch("/api/create/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, from: "fr", to: lang }) });
-      if (!res.ok) { setErr(await apiError(res, p.errors.generic)); return; }
-      const out = (await res.json()) as { text: string };
-      setOriginal(text); setText(out.text); setFrench(false);
-    } catch { setErr(p.errors.network); } finally { setBusy(null); }
+      let said = words, source = written, sourceText = "";
+      if (written !== lang) {
+        setPhase("translate");
+        said = await translate(words, written, lang);
+        setOriginal(words); setText(said); setWritten(lang); sourceText = words;
+      } else if (original !== null) { source = WRITTEN; sourceText = original; }
+      setPhase("speak");
+      const wav = await speak(said, lang, voice);
+      const file = await fileFor(wav, target, fileName(titleFrom(sourceText || said), language(lang).endonym, "x").replace(/\.x$/, ""));
+      setMade({ wav, file, text: said, lang, voice, target });
+      keep({ sourceLang: source, sourceText, lang, text: said, voice, madeFor: target }).then(m => setRecent(r => [m, ...r])).catch(() => {});
+    } catch (e) { setErr(e instanceof Error ? e.message : p.errors.generic); }
+    finally { setPhase("idle"); }
   };
-
-  const generate = async () => {
-    if (!voice) return;
-    setBusy("speak"); setErr(null);
-    try {
-      const res = await fetch("/api/create/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang, voice }) });
-      if (!res.ok) { setErr(await apiError(res, p.errors.generic)); return; }
-      const wav = await res.blob();
-      const file = await render(wav, target);
-      const id = ++ids.current;
-      setTakes(ts => [{ id, text, lang, voice, wav, target, file: { blob: file.blob, ext: file.ext }, at: Date.now() }, ...ts]);
-      setCurrent(id);
-    } catch { setErr(p.errors.network); } finally { setBusy(null); }
-  };
-
-  const primary = french && local
-    ? { label: busy === "translate" ? t.translating : t.translate, run: translate, icon: "translate" as const }
-    : { label: busy === "speak" ? t.generating : take && take.text === text && take.voice === voice ? t.again : t.generate, run: generate, icon: "waveform" as const };
+  const restore = () => { if (original === null) return; setText(original); setOriginal(null); setWritten(WRITTEN); setMade(null); };
+  const pickLang = (l: LangCode) => { setLang(l); setMade(null); if (written !== WRITTEN) setWritten(l); };
 
   return (
     <div className="cr-studio">
-      <div className="cr-editor">
-        {original !== null && (
-          <div className="cr-original">
-            <span className="cr-tag">{t.original}</span>
-            <p>{original}</p>
-            <button type="button" className="cx-link" onClick={() => { setText(original); setOriginal(null); setFrench(true); }}>{t.restore}</button>
-          </div>
-        )}
-        <textarea ref={box} className="cr-text" value={text} onChange={e => setText(e.target.value)} placeholder={t.placeholder}
-          lang={french ? "fr" : lang} aria-label={t.title} aria-invalid={tooLong || undefined} spellCheck={french || lang === "fr"} />
-
-        {!french && lang !== "fr" && (
-          <div className="cr-letters">
-            <Letters lang={lang} target={box} onInsert={setText} />
-            {hasStandIns(text, lang) && <button type="button" className="pf-chip" onClick={() => setText(fixLetters(text, lang))}><Icon name="check" size={15} stroke={1.6} />{t.fix(digraphs)}</button>}
-          </div>
-        )}
-
-        {!text && (
-          <div className="cr-starters">
-            <p>{t.startWith}</p>
-            <div className="pf-chips">{t.starters.map(s => <button key={s.label} type="button" className="pf-chip" onClick={() => starter(s.text)}>{s.label}</button>)}</div>
-          </div>
-        )}
-
-        <div className="cr-foot">
-          {take && (
-            <div className="cr-result">
-              <AudioPlayer src={take.wav} labels={{ play: p.play, pause: p.pause, download: p.download }} />
-              <FileLink className="cx-btn sm" blob={take.file.blob} name={`namu-${take.lang}-${take.voice}.${take.file.ext}`}>
-                <Icon name="download" size={15} stroke={1.6} />{t.download(p.outputs[take.target], take.file.ext)}
-              </FileLink>
+      <div className="cr-studio-main">
+        <div className="cr-card cr-editor">
+          {original !== null && (
+            <div className="cr-original">
+              <span>{t.original}</span><p lang={WRITTEN}>{original}</p>
+              <button type="button" className="cx-btn ghost sm" onClick={restore}>{t.restore}</button>
             </div>
           )}
-          <div className="cr-bar">
-            <span className={`cr-count${tooLong ? " over" : ""}`}>{t.chars(formatNumber(ui, text.length), formatNumber(ui, LIMITS.textChars))}</span>
-            {err && <p className="cx-error" role="alert">{err}</p>}
-            <button type="button" className="cx-btn primary" onClick={() => void primary.run()} disabled={!text.trim() || tooLong || busy !== null || !voice}>
-              {busy ? <span className="cx-dots" aria-hidden="true"><i /><i /><i /></span> : <Icon name={primary.icon} size={16} stroke={1.6} />}{primary.label}
-            </button>
+          <textarea ref={box} value={text} onChange={e => { setText(e.target.value); if (original !== null && written === WRITTEN) setOriginal(null); }}
+            placeholder={t.placeholder} aria-label={p.nav.speak} lang={written} aria-invalid={tooLong || undefined} spellCheck={written === WRITTEN} />
+          {local && (
+            <div className="cr-letters">
+              <Letters lang={lang} target={box} onInsert={setText} />
+              {hasStandIns(text, lang) && <button type="button" className="cr-chip" onClick={() => setText(fixLetters(text, lang))}><Icon name="check" size={14} stroke={1.6} />{t.fix(digraphs)}</button>}
+            </div>
+          )}
+          <div className="cr-editor-foot">
+            <span className={tooLong ? "over" : undefined}>{t.chars(formatNumber(ui, text.length), formatNumber(ui, LIMITS.textChars))}</span>
+            <Dictate lang={written} onText={x => setText(cur => (cur.trim() ? `${cur.trim()} ${x}` : x))} onError={setErr}
+              labels={{ dictate: c.read.record, stop: c.read.stop, listening: c.read.listening, mic: c.errors.mic }} />
           </div>
         </div>
-      </div>
-
-      <aside className="cr-panel">
-        <div className="cx-seg cr-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={side === "settings"} onClick={() => setSide("settings")}>{t.settings}</button>
-          <button type="button" role="tab" aria-selected={side === "history"} onClick={() => setSide("history")}>{t.history}{takes.length > 0 && <span className="cx-count">{takes.length}</span>}</button>
-        </div>
-
-        {side === "settings" ? (
-          <div className="cr-settings">
-            <div className="cr-set"><p className="cr-label">{t.language}</p>
-              <LanguageChips value={lang} onPick={pickLang} options={ORDER} ready={l => can("speech", l)} soon={p.soon} label={t.language} /></div>
-            {local && (
-              <label className="cr-switch">
-                <span>{t.written}</span>
-                <input type="checkbox" role="switch" checked={french} onChange={e => setFrench(e.target.checked)} />
-                <i aria-hidden="true" />
-              </label>
-            )}
-            <div className="cr-set"><p className="cr-label">{t.voice}</p>
-              <VoicePicker lang={lang} value={voice} onPick={v => setVoices(vs => ({ ...vs, [lang]: v }))} label={t.voice} playLabel={p.play} /></div>
-            <div className="cr-set"><p className="cr-label">{t.madeFor}</p>
-              <div className="cr-targets" role="radiogroup" aria-label={t.madeFor}>
-                {OUTPUTS.map(o => (
-                  <button key={o.id} type="button" role="radio" aria-checked={target === o.id} onClick={() => setTarget(o.id)}>
-                    <Icon name={TARGET_ICON[o.id]} size={18} stroke={1.5} /><span>{p.outputs[o.id]}</span>
-                  </button>
-                ))}
-              </div>
+        {err && <p className="cx-error" role="alert">{err}</p>}
+        {phase !== "idle" && <Making label={phase === "translate" ? c.home.translating : c.home.speaking} />}
+        {made && phase === "idle" && (
+          <div className="cr-result">
+            <VoiceNote tail={<><VoiceAvatar v={{ id: made.voice }} size={22} />{language(made.lang).endonym} · {voiceOf(made.voice).name}</>}>
+              <AudioPlayer src={made.wav} labels={{ play: p.play, pause: p.pause, download: p.download }} compact />
+            </VoiceNote>
+            <div className="cr-acts">
+              {made.target === "whatsapp" && <button type="button" className="cx-btn primary" onClick={() => void share(made.file)}><Icon name="share" size={16} stroke={1.6} />{c.home.whatsapp}</button>}
+              <button type="button" className={`cx-btn${made.target === "whatsapp" ? "" : " primary"}`} onClick={() => save(made.file, made.file.name)}>
+                <Icon name="download" size={16} stroke={1.6} />{c.home.download}
+              </button>
+              <span className="cr-grow" />
+              <span className="cr-tag"><Icon name={OUTPUT_ICON[made.target]} size={14} stroke={1.6} />{c.madeFor[made.target]} · .{made.file.name.split(".").pop()}</span>
             </div>
           </div>
-        ) : takes.length === 0 ? (
-          <p className="cr-none">{t.empty}</p>
-        ) : (
-          <ul className="cr-history">
-            {takes.map(x => (
-              <li key={x.id}>
-                <button type="button" aria-pressed={x.id === current} onClick={() => { setCurrent(x.id); setLang(x.lang); setVoices(vs => ({ ...vs, [x.lang]: x.voice })); setText(x.text); setTarget(x.target); }}>
-                  <VoiceAvatar v={{ id: x.voice }} size={28} />
-                  <span><strong>{x.text}</strong><em>{voiceOf(x.voice).name} · {language(x.lang).endonym} · {p.outputs[x.target]}</em></span>
-                </button>
-              </li>
-            ))}
-          </ul>
         )}
+        <section className="cr-section">
+          <h2>{t.history}</h2>
+          <MessageList lang={ui} list={recent} ready={ready} />
+        </section>
+      </div>
+
+      <aside className="cr-card cr-settings">
+        <div className="cr-set">
+          <p className="cr-label">{t.writtenIn}</p>
+          <div className="cr-choices" role="radiogroup" aria-label={t.writtenIn}>
+            {[WRITTEN, lang].filter((l, i, xs) => xs.indexOf(l) === i).map(l => (
+              <button key={l} type="button" role="radio" className="cr-choice" aria-checked={written === l} onClick={() => { setWritten(l); setOriginal(null); }}
+                disabled={l !== lang && !canTranslate(l, lang)}>{language(l).endonym}</button>
+            ))}
+          </div>
+        </div>
+        <div className="cr-set">
+          <p className="cr-label">{t.language}</p>
+          <div className="cr-options" role="radiogroup" aria-label={t.language}>
+            {LOCAL.map(l => {
+              const ok = can("speech", l);
+              return (
+                <button key={l} type="button" role="radio" className="cr-option" aria-checked={lang === l} disabled={!ok} onClick={() => pickLang(l)}>
+                  {language(l).endonym}<span className="cr-end">{ok ? lang === l && <Icon name="check" size={16} stroke={1.6} /> : <span className="pf-soon">{p.soon}</span>}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="cr-set">
+          <p className="cr-label">{t.voice}</p>
+          <div className="cr-options" role="radiogroup" aria-label={t.voice}>
+            {voicesFor(lang).map(v => (
+              <div key={v.id} className="cr-option-row">
+                <button type="button" role="radio" className="cr-option" aria-checked={voice === v.id} onClick={() => setVoices(vs => ({ ...vs, [lang]: v.id as VoiceId }))}>
+                  <VoiceAvatar v={v} size={26} />{v.name}
+                </button>
+                <SampleButton src={v.sample} label={`${p.play} ${v.name}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="cr-set">
+          <p className="cr-label">{t.madeFor}</p>
+          <div className="cr-options" role="radiogroup" aria-label={t.madeFor}>
+            {OUTPUTS.map(o => (
+              <button key={o.id} type="button" role="radio" className="cr-option" aria-checked={target === o.id} onClick={() => setTarget(o.id)}>
+                <Icon name={OUTPUT_ICON[o.id]} size={18} stroke={1.5} />{c.madeFor[o.id]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button type="button" className="cx-btn primary cr-make" onClick={() => void make()} disabled={!text.trim() || tooLong || phase !== "idle" || !voice}>
+          {made && made.text === text.trim() ? t.again : t.make}
+        </button>
       </aside>
     </div>
   );
 }
-
-const TARGET_ICON: Record<OutputId, "microphone" | "volume" | "phone-voice" | "download"> = { whatsapp: "microphone", radio: "volume", phone: "phone-voice", file: "download" };
