@@ -10,14 +10,14 @@ import { hasAccounts } from "@/lib/env";
 export const dynamic = "force-dynamic";
 export const generateMetadata = ({ params }: { params: Promise<{ lang: string }> }) => platformMetadata(params, "agents", t => t.nav.templates);
 
+/* Every template, filtered by who the agent helps, and a blank agent. */
 export default async function Templates({ params }: { params: Promise<{ lang: string }> }) {
   const lang = (await params).lang as Lang;
   if (!hasAccounts()) return <NotConfigured lang={lang} />;
   const { user, profile } = await requireAccount(lang, "/agents/templates");
-  const t = agentsCopy[lang];
   return (
-    <PlatformShell lang={lang} door="agents" page="templates" admin={profile.role === "admin"} user={user} access={profile.beta_status} layout="full">
-      <div className="ag-page"><h1 className="ag-h1">{t.templates.title}</h1><TemplateGallery lang={lang} /></div>
+    <PlatformShell lang={lang} door="agents" page="templates" admin={profile.role === "admin"} user={user} access={profile.beta_status} title={agentsCopy[lang].templates.title}>
+      <TemplateGallery lang={lang} />
     </PlatformShell>
   );
 }

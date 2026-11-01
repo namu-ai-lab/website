@@ -60,8 +60,8 @@ export function VoicePicker({ lang, value, onPick, label, playLabel }: { lang: L
   );
 }
 
-const TONES: [string, string, string][] = [["#ffd8b8", "#e8935a", "#b4552a"], ["#f6e6d6", "#c4865a", "#5e3418"], ["#f4ece2", "#8fa6d6", "#3d4a78"], ["#f4dcc4", "#d97a6c", "#7a3125"]];
-/** A voice's sphere: the same warm glass as the models', its tone fixed by the voice's id. */
+const TONES: [string, string, string][] = [["#f4ece2", "#c9b8a6", "#5e5148"], ["#ffd8b8", "#e8935a", "#b4552a"], ["#f6e6d6", "#c4865a", "#5e3418"], ["#f4dcc4", "#d97a6c", "#7a3125"]];
+/** A voice's sphere: warm glass in Namu's colours (never blue or green), its tone fixed by the voice's id. */
 export function VoiceAvatar({ v, size = 26 }: { v: Pick<Voice, "id">; size?: number }) {
   const [a, b, c] = TONES[[...v.id].reduce((s, ch) => s + ch.charCodeAt(0), 0) % TONES.length];
   return <i className="pf-voice-orb" style={{ width: size, height: size, background: `radial-gradient(circle at 34% 30%, ${a} 0, ${b} 50%, ${c} 100%)` }} aria-hidden="true" />;

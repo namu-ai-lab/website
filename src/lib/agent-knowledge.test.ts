@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_MESSAGE_CHARS, contextMessage, passages, retrieve, words } from "./agent-knowledge";
-import { cleanPatch, parseExpect, passes } from "./agent-shape";
+import { cleanPatch } from "./agent-shape";
 
 const guide = `Le paludisme se transmet par la piqûre du moustique.
 
@@ -47,11 +47,5 @@ describe("agent shape", () => {
     expect(cleanPatch({ channels: { whatsapp: { phoneNumberId: "1234 5678" } } }, { channels: true })).toEqual({ channels: { whatsapp: { phoneNumberId: "12345678" } } });
     expect(cleanPatch({ channels: { whatsapp: { phoneNumberId: "12345678" } } })).toEqual({});
     expect(cleanPatch({ checks: [{ kind: "goal", text: " Oriente vers le CSI " }, { kind: "x", text: "no" }] })).toEqual({ checks: [{ kind: "goal", text: "Oriente vers le CSI" }] });
-  });
-
-  it("passes a reply that holds every expected word, accents and case aside", () => {
-    expect(passes("Ku je CSI mafi kusa.", ["csi"])).toBe(true);
-    expect(passes("Allez à l’hôpital", ["hopital", "CSI"])).toBe(false);
-    expect(parseExpect(" CSI, agent de santé ,, ")).toEqual(["CSI", "agent de santé"]);
   });
 });

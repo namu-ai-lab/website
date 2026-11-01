@@ -7,7 +7,6 @@ import "@/styles/orgs.css";
 import "@/styles/console.css";
 import "@/styles/platform.css";
 import "@/styles/create.css";
-import "@/styles/projects.css";
 import "@/styles/agents.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";

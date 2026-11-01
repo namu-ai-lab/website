@@ -1,4 +1,4 @@
-/* Copy shared by the platform's three doors (Namu Create, Namu Agents, Namu API): the sidebar, the switch, and the
+/* Copy shared by the platform's three areas (Namu Create, Namu Agents, Namu API): the top bar, the side menus, and the
    words every door uses (tasks, voice uses, output targets, common actions). Each door's own pages keep their copy in
    content/create.ts, content/agents.ts and content/console.ts. Short on purpose: the platform names things and
    does not describe them. The doors' names are product names, the same in every language.
@@ -14,8 +14,7 @@ export type PlatformCopy = {
   platform: string; menu: string; signedIn: string;
   nav: {
     home: string; voices: string; speak: string; read: string; translate: string;
-    projects: string; kit: string; tools: string; transcribe: string; video: string;
-    agents: string; templates: string; conversations: string; knowledge: string;
+    agents: string; templates: string; conversations: string;
     settings: string;
   };
   tasks: Record<Task, string>;
@@ -38,8 +37,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     platform: "Platform", menu: "Menu", signedIn: "Signed in as",
     nav: {
       home: "Home", voices: "Voices", speak: "Voice message", read: "Read a voice note", translate: "Translate",
-      projects: "Projects", kit: "Kit", tools: "Tools", transcribe: "Transcribe", video: "Translate a video",
-      agents: "Agents", templates: "Templates", conversations: "Conversations", knowledge: "Knowledge",
+      agents: "Agents", templates: "Templates", conversations: "Conversations",
       settings: "Settings",
     },
     tasks: { speech: "Speech", transcribe: "Transcription", translate: "Translation", converse: "Conversation" },
@@ -60,8 +58,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
     platform: "Plateforme", menu: "Menu", signedIn: "Connecté en tant que",
     nav: {
       home: "Accueil", voices: "Voix", speak: "Message vocal", read: "Lire un message vocal", translate: "Traduire",
-      projects: "Projets", kit: "Kit", tools: "Outils", transcribe: "Transcrire", video: "Traduire une vidéo",
-      agents: "Agents", templates: "Modèles", conversations: "Conversations", knowledge: "Connaissances",
+      agents: "Agents", templates: "Modèles", conversations: "Conversations",
       settings: "Paramètres",
     },
     tasks: { speech: "Synthèse vocale", transcribe: "Transcription", translate: "Traduction", converse: "Conversation" },

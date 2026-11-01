@@ -1,80 +1,74 @@
-/* Copy for Namu Create's tools (src/components/create): Speak, Transcribe and the Kit. Names and actions only; the
-   platform does not explain itself. The starters are French on purpose: organisations write in French, and Speak
-   turns the French into the local language before it is spoken.
+/* Copy for Namu Create (src/components/create): Home, Voice message, Read a voice note, Translate and Voices. Names
+   and actions only; the platform does not explain itself. The pages' names are in content/platform.ts (nav).
    FR-REVIEW: drafted French, to be reviewed by a native French speaker before publication. */
 import type { Lang } from "@/i18n/config";
+import type { OutputId } from "@/lib/catalog";
 
-const n = " ";   // narrow no-break space before French high punctuation
-
-export type Starter = { label: string; text: string };
-
-/* The French starter texts, the same in both interfaces (what the organisation would write). */
-const STARTERS_FR: string[] = [
-  "Dormez chaque nuit sous une moustiquaire imprégnée. Elle protège toute la famille contre le paludisme.",
-  "La réunion du comité aura lieu jeudi à seize heures, à la mairie. Votre présence est importante.",
-  "Il était une fois, dans un village au bord du fleuve, une vieille femme qui connaissait toutes les histoires.",
-  "Aujourd’hui, nous apprenons à compter jusqu’à dix. Répétez après moi : un, deux, trois.",
-  "Chers auditeurs, la campagne de vaccination commence lundi dans tous les centres de santé.",
-  "Merci de votre confiance. Notre équipe reste à votre écoute tous les jours, de huit heures à dix-huit heures.",
-].map(s => s.replace(" :", `${n}:`));
+const n = " ";   // narrow no-break space before French high punctuation
 
 export type CreateCopy = {
+  home: {
+    question: string; placeholder: string; writtenIn: string; to: string; make: string; again: string;
+    translating: string; speaking: string; whatsapp: string; download: string;
+    shelf: (langs: string) => string; shelfLine: (voices: string, soon: string) => string;
+    ideas: string; recent: string; all: string; use: string; text: string; none: string; agents: string;
+  };
   speak: {
-    title: string; placeholder: string; startWith: string; starters: Starter[];
-    settings: string; history: string; language: string; voice: string; written: string; madeFor: string;
-    translate: string; translating: string; generate: string; generating: string; again: string;
-    original: string; restore: string; fix: (letters: string) => string; chars: (used: string, max: string) => string;
-    download: (target: string, ext: string) => string; empty: string; tooLong: (max: string) => string;
+    placeholder: string; language: string; voice: string; madeFor: string; writtenIn: string; make: string; again: string;
+    original: string; restore: string; fix: (letters: string) => string; chars: (used: string, max: string) => string; tooLong: (max: string) => string;
+    history: string; none: string;
   };
-  transcribe: {
-    title: string; language: string; listening: string; again: string; copy: string; copied: string; download: string; nothing: string;
+  read: {
+    record: string; stop: string; upload: string; tryOne: string; readIt: string; listening: string; nothing: string;
+    listen: string; copy: string; copied: string; again: string; today: string;
   };
-  kit: {
-    title: string; words: string; voices: string; term: string; say: string; language: string; every: string;
-    add: string; remove: string; save: string; saving: string; saved: string; listen: string; termPh: string; sayPh: string;
-  };
-  errors: { generic: string; network: string; big: (mb: number) => string };
+  translate: { go: string; swap: string; placeholder: string; empty: string; record: string; stop: string; listen: string; copy: string; copied: string; try: string };
+  voices: { all: string; listen: string; use: string };
+  madeFor: Record<OutputId, string>;
+  errors: { generic: string; network: string; big: (mb: number) => string; mic: string };
 };
 
 export const createCopy: Record<Lang, CreateCopy> = {
   en: {
+    home: {
+      question: "What should people hear?", placeholder: "Write or say your message", writtenIn: "Written in", to: "Said in", make: "Make it", again: "New message",
+      translating: "Translating…", speaking: "Making the voice…", whatsapp: "Send on WhatsApp", download: "Download",
+      shelf: l => `${l} voices`, shelfLine: (v, s) => `${v} today. ${s} next.`,
+      ideas: "Ideas", recent: "Recent", all: "All", use: "Use", text: "Text", none: "Your messages will show here.", agents: "Agents",
+    },
     speak: {
-      title: "Speak", placeholder: "Write what people should hear…", startWith: "Get started with",
-      starters: ["Health message", "Announce a meeting", "Tell a folktale", "Explain a lesson", "Radio spot", "Thank your customers"]
-        .map((label, i) => ({ label, text: STARTERS_FR[i] })),
-      settings: "Settings", history: "History", language: "Language", voice: "Voice", written: "Written in French", madeFor: "Made for",
-      translate: "Translate", translating: "Translating…", generate: "Generate", generating: "Generating…", again: "Generate again",
-      original: "French", restore: "Back to the French", fix: l => `Fix ${l}`, chars: (u, m) => `${u} / ${m}`,
-      download: (t, e) => `${t} · .${e}`, empty: "Nothing yet.", tooLong: m => `Up to ${m} characters.`,
+      placeholder: "Write what people should hear", language: "Language", voice: "Voice", madeFor: "Made for", writtenIn: "Written in",
+      make: "Make it", again: "Make it again", original: "French", restore: "Back to the French", fix: l => `Fix ${l}`,
+      chars: (u, m) => `${u} / ${m}`, tooLong: m => `Up to ${m} characters.`, history: "History", none: "Nothing yet.",
     },
-    transcribe: {
-      title: "Transcribe", language: "Language", listening: "Listening…", again: "New recording", copy: "Copy", copied: "Copied",
-      download: "Download .txt", nothing: "Nothing was heard.",
+    read: {
+      record: "Record", stop: "Stop", upload: "Upload a voice note", tryOne: "Or try one", readIt: "Read it", listening: "Listening…",
+      nothing: "Nothing was heard.", listen: "Listen", copy: "Copy", copied: "Copied", again: "New voice note", today: "Today",
     },
-    kit: {
-      title: "Kit", words: "Words", voices: "Voices", term: "Word", say: "Say it as", language: "Language", every: "Every language",
-      add: "Add a word", remove: "Remove", save: "Save", saving: "Saving…", saved: "Saved", listen: "Listen", termPh: "UNICEF", sayPh: "Yunisef",
-    },
-    errors: { generic: "Something went wrong. Try again.", network: "No connection. Try again.", big: mb => `Up to ${mb} MB here.` },
+    translate: { go: "Translate", swap: "Swap the languages", placeholder: "Write or say it", empty: "The translation shows here", record: "Record", stop: "Stop", listen: "Listen", copy: "Copy", copied: "Copied", try: "Try" },
+    voices: { all: "All", listen: "Listen", use: "Use" },
+    madeFor: { whatsapp: "WhatsApp voice note", radio: "Radio", phone: "Phone line", file: "File" },
+    errors: { generic: "Something went wrong. Try again.", network: "No connection. Try again.", big: mb => `Up to ${mb} MB here.`, mic: "The microphone is not available." },
   },
   fr: {
+    home: {
+      question: `Que doivent-ils entendre${n}?`, placeholder: "Écrivez ou dites votre message", writtenIn: "Écrit en", to: "Dit en", make: "Créer", again: "Nouveau message",
+      translating: "Traduction…", speaking: "Création de la voix…", whatsapp: "Envoyer sur WhatsApp", download: "Télécharger",
+      shelf: l => `Voix en ${l.toLowerCase()}`, shelfLine: (v, s) => `${v} aujourd’hui. ${s} ensuite.`,
+      ideas: "Idées", recent: "Récents", all: "Tout", use: "Utiliser", text: "Texte", none: "Vos messages s’afficheront ici.", agents: "Agents",
+    },
     speak: {
-      title: "Parler", placeholder: "Écrivez ce que les gens doivent entendre…", startWith: "Pour commencer",
-      starters: ["Message de santé", "Annoncer une réunion", "Raconter un conte", "Expliquer une leçon", "Spot radio", "Remercier vos clients"]
-        .map((label, i) => ({ label, text: STARTERS_FR[i] })),
-      settings: "Paramètres", history: "Historique", language: "Langue", voice: "Voix", written: "Écrit en français", madeFor: "Pour",
-      translate: "Traduire", translating: "Traduction…", generate: "Générer", generating: "Génération…", again: "Générer à nouveau",
-      original: "Français", restore: "Revenir au français", fix: l => `Corriger ${l}`, chars: (u, m) => `${u} / ${m}`,
-      download: (t, e) => `${t} · .${e}`, empty: "Rien pour l’instant.", tooLong: m => `${m} caractères au plus.`,
+      placeholder: "Écrivez ce que les gens doivent entendre", language: "Langue", voice: "Voix", madeFor: "Pour", writtenIn: "Écrit en",
+      make: "Créer", again: "Recréer", original: "Français", restore: "Revenir au français", fix: l => `Corriger ${l}`,
+      chars: (u, m) => `${u} / ${m}`, tooLong: m => `${m} caractères au plus.`, history: "Historique", none: "Rien pour l’instant.",
     },
-    transcribe: {
-      title: "Transcrire", language: "Langue", listening: "Écoute…", again: "Nouvel enregistrement", copy: "Copier", copied: "Copié",
-      download: "Télécharger .txt", nothing: "Rien n’a été entendu.",
+    read: {
+      record: "Enregistrer", stop: "Arrêter", upload: "Importer un message vocal", tryOne: "Ou essayez-en un", readIt: "Lire", listening: "Écoute…",
+      nothing: "Rien n’a été entendu.", listen: "Écouter", copy: "Copier", copied: "Copié", again: "Nouveau message vocal", today: "Aujourd’hui",
     },
-    kit: {
-      title: "Kit", words: "Mots", voices: "Voix", term: "Mot", say: "Prononcer", language: "Langue", every: "Toutes les langues",
-      add: "Ajouter un mot", remove: "Retirer", save: "Enregistrer", saving: "Enregistrement…", saved: "Enregistré", listen: "Écouter", termPh: "UNICEF", sayPh: "Yunisef",
-    },
-    errors: { generic: "Un problème est survenu. Réessayez.", network: "Pas de connexion. Réessayez.", big: mb => `${mb}${n}Mo au plus ici.` },
+    translate: { go: "Traduire", swap: "Inverser les langues", placeholder: "Écrivez ou dites-le", empty: "La traduction s’affiche ici", record: "Enregistrer", stop: "Arrêter", listen: "Écouter", copy: "Copier", copied: "Copié", try: "Essayer" },
+    voices: { all: "Tout", listen: "Écouter", use: "Utiliser" },
+    madeFor: { whatsapp: "Note vocale WhatsApp", radio: "Radio", phone: "Ligne téléphonique", file: "Fichier" },
+    errors: { generic: "Un problème est survenu. Réessayez.", network: "Pas de connexion. Réessayez.", big: mb => `${mb}${n}Mo au plus ici.`, mic: "Le micro n’est pas disponible." },
   },
 };
