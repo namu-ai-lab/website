@@ -176,7 +176,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; }
 @media (max-width: 1120px) {
   .nav, .hdr-cta { display: none; }
   .menu-toggle { display: grid; }
-  .hdr.solid, .hdr.open { background: #fff; }   /* nothing of the page shows through on a small screen */
+  /* nothing of the page shows through on a small screen, so no blur either: on iPhone Safari a blurred header becomes
+     the frame of the fixed menu inside it (.sheet), which is then cut to the bar's height under the page */
+  .hdr.solid, .hdr.open { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (max-width: 640px) {
   :root { --hdr-h: 56px; }

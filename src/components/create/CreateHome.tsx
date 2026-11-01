@@ -37,6 +37,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
   const [recent, setRecent] = useState(initial);
   const [tab, setTab] = useState<"ideas" | "recent">("ideas");
   const [sector, setSector] = useState<SectorId | null>(null);
+  const [allIdeas, setAllIdeas] = useState(false);   // phones show six until asked
   const box = useRef<HTMLTextAreaElement>(null), top = useRef<HTMLDivElement>(null);
   const tooLong = text.length > LIMITS.textChars;
   const sources: LangCode[] = [WRITTEN, ...spoken];
@@ -149,7 +150,7 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
                 </button>
               ))}
             </div>
-            <ul className="cr-ideas">
+            <ul className={`cr-ideas${allIdeas || sector ? " all" : ""}`}>
               {ideas.map(i => {
                 const src = voice ? sampleOf(i, voice) : undefined;
                 return (
@@ -165,6 +166,9 @@ export function CreateHome({ lang: ui, recent: initial, ready, kitVoices }: { la
                 );
               })}
             </ul>
+            {!allIdeas && !sector && ideas.length > 6 && (
+              <button type="button" className="cx-btn cr-more" onClick={() => setAllIdeas(true)}>{t.allIdeas(ideas.length)}</button>
+            )}
           </div>
         ) : (
           <div role="tabpanel"><MessageList lang={ui} list={recent} ready={ready} /></div>

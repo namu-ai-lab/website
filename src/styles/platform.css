@@ -34,6 +34,7 @@
 .pf-side a[aria-current="page"] { background: var(--surface); color: var(--ink); }
 .pf-side a svg { flex: none; }
 .pf-side a[aria-current="page"] svg { color: var(--sahel-deep); }
+.pf-short { display: none; }
 .pf-side-foot { margin: auto 0 0; padding: 14px 12px 0; box-shadow: 0 -1px 0 var(--line); }
 .pf-access { display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 9999px; background: var(--surface-2); color: var(--ink); font-size: 13px; }
 .pf-access.pending, .pf-access.denied { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink-3); }
@@ -59,18 +60,23 @@
 .pf .cx-play { background: var(--kola); color: #FFFAF1; }
 .pf .cx-play:hover { background: var(--ink); }
 
-/* ---- phones and small tablets: the side menu becomes a row of tabs under the bar */
+/* ---- phones and small tablets: the side menu becomes a tab bar at the foot of the screen, as WhatsApp's: every
+   page in view and under the thumb, an icon over its short name, the current one in ink with its icon in Sahel */
 @media (max-width: 860px) {
-  .pf-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
-  .pf-side { z-index: 40; height: auto; flex-direction: row; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; background: rgba(255, 250, 241, .9);
-    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 1px 0 var(--line); }
-  .pf-side::-webkit-scrollbar { display: none; }
-  .pf-side ul { display: flex; gap: 4px; }
-  .pf-side a { height: 38px; font-size: 15px; }
-  .pf-side a svg, .pf-side-foot { display: none; }
+  .pf-body { grid-template-columns: minmax(0, 1fr); }
+  .pf-side { position: fixed; inset: auto 0 0; top: auto; z-index: 45; height: auto; flex-direction: row; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(255, 250, 241, .94); -webkit-backdrop-filter: saturate(1.6) blur(20px); backdrop-filter: saturate(1.6) blur(20px); box-shadow: 0 -1px 0 var(--line); }
+  .pf-side ul { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 2px; width: 100%; }
+  .pf-side a { flex-direction: column; justify-content: center; gap: 4px; height: 56px; padding: 0 2px; border-radius: 14px; font-size: 12px; letter-spacing: .01em; }
+  .pf-side a[aria-current="page"] { background: transparent; color: var(--ink); font-weight: 500; }
+  .pf-side a:hover { background: transparent; }
+  .pf-long, .pf-side-foot { display: none; }
+  .pf-short { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .pf-page { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 600px) {
   .pf-bar { grid-template-columns: auto 1fr auto; gap: 6px; padding: 0 12px; }
+  .pf-brand { padding: 8px 4px; margin-left: -4px; }
   .pf-brand .mark { height: 26px; }
   .pf-areas { justify-self: center; gap: 0; }
   .pf-areas a { padding: 0 10px; font-size: 15px; }
@@ -150,3 +156,16 @@
 .pf-vid { padding: 4px 9px; border-radius: 8px; background: var(--surface); font-size: 13.5px; }
 .pf-coming-orb { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff 0, var(--surface-2) 55%, #d8cfc4 100%);
   box-shadow: inset 0 0 0 1px var(--line); }
+
+/* ---- a row that scrolls sideways (components/platform/ScrollRow) fades where there is more */
+.scroll-row[data-right="true"] { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+.scroll-row[data-left="true"] { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px); mask-image: linear-gradient(90deg, transparent, #000 44px); }
+.scroll-row[data-left="true"][data-right="true"] { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); }
+
+/* ---- on a touch screen every control is at least 40 px each way: a finger is not a cursor */
+@media (pointer: coarse) {
+  .pf .cx-btn.sm, .cr-mini, .ag-mini, .cr-chip, .ag-chip, .cx-seg button { min-height: 40px; }
+  .pf .pf-sample, .cx-icon-btn, .ag-mini.round { min-width: 40px; min-height: 40px; }
+  .pf .ag-see, .pf .ag-link, .pf .ag-crumb a, .cx-frame .cx-more, .cx-frame .cx-dismiss { padding-block: 10px; margin-block: -10px; }   /* a taller hit area, the same layout */
+}

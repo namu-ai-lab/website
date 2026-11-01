@@ -17,6 +17,8 @@ export type PlatformCopy = {
     agents: string; templates: string; conversations: string;
     settings: string;
   };
+  /** the side menu's names in the phone's tab bar, where five share one row */
+  short: Record<"home" | "speak" | "read" | "translate" | "voices" | "agents" | "templates" | "conversations", string>;
   tasks: Record<Task, string>;
   uses: Record<Use, string>;
   outputs: Record<OutputId, string>;
@@ -40,6 +42,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
       agents: "Agents", templates: "Templates", conversations: "Conversations",
       settings: "Settings",
     },
+    short: { home: "Home", speak: "Message", read: "Read", translate: "Translate", voices: "Voices", agents: "Agents", templates: "Templates", conversations: "Conversations" },
     tasks: { speech: "Speech", transcribe: "Transcription", translate: "Translation", converse: "Conversation" },
     uses: { health: "Health", education: "Education", radio: "Radio", stories: "Stories", public: "Public information", business: "Business" },
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Phone line", file: "File" },
@@ -61,6 +64,7 @@ export const platformCopy: Record<Lang, PlatformCopy> = {
       agents: "Agents", templates: "Modèles", conversations: "Conversations",
       settings: "Paramètres",
     },
+    short: { home: "Accueil", speak: "Message", read: "Lire", translate: "Traduire", voices: "Voix", agents: "Agents", templates: "Modèles", conversations: "Conversations" },
     tasks: { speech: "Synthèse vocale", transcribe: "Transcription", translate: "Traduction", converse: "Conversation" },
     uses: { health: "Santé", education: "Éducation", radio: "Radio", stories: "Contes", public: "Information publique", business: "Entreprise" },
     outputs: { whatsapp: "WhatsApp", radio: "Radio", phone: "Ligne téléphonique", file: "Fichier" },

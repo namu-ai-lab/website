@@ -171,14 +171,27 @@
 }
 @media (max-width: 860px) {
   .ag-work { grid-template-columns: minmax(0, 1fr); }
-  .ag-talk { position: static; order: -1; }
-  .ag-orb { width: 150px; height: 150px; }
-  .ag-agent-row { grid-template-columns: 40px minmax(0, 1fr) 18px; }
+  /* the talk panel on one line: the orb beside the name, the voice and the button */
+  .ag-talk { position: static; order: -1; display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; justify-items: start;
+    column-gap: 16px; row-gap: 4px; padding: 16px 18px; text-align: left; }
+  .ag-talk .ag-orb { grid-row: 1 / span 4; width: 92px; height: 92px; margin: 0; }
+  .ag-talk-sub { margin: 0 0 6px; }
+  .ag-talk .ag-link { margin-top: 2px; }
+  .ag-talk .cx-error { grid-column: 1 / -1; }
+  .ag-talk-btn { min-width: 0; }
+  .ag-tabs { gap: 20px; }
+  .ag-agent-row { grid-template-columns: 40px minmax(0, 1fr) auto 18px; }
   .ag-conv-row { grid-template-columns: 40px minmax(0, 1fr) auto; }
   .ag-row .hide-sm { display: none; }
 }
 @media (max-width: 600px) {
   .ag-tgrid { grid-template-columns: minmax(0, 1fr); }
+  /* on the Agents page the templates are a row to swipe; the Templates page keeps them in a column */
+  .ag-section .ag-tgrid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 80%; overflow-x: auto; scroll-snap-type: x mandatory;
+    margin-right: -16px; padding-right: 16px; scrollbar-width: none; }
+  .ag-section .ag-tgrid::-webkit-scrollbar { display: none; }
+  .ag-section .ag-tgrid > li { scroll-snap-align: start; }
+  .ag-tabs button { font-size: 15px; }
   .ag-field, .ag-wa-admin .ag-field { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .ag-field > span:first-child { padding-top: 0; }
   .ag-card.ag-form { padding: 4px 18px; }

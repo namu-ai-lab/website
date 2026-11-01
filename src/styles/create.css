@@ -205,7 +205,7 @@
 .cr-translate { display: grid; gap: 16px; }
 .cr-swap { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .cr-examples { display: flex; flex-wrap: wrap; gap: 8px; }
-.cr-examples .cr-chip { background: var(--surface); }
+.cr-examples .cr-chip { height: auto; min-height: 40px; padding: 9px 14px; background: var(--surface); line-height: 1.35; text-align: left; white-space: normal; }
 .cr-examples .cr-chip:hover { background: var(--surface-2); }
 
 /* ---- Voices */
@@ -225,6 +225,8 @@
 .cr-tags span { padding: 3px 10px; border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: 13px; }
 .cr-vacts { display: flex; gap: 8px; margin-top: auto; }
 
+.cr-make-here, .cr-more { display: none; }
+
 /* ---- smaller screens */
 @media (max-width: 1100px) {
   .cr-sectors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -237,8 +239,18 @@
   .cr-editor { order: 1; }
   .cr-settings { position: static; order: 2; }
   .cr-studio-main > .cx-error, .cr-studio-main > .cr-making, .cr-studio .cr-result { order: 3; }
+  .cr-studio-main > .cx-error, .cr-studio-main > .cr-making, .cr-studio .cr-result { order: 2; }
+  .cr-settings { order: 3; }
   .cr-studio .cr-section { order: 4; margin-top: 26px; }
   .cr-studio .cr-result { margin-top: 0; }
+  /* Make it sits under the words; the settings become rows of chips, so the whole card is a glance */
+  .cr-make-here { display: inline-flex; }
+  .cr-editor textarea { min-height: 132px; }
+  .cr-settings .cr-make { display: none; }
+  .cr-settings .cr-options { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cr-settings .cr-option-row { flex: none; }
+  .cr-settings .cr-option { flex: none; width: auto; height: 40px; padding: 0 14px; border-radius: 9999px; background: var(--bg); }
+  .cr-settings .cr-option[aria-checked="true"] { background: var(--bg); }
   .cr-shelf { grid-template-columns: minmax(0, 1fr); }
   .cr-shelf ul { overflow-x: auto; scrollbar-width: none; }
   .cr-row { grid-template-columns: 40px minmax(0, 1fr) minmax(56px, auto) 40px; }
@@ -254,4 +266,13 @@
   .cr-composer { padding: 14px 12px 10px; border-radius: 24px; }
   .cr-note-tail { display: none; }
   .cr-shelf { padding: 24px 20px; }
+  /* the voices fit one row: four circles, no scrolling */
+  .cr-shelf ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow: visible; }
+  .cr-shelf li { min-width: 0; text-align: center; font-size: 13.5px; }
+  .cr-shelf .cr-orb, .cr-shelf .cr-orb > .pf-voice-orb, .cr-shelf .cr-orb-ghost { width: 60px !important; height: 60px !important; }
+  /* six ideas until asked, so the page ends */
+  .cr-ideas:not(.all) > li:nth-child(n + 7) { display: none; }
+  .cr-more { display: flex; justify-content: center; width: 100%; margin-top: 14px; }
+  .cr-vcard.soon { padding: 14px 18px; }
+  .cr-vcard.soon .cr-orb-ghost { width: 40px; height: 40px; }
 }
